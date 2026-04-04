@@ -9,13 +9,24 @@ from .models import Transaction
 
 @login_required
 def index(request):
-    # Only approved products
+    query = request.GET.get('q', '')
+    cat_id = request.GET.get('category', '')
+    
     products = Product.objects.filter(approved=True).order_by('name')
-    categories = Category.objects.all()
+    
+    if query:
+        products = products.filter(name__icontains=query)
+    
+    if cat_id and cat_id != 'all':
+        products = products.filter(category_id=cat_id)
+        
+    categories = Category.objects.all().order_by('name')
     
     context = {
         'products': products,
         'categories': categories,
+        'active_category': cat_id or 'all',
+        'query': query,
     }
     
     if request.headers.get('HX-Request'):

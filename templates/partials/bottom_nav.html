@@ -1,5 +1,5 @@
 {% load static %}
-<nav class="fixed bottom-0 left-0 right-0 z-40 bg-surface border-t border-border safe-bottom">
+<nav class="fixed bottom-0 left-0 right-0 z-40 bg-surface border-t border-border safe-bottom tablet:hidden">
   <div class="flex items-center justify-around h-16 relative">
     
     <!-- POS -->
@@ -15,32 +15,14 @@
 
     <!-- Stock -->
     <a href="{% url 'catalogue:inventory' %}" class="flex flex-col items-center justify-center gap-1 w-full h-full relative group">
-      {% if request.resolver_match.app_name == 'catalogue' %}
+      {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}
         <div class="absolute top-0 w-8 h-0.5 bg-brand-green rounded-full shadow-[0_0_8px_rgba(0,230,118,0.4)]"></div>
       {% endif %}
-      <div class="relative {% if request.resolver_match.app_name == 'catalogue' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors group-active:scale-90 transform duration-100">
+      <div class="relative {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors group-active:scale-90 transform duration-100">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></svg>
-        {% if pending_count > 0 and user.role == 'admin' %}
-          <div class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-red border-2 border-surface flex items-center justify-center text-[8px] font-bold text-white">
-            {{ pending_count|default:"!" }}
-          </div>
-        {% endif %}
       </div>
-      <span class="text-[9px] font-bold tracking-wider uppercase {% if request.resolver_match.app_name == 'catalogue' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors">Stock</span>
+      <span class="text-[9px] font-bold tracking-wider uppercase {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors">Stock</span>
     </a>
-
-    <!-- Reports (Admin Only) -->
-    {% if user.role == 'admin' %}
-    <a href="{% url 'reports:dashboard' %}" class="flex flex-col items-center justify-center gap-1 w-full h-full relative group">
-      {% if request.resolver_match.app_name == 'reports' %}
-        <div class="absolute top-0 w-8 h-0.5 bg-brand-green rounded-full shadow-[0_0_8px_rgba(0,230,118,0.4)]"></div>
-      {% endif %}
-      <div class="{% if request.resolver_match.app_name == 'reports' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors group-active:scale-90 transform duration-100">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-      </div>
-      <span class="text-[9px] font-bold tracking-wider uppercase {% if request.resolver_match.app_name == 'reports' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors">Reports</span>
-    </a>
-    {% endif %}
 
     <!-- Expenses -->
     <a href="{% url 'expenses:list' %}" class="flex flex-col items-center justify-center gap-1 w-full h-full relative group">
@@ -48,23 +30,24 @@
         <div class="absolute top-0 w-8 h-0.5 bg-brand-green rounded-full shadow-[0_0_8px_rgba(0,230,118,0.4)]"></div>
       {% endif %}
       <div class="{% if request.resolver_match.app_name == 'expenses' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors group-active:scale-90 transform duration-100">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18.06"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
       </div>
       <span class="text-[9px] font-bold tracking-wider uppercase {% if request.resolver_match.app_name == 'expenses' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors">Expenses</span>
     </a>
 
-    <!-- Users (Admin Only) -->
-    {% if user.role == 'admin' %}
-    <a href="{% url 'accounts:user_list' %}" class="flex flex-col items-center justify-center gap-1 w-full h-full relative group">
-      {% if request.resolver_match.url_name == 'user_list' %}
+    <!-- Categories -->
+    <a href="{% url 'catalogue:category_list' %}" class="flex flex-col items-center justify-center gap-1 w-full h-full relative group">
+      {% if request.resolver_match.url_name == 'category_list' %}
         <div class="absolute top-0 w-8 h-0.5 bg-brand-green rounded-full shadow-[0_0_8px_rgba(0,230,118,0.4)]"></div>
       {% endif %}
-      <div class="{% if request.resolver_match.url_name == 'user_list' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors group-active:scale-90 transform duration-100">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="{% if request.resolver_match.url_name == 'category_list' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors group-active:scale-90 transform duration-100">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
       </div>
-      <span class="text-[9px] font-bold tracking-wider uppercase {% if request.resolver_match.url_name == 'user_list' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors">Users</span>
+      <span class="text-[9px] font-bold tracking-wider uppercase {% if request.resolver_match.url_name == 'category_list' %}text-brand-green{% else %}text-text-muted{% endif %} transition-colors">Categories</span>
     </a>
-    {% endif %}
+
+  </div>
+</nav>
 
   </div>
 </nav>

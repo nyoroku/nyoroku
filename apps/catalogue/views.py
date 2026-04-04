@@ -88,3 +88,32 @@ def delete_product(request, pk):
         return HttpResponse('') # Remove from DOM
     
     return redirect('catalogue:inventory')
+
+@login_required
+def category_list(request):
+    if request.user.role != 'admin':
+        return redirect('catalogue:inventory')
+    
+    categories = Category.objects.all().order_by('name')
+    return render(request, 'catalogue/category_list.html', {'categories': categories})
+
+@login_required
+@require_http_methods(["POST"])
+def add_category(request):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+    
+    name = request.POST.get('name')
+    if name:
+        Category.objects.get_or_create(name=name)
+    return redirect('catalogue:category_list')
+
+@login_required
+@require_http_methods(["POST", "DELETE"])
+def delete_category(request, pk):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+        
+    category = get_object_or_404(Category, pk=pk)
+    category.delete()
+    return redirect('catalogue:category_list')

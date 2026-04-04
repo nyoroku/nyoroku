@@ -6,21 +6,46 @@
 {% block content %}
 <div class="px-4 py-6" x-data="{ checkoutLoading: false }">
     
-    <!-- Search & Scan -->
-    <div class="relative mb-6" x-data="{ scanOpen: false, manualBarcode: '' }">
-        <input type="text" 
-               name="q" 
-               hx-get="{% url 'pos:index' %}"
-               hx-trigger="input changed delay:200ms"
-               hx-target="#product-grid"
-               placeholder="Search product..."
-               class="w-full bg-surface2 border border-border rounded-xl px-12 py-3.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-green focus:ring-0 transition-colors">
-        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <!-- Search & Filters -->
+    <div class="space-y-4 mb-6" x-data="{ scanOpen: false, manualBarcode: '' }">
+        <div class="relative">
+            <input type="text" 
+                   name="q" 
+                   hx-get="{% url 'pos:index' %}"
+                   hx-trigger="input changed delay:200ms"
+                   hx-target="#product-grid"
+                   hx-include="[name='category']"
+                   placeholder="Search product name..."
+                   class="w-full bg-surface2 border border-border rounded-xl px-12 py-3.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-green focus:ring-0 transition-colors">
+            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </div>
+            <button @click="scanOpen = true" class="absolute right-4 top-1/2 -translate-y-1/2 text-brand-green active:scale-90 transition-transform">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/><path d="M12 9v6"/></svg>
+            </button>
         </div>
-        <button @click="scanOpen = true" class="absolute right-4 top-1/2 -translate-y-1/2 text-brand-green active:scale-90 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/><path d="M12 9v6"/></svg>
-        </button>
+
+        <!-- Categories Scroll -->
+        <div class="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
+            <input type="hidden" name="category" value="{{ active_category }}">
+            
+            <button hx-get="{% url 'pos:index' %}?category=all" 
+                    hx-target="#product-grid"
+                    hx-trigger="click"
+                    @click="$el.closest('div').querySelector('[name=category]').value = 'all'"
+                    class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap border transition-all active:scale-95 {% if active_category == 'all' %}bg-brand-green border-brand-green text-surface shadow-[0_4px_12px_rgba(0,230,118,0.2)]{% else %}bg-surface2 border-border text-text-muted{% endif %}">
+                All Items
+            </button>
+            {% for cat in categories %}
+            <button hx-get="{% url 'pos:index' %}?category={{ cat.id }}" 
+                    hx-target="#product-grid"
+                    hx-trigger="click"
+                    @click="$el.closest('div').querySelector('[name=category]').value = '{{ cat.id }}'"
+                    class="px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-widest whitespace-nowrap border transition-all active:scale-95 {% if active_category == cat.id|stringformat:'s' %}bg-brand-green border-brand-green text-surface shadow-[0_4px_12px_rgba(0,230,118,0.2)]{% else %}bg-surface2 border-border text-text-muted{% endif %}">
+                {{ cat.name }}
+            </button>
+            {% endfor %}
+        </div>
 
         <!-- Scan Overlay -->
         <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-6">
