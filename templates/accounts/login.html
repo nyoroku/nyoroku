@@ -68,26 +68,27 @@
 
     <!-- Numpad -->
     <form id="pin-form" hx-post="{% url 'accounts:login' %}" hx-swap="none" hx-indicator="#loading">
+      {% csrf_token %}
       <input type="hidden" name="user_id" :value="selectedUser?.id">
       <input type="hidden" name="pin" :value="pin">
       
       <div class="grid grid-cols-3 gap-4 max-w-[280px]">
         <template x-for="n in ['1', '2', '3', '4', '5', '6', '7', '8', '9']">
           <button type="button" 
-                  @click="if(pin.length < 4) { pin += n; if(pin.length === 4) { htmx.trigger('#pin-form', 'submit'); } }"
-                  class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-90 transition-transform">
+                  @click="console.log('Tapped:', n); if(pin.length < 4) { pin += n; if(pin.length === 4) { htmx.trigger('#pin-form', 'submit'); } }"
+                  class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-95 transition-transform">
             <span x-text="n"></span>
           </button>
         </template>
         <div class="col-span-1"></div>
         <button type="button" 
-                @click="if(pin.length < 4) { pin += '0'; if(pin.length === 4) { htmx.trigger('#pin-form', 'submit'); } }"
-                class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-90 transition-transform">
+                @click="console.log('Tapped: 0'); if(pin.length < 4) { pin += '0'; if(pin.length === 4) { htmx.trigger('#pin-form', 'submit'); } }"
+                class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-95 transition-transform">
           0
         </button>
         <button type="button" 
-                @click="pin = ''"
-                class="w-[76px] h-[76px] flex items-center justify-center text-text-muted active:scale-90 transition-transform">
+                @click="pin = ''; console.log('PIN Cleared')"
+                class="w-[76px] h-[76px] flex items-center justify-center text-text-muted active:scale-95 transition-transform">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
       </div>
