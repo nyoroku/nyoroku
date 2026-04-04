@@ -82,7 +82,7 @@
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="translate-y-20 opacity-0"
             x-transition:enter-end="translate-y-0 opacity-100"
-            class="fixed bottom-24 right-5 bg-brand-green text-surface rounded-2xl shadow-glow-green px-6 py-4 flex items-center gap-3 active:scale-95 transition-all z-30 font-display font-extrabold uppercase tracking-tight btn-shimmer">
+            class="fixed bottom-24 sm:bottom-10 right-5 sm:right-10 bg-brand-green text-surface rounded-2xl shadow-glow-green px-6 py-4 flex items-center gap-3 active:scale-95 transition-all z-30 font-display font-extrabold uppercase tracking-tight btn-shimmer">
         <div class="relative">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
             <span class="absolute -top-2 -right-2.5 bg-surface text-brand-green text-[9px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-brand-green font-extrabold" x-text="itemCount"></span>
@@ -94,11 +94,13 @@
     <div x-show="cart.open" x-cloak class="fixed inset-0 z-50 overflow-hidden">
         <div x-show="cart.open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="cart.open = false"></div>
         
-        <div x-show="cart.open" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" 
-             class="absolute inset-x-0 bottom-0 bg-surface2 border-t border-border rounded-t-[28px] shadow-2xl flex flex-col max-h-[92vh]">
+        <div x-show="cart.open" x-transition:enter="transition ease-out duration-300 transform" 
+             x-transition:enter-start="translate-y-full sm:translate-y-0 sm:translate-x-full" 
+             x-transition:enter-end="translate-y-0 sm:translate-x-0" 
+             class="absolute inset-x-0 sm:inset-x-auto sm:right-0 bottom-0 sm:top-0 bg-surface2 border-t sm:border-t-0 sm:border-l border-border rounded-t-[28px] sm:rounded-none shadow-2xl flex flex-col max-h-[92vh] sm:max-h-full sm:w-[420px] sm:h-full">
             
-            <!-- Drag handle -->
-            <div class="flex justify-center pt-3 pb-1">
+            <!-- Drag handle (mobile only) -->
+            <div class="flex sm:hidden justify-center pt-3 pb-1">
                 <div class="w-10 h-1 rounded-full bg-white/10"></div>
             </div>
             
