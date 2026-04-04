@@ -43,11 +43,18 @@
 
     <!-- PIN Dots -->
     <div class="flex gap-6 mb-12" :class="{ 'animate-shake': error }">
-      <template x-for="i in 4">
-        <div class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"
-             :class="pin.length >= i ? 'bg-brand-green border-brand-green shadow-[0_0_12px_rgba(0,230,118,0.4)]' : ''">
-        </div>
-      </template>
+      <div class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"
+           :class="pin.length >= 1 ? 'bg-brand-green border-brand-green shadow-[0_0_12px_rgba(0,230,118,0.4)]' : ''">
+      </div>
+      <div class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"
+           :class="pin.length >= 2 ? 'bg-brand-green border-brand-green shadow-[0_0_12px_rgba(0,230,118,0.4)]' : ''">
+      </div>
+      <div class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"
+           :class="pin.length >= 3 ? 'bg-brand-green border-brand-green shadow-[0_0_12px_rgba(0,230,118,0.4)]' : ''">
+      </div>
+      <div class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"
+           :class="pin.length >= 4 ? 'bg-brand-green border-brand-green shadow-[0_0_12px_rgba(0,230,118,0.4)]' : ''">
+      </div>
     </div>
 
     <!-- Numpad -->
