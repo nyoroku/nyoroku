@@ -180,15 +180,15 @@
                 
                 <!-- Payment Method Selector -->
                 <div class="grid grid-cols-3 gap-2">
-                    <button @click="payment = 'cash'" :class="payment === 'cash' ? 'bg-brand-green/15 text-brand-green border-brand-green/30 shadow-glow-green-sm' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                    <button @click="payment = 'cash'" :class="payment === 'cash' ? 'bg-brand-green text-black border-brand-green shadow-glow-green-sm' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">Cash</span>
                     </button>
-                    <button @click="payment = 'mpesa'" :class="payment === 'mpesa' ? 'bg-brand-amber/15 text-brand-amber border-brand-amber/30 shadow-glow-amber' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                    <button @click="payment = 'mpesa'" :class="payment === 'mpesa' ? 'bg-brand-amber text-black border-brand-amber shadow-glow-amber' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">M-Pesa</span>
                     </button>
-                    <button @click="payment = 'card'" :class="payment === 'card' ? 'bg-brand-purple/15 text-brand-purple border-brand-purple/30' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                    <button @click="payment = 'card'" :class="payment === 'card' ? 'bg-[#7c6af7] text-white border-[#7c6af7]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">Card</span>
                     </button>
