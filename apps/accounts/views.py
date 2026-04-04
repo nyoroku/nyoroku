@@ -15,29 +15,29 @@ def pin_login(request):
         return redirect('pos:index')
     
     if request.method == 'POST':
+        user_id = request.POST.get('user_id')
         pin = request.POST.get('pin', '')
+        
         # Basic validation
         if not re.fullmatch(r'\d{4}', pin):
-            return render(request, 'accounts/partials/pin_error.html', {'error': 'Invalid PIN'})
+            return HttpResponse('Invalid PIN format', status=400)
         
-        # Authenticate
-        user = User.objects.filter(is_active=True).all()
-        # Find user by matching hashed PIN
-        authenticated_user = None
-        for u in user:
-            if u.check_password(pin):
-                authenticated_user = u
-                break
+        if not user_id:
+            return HttpResponse('User not selected', status=400)
+            
+        # Authenticate specific user
+        user = get_object_or_404(User, id=user_id, is_active=True)
         
-        if authenticated_user:
-            login(request, authenticated_user)
+        if user.check_password(pin):
+            login(request, user)
             response = HttpResponse(status=204)
             response['HX-Redirect'] = '/pos/'
             return response
         else:
-            return HttpResponse('Wrong PIN', status=401)
+            return HttpResponse('Incorrect PIN', status=401)
 
-    return render(request, 'accounts/login.html')
+    users = User.objects.filter(is_active=True).order_by('name')
+    return render(request, 'accounts/login.html', {'users': users})
 
 @login_required
 def user_list(request):
