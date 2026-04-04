@@ -1,0 +1,89 @@
+{% load tailwind_cli %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" x-data="appState()">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Eli Collection POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  
+  {% tailwind_css %}
+  
+  <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+  
+  <style>
+    [x-cloak] { display: none !important; }
+    body { background-color: #0a0a0f; color: #f0f0f5; }
+    .syne { font-family: 'Syne', sans-serif; }
+    .dm-sans { font-family: 'DM Sans', sans-serif; }
+    .dm-mono { font-family: 'DM Mono', monospace; }
+  </style>
+
+  <script>
+    function appState() {
+      return {
+        cart: { items: [], open: false },
+        payment: 'cash',
+        pin: '',
+        error: '',
+        get itemCount() { return this.cart.items.reduce((s, i) => s + i.qty, 0); },
+        get cartTotal() { return this.cart.items.reduce((s, i) => s + (i.price * i.qty), 0); },
+        
+        addToCart(product) {
+          const ex = this.cart.items.find(i => i.id === product.id);
+          ex ? ex.qty++ : this.cart.items.push({ ...product, qty: 1 });
+        },
+        updateQty(id, delta) {
+          const item = this.cart.items.find(i => i.id === id);
+          if (item) item.qty = Math.max(0, item.qty + delta);
+          this.cart.items = this.cart.items.filter(i => i.qty > 0);
+        },
+        clearCart() { this.cart.items = []; this.cart.open = false; },
+        
+        // PIN Auth
+        addDigit(digit) {
+          if (this.pin.length < 4) {
+            this.pin += digit;
+            if (this.pin.length === 4) {
+              // Auto-submit via HTMX
+              htmx.trigger('#pin-form', 'submit');
+            }
+          }
+        },
+        clearPin() { this.pin = ''; this.error = ''; },
+        shakeError() {
+          this.error = true;
+          setTimeout(() => { this.error = false; this.pin = ''; }, 400);
+        }
+      };
+    }
+  </script>
+</head>
+<body class="bg-[#0a0a0f] font-sans text-[#f0f0f5] antialiased min-h-screen flex flex-col">
+  
+  {% if user.is_authenticated %}
+    {% include 'partials/topbar.html' %}
+  {% endif %}
+
+  <main class="flex-grow pb-24">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% if user.is_authenticated %}
+    {% include 'partials/bottom_nav.html' %}
+  {% endif %}
+
+  <div id="modal-container"></div>
+  
+  {% csrf_token %}
+  <script>
+    document.body.addEventListener('htmx:configRequest', (event) => {
+      event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+  </script>
+</body>
+</html>

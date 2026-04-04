@@ -1,0 +1,30 @@
+{% for product in products %}
+<div @click="addToCart({ id: '{{ product.id }}', name: '{{ product.name|escapejs }}', price: {{ product.price }}, image: '{{ product.image }}' })"
+     class="relative bg-surface border border-border rounded-2xl p-3.5 flex flex-col gap-2 active:scale-95 transition-all active:border-brand-green group cursor-pointer">
+    
+    <!-- Cart Badge -->
+    <template x-if="cart.items.find(i => i.id === '{{ product.id }}')">
+        <div class="absolute -top-2 -right-2 w-6 h-6 bg-brand-green text-surface text-[10px] font-black rounded-full flex items-center justify-center border-2 border-surface animate-bounce"
+             x-text="cart.items.find(i => i.id === '{{ product.id }}').qty">
+        </div>
+    </template>
+
+    <!-- Icon -->
+    <div class="w-12 h-12 bg-surface2 border border-border rounded-xl flex items-center justify-center text-2xl mb-1">
+        {{ product.image }}
+    </div>
+
+    <!-- Name & Price -->
+    <div class="flex-grow">
+        <h4 class="font-bold text-[13px] text-text-primary leading-tight line-clamp-2 mb-1 group-active:text-brand-green transition-colors">{{ product.name }}</h4>
+        <div class="flex justify-between items-baseline">
+            <span class="text-xs font-black text-brand-green">KES {{ product.price }}</span>
+            <span class="text-[9px] font-medium text-text-muted opacity-60">{{ product.stock_qty }} left</span>
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="col-span-full py-20 text-center text-text-muted">
+    <p class="font-medium">No products for sale</p>
+</div>
+{% endfor %}

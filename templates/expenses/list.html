@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}Expenses{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6" x-data="{ expenseModal: false }">
+    
+    <!-- Category Breakdown -->
+    <div class="flex gap-3 overflow-x-auto pb-4 mb-6 -mx-4 px-4 scrollbar-hide">
+        <div class="min-w-[140px] bg-surface2 border border-border rounded-2xl p-4 flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Total</span>
+            <span class="text-lg font-display font-extrabold text-brand-amber">KES {{ total_expenses|floatformat:2 }}</span>
+        </div>
+        {% for cat in breakdown %}
+        <div class="min-w-[140px] bg-surface2 border border-border rounded-2xl p-4 flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-text-muted uppercase tracking-wider">{{ cat.category|title }}</span>
+            <span class="text-lg font-display font-extrabold text-text-primary">KES {{ cat.total|floatformat:2 }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Expense List -->
+    <div class="space-y-3">
+        {% for expense in expenses %}
+        <div class="bg-surface2 border border-border rounded-xl p-4 flex items-center gap-4 transition-all hover:bg-white/[0.02]">
+            <div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center text-lg shrink-0">
+                {% if expense.category == 'stock' %}📦{% elif expense.category == 'utilities' %}💡{% elif expense.category == 'staff' %}👥{% elif expense.category == 'transport' %}🚚{% elif expense.category == 'rent' %}🏠{% else %}💸{% endif %}
+            </div>
+            <div class="flex-grow min-w-0">
+                <div class="flex justify-between items-start mb-0.5">
+                    <h4 class="font-bold text-sm text-text-primary truncate">{{ expense.name }}</h4>
+                    <span class="text-sm font-bold text-brand-amber whitespace-nowrap">- KES {{ expense.amount }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest">{{ expense.category }}</span>
+                    <span class="text-[10px] text-text-muted/60">•</span>
+                    <span class="text-[10px] text-text-muted font-medium">{{ expense.date|date:"d M Y" }}</span>
+                </div>
+            </div>
+            {% if user.role == 'admin' %}
+            <button hx-post="{% url 'expenses:delete_expense' expense.id %}" 
+                    hx-confirm="Delete this expense record?"
+                    hx-target="closest div"
+                    hx-swap="outerHTML"
+                    class="p-2 text-text-muted hover:text-brand-red active:scale-90 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+            {% endif %}
+        </div>
+        {% empty %}
+        <div class="flex flex-col items-center justify-center py-20 text-text-muted opacity-40">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+            <p class="font-medium">No expenses recorded</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Add FAB -->
+    <button @click="expenseModal = true" class="fixed bottom-24 right-5 w-14 h-14 bg-brand-amber text-surface rounded-full shadow-[0_8px_24px_rgba(255,171,0,0.3)] flex items-center justify-center active:scale-90 transition-transform z-30">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    </button>
+
+    <!-- Add Modal -->
+    <div x-show="expenseModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div x-show="expenseModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-surface/80 backdrop-blur-sm" @click="expenseModal = false"></div>
+        
+        <div x-show="expenseModal" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full sm:translate-y-0 sm:scale-95" x-transition:enter-end="translate-y-0 sm:scale-100" 
+             class="relative w-full max-w-lg bg-surface2 border-t sm:border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden p-6">
+            
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-display font-extrabold text-xl text-text-primary uppercase tracking-tight">Record Expense</h3>
+                <button @click="expenseModal = false" class="text-text-muted hover:text-text-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+
+            <form action="{% url 'expenses:add_expense' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Expense Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Electricity Bill, Milk Stock" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-amber focus:ring-0">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Category</label>
+                        <select name="category" required class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-amber focus:ring-0">
+                            {% for code, label in categories %}
+                                <option value="{{ code }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Amount (KES)</label>
+                        <input type="number" step="0.01" name="amount" required placeholder="0.00" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-brand-amber font-bold focus:border-brand-amber focus:ring-0">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Date</label>
+                    <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-amber focus:ring-0">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Note (Optional)</label>
+                    <textarea name="note" rows="2" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-amber focus:ring-0"></textarea>
+                </div>
+
+                <div class="pt-4 flex gap-3">
+                    <button type="button" @click="expenseModal = false" class="flex-1 px-4 py-4 bg-white/5 text-text-primary rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-transform">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-[2] px-4 py-4 bg-brand-amber text-surface rounded-2xl font-display font-extrabold text-sm shadow-[0_8px_20px_rgba(255,171,0,0.2)] active:scale-95 transition-transform">
+                        Save Expense
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[90vh] px-6" x-data="{ pin: '' }">
+  <div class="text-center mb-12">
+    <h1 class="font-display font-extrabold text-[42px] tracking-tight text-brand-green leading-none">Eli Collection</h1>
+    <p class="text-text-muted mt-2 font-medium uppercase tracking-[0.2em] text-[10px]">Point of Sale</p>
+  </div>
+
+  <!-- PIN Dots -->
+  <div class="flex gap-6 mb-16" :class="{ 'animate-shake': error }">
+    <template x-for="i in 4">
+      <div class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"
+           :class="pin.length >= i ? 'bg-brand-green border-brand-green shadow-[0_0_12px_rgba(0,230,118,0.4)]' : ''">
+      </div>
+    </template>
+  </div>
+
+  <!-- Numpad -->
+  <form id="pin-form" hx-post="{% url 'accounts:login' %}" hx-swap="none" hx-indicator="#loading">
+    <input type="hidden" name="pin" :value="pin">
+    <div class="grid grid-cols-3 gap-4 max-w-[280px]">
+      <template x-for="n in ['1', '2', '3', '4', '5', '6', '7', '8', '9']">
+        <button type="button" 
+                @click="if(pin.length < 4) pin += n; if(pin.length === 4) htmx.trigger('#pin-form', 'submit')"
+                class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-90 transition-transform">
+          <span x-text="n"></span>
+        </button>
+      </template>
+      <div class="col-span-1"></div>
+      <button type="button" 
+              @click="if(pin.length < 4) pin += '0'; if(pin.length === 4) htmx.trigger('#pin-form', 'submit')"
+              class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-90 transition-transform">
+        0
+      </button>
+      <button type="button" 
+              @click="pin = ''"
+              class="w-[76px] h-[76px] flex items-center justify-center text-text-muted active:scale-90 transition-transform">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+  </form>
+
+  <style>
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+      20%, 40%, 60%, 80% { transform: translateX(10px); }
+    }
+    .animate-shake {
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+      border-color: #ff1744 !important;
+    }
+  </style>
+
+  <div id="loading" class="htmx-indicator fixed top-4 right-4">
+    <div class="w-2 h-2 bg-brand-green rounded-full animate-ping"></div>
+  </div>
+</div>
+
+<script>
+  // Handle PIN error response
+  document.addEventListener('htmx:afterRequest', (e) => {
+    if (e.detail.xhr.status !== 204 && e.detail.target.id === 'pin-form') {
+      // Logic for errors (handled by partial swap if we wanted, but we keep it simple)
+      const pinContainer = document.querySelector('.animate-shake'); 
+      // We can also just let the partial render and then trigger a JS event
+    }
+  });
+
+  // If a partial returns something that is NOT a redirect, it means error
+  document.addEventListener('htmx:responseError', (e) => {
+    // handled here
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}Analytics{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6" x-data="{ period: 'today' }">
+    
+    <!-- Period Filters -->
+    <div class="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+        <button @click="period = 'today'" 
+                hx-get="{% url 'reports:dashboard' %}?period=today"
+                hx-target="#dashboard-body"
+                :class="period === 'today' ? 'bg-white text-surface shadow-xl' : 'bg-surface2 text-text-muted border-border'"
+                class="px-5 py-2.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap">
+            Today
+        </button>
+        <button @click="period = '7days'" 
+                hx-get="{% url 'reports:dashboard' %}?period=7days"
+                hx-target="#dashboard-body"
+                :class="period === '7days' ? 'bg-white text-surface shadow-xl' : 'bg-surface2 text-text-muted border-border'"
+                class="px-5 py-2.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap">
+            7 Days
+        </button>
+        <button @click="period = '30days'" 
+                hx-get="{% url 'reports:dashboard' %}?period=30days"
+                hx-target="#dashboard-body"
+                :class="period === '30days' ? 'bg-white text-surface shadow-xl' : 'bg-surface2 text-text-muted border-border'"
+                class="px-5 py-2.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap">
+            30 Days
+        </button>
+        <button class="px-5 py-2.5 rounded-full text-xs font-bold bg-surface2 text-text-muted border-border border whitespace-nowrap">
+            Custom
+        </button>
+    </div>
+
+    <!-- Dashboard Body -->
+    <div id="dashboard-body" hx-get="{% url 'reports:dashboard' %}?period=today" hx-trigger="load">
+        <!-- Initial loading state -->
+        <div class="flex items-center justify-center py-20">
+            <div class="w-8 h-8 border-4 border-brand-green border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

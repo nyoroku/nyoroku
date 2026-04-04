@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}Checkout{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6" x-data="{ checkoutLoading: false }">
+    
+    <!-- Search & Scan -->
+    <div class="relative mb-6" x-data="{ scanOpen: false, manualBarcode: '' }">
+        <input type="text" 
+               name="q" 
+               hx-get="{% url 'pos:index' %}"
+               hx-trigger="input changed delay:200ms"
+               hx-target="#product-grid"
+               placeholder="Search product..."
+               class="w-full bg-surface2 border border-border rounded-xl px-12 py-3.5 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-green focus:ring-0 transition-colors">
+        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+        <button @click="scanOpen = true" class="absolute right-4 top-1/2 -translate-y-1/2 text-brand-green active:scale-90 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/><path d="M12 9v6"/></svg>
+        </button>
+
+        <!-- Scan Overlay -->
+        <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center p-6">
+            <div class="relative w-full max-w-xs aspect-square border-2 border-brand-green/30 rounded-3xl overflow-hidden">
+                <video id="video" class="w-full h-full object-cover"></video>
+                <!-- Scanning corners -->
+                <div class="absolute inset-0 border-[40px] border-black/40"></div>
+                <div class="absolute top-8 left-8 w-8 h-8 border-t-4 border-l-4 border-brand-green rounded-tl-xl font-bold"></div>
+                <div class="absolute top-8 right-8 w-8 h-8 border-t-4 border-r-4 border-brand-green rounded-tr-xl font-bold"></div>
+                <div class="absolute bottom-8 left-8 w-8 h-8 border-b-4 border-l-4 border-brand-green rounded-bl-xl font-bold"></div>
+                <div class="absolute bottom-8 right-8 w-8 h-8 border-b-4 border-r-4 border-brand-green rounded-br-xl font-bold"></div>
+                <div class="absolute top-1/2 left-4 right-4 h-0.5 bg-brand-green/40 shadow-[0_0_8px_rgba(0,230,118,0.5)] animate-scan"></div>
+            </div>
+            
+            <p class="text-white font-bold mt-8 text-center px-8 leading-relaxed">Place the barcode inside the frame to scan</p>
+            
+            <div class="mt-12 w-full max-w-xs space-y-4">
+                <input type="text" x-model="manualBarcode" @keyup.enter="handleBarcode(manualBarcode); scanOpen = false; manualBarcode = ''"
+                       placeholder="Enter barcode manually..." 
+                       class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-center font-mono">
+                
+                <button @click="scanOpen = false" class="w-full py-4 text-white font-bold opacity-60 active:scale-95 transition-transform">
+                    Cancel & Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Grid -->
+    <div id="product-grid" class="grid grid-cols-2 tablet:grid-cols-3 gap-4">
+        {% include 'pos/partials/product_grid.html' %}
+    </div>
+
+    <!-- Cart FAB -->
+    <button @click="cart.open = true" 
+            x-show="itemCount > 0"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="translate-y-20 opacity-0"
+            x-transition:enter-end="translate-y-0 opacity-100"
+            class="fixed bottom-24 right-5 bg-brand-green text-surface rounded-2xl shadow-[0_12px_32px_rgba(0,230,118,0.3)] px-6 py-4 flex items-center gap-3 active:scale-95 transition-all z-30 font-display font-extrabold uppercase tracking-tight overflow-hidden">
+        <div class="relative">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            <span class="absolute -top-1.5 -right-2 bg-surface text-brand-green text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-brand-green" x-text="itemCount"></span>
+        </div>
+        <span class="text-sm">Checkout</span>
+    </button>
+
+    <!-- Cart Drawer -->
+    <div x-show="cart.open" x-cloak class="fixed inset-0 z-50 overflow-hidden">
+        <div x-show="cart.open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-surface/80 backdrop-blur-sm" @click="cart.open = false"></div>
+        
+        <div x-show="cart.open" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" 
+             class="absolute inset-x-0 bottom-0 bg-surface2 border-t border-border rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh]">
+            
+            <div class="p-6 pb-4 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-display font-extrabold text-xl text-text-primary uppercase tracking-tight">Your Cart</h3>
+                    <span class="px-2 py-0.5 bg-white/5 rounded-full text-[10px] font-bold text-text-muted" x-text="itemCount + ' items'"></span>
+                </div>
+                <button @click="cart.open = false" class="text-text-muted hover:text-text-primary p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+            </div>
+
+            <!-- Cart Items -->
+            <div class="flex-grow overflow-y-auto px-6 py-2">
+                <template x-for="item in cart.items" :key="item.id">
+                    <div class="flex items-center gap-4 py-4 border-b border-border last:border-b-0 animate-fade-in">
+                        <div class="w-12 h-12 bg-surface rounded-xl flex items-center justify-center text-xl shrink-0" x-text="item.image"></div>
+                        <div class="flex-grow min-w-0">
+                            <h4 class="font-bold text-sm text-text-primary truncate mb-0.5" x-text="item.name"></h4>
+                            <p class="text-xs text-brand-green font-bold">KES <span x-text="item.price"></span></p>
+                        </div>
+                        <div class="flex items-center gap-4 bg-surface rounded-xl p-1 border border-border shrink-0">
+                            <button @click="updateQty(item.id, -1)" class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-text-primary active:scale-95 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+                            </button>
+                            <span class="w-4 text-center font-bold text-sm text-text-primary" x-text="item.qty"></span>
+                            <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center text-brand-green active:scale-95 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Checkout Footer -->
+            <div class="p-6 bg-surface border-t border-border safe-bottom shrink-0">
+                <!-- Payment Method Selector -->
+                <div class="grid grid-cols-3 gap-2 mb-6">
+                    <button @click="payment = 'cash'" :class="payment === 'cash' ? 'bg-brand-green text-surface border-brand-green' : 'bg-surface2 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                        <span class="text-[10px] font-black uppercase">Cash</span>
+                    </button>
+                    <button @click="payment = 'mpesa'" :class="payment === 'mpesa' ? 'bg-brand-amber text-surface border-brand-amber' : 'bg-surface2 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        <span class="text-[10px] font-black uppercase">M-Pesa</span>
+                    </button>
+                    <button @click="payment = 'card'" :class="payment === 'card' ? 'bg-brand-purple text-white border-brand-purple' : 'bg-surface2 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        <span class="text-[10px] font-black uppercase">Card</span>
+                    </button>
+                </div>
+
+                <div class="flex justify-between items-end mb-6">
+                    <span class="text-text-muted font-bold uppercase tracking-[0.2em] text-[10px]">Total Amount</span>
+                    <span class="font-display font-extrabold text-3xl text-brand-green leading-none">KES <span x-text="cartTotal.toLocaleString()"></span></span>
+                </div>
+
+                <button @click="checkoutLoading = true; 
+                                htmx.ajax('POST', '{% url 'pos:checkout' %}', {
+                                    values: JSON.stringify({ items: cart.items, payment_method: payment }),
+                                    target: '#modal-container',
+                                    swap: 'innerHTML'
+                                }).then(() => { checkoutLoading = false; })"
+                        :disabled="checkoutLoading"
+                        :class="{ 'bg-brand-green': payment === 'cash', 'bg-brand-amber': payment === 'mpesa', 'bg-brand-purple': payment === 'card' }"
+                        class="w-full py-5 rounded-2xl text-surface font-display font-extrabold text-lg uppercase tracking-tight shadow-2xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+                    <template x-if="checkoutLoading">
+                        <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </template>
+                    <template x-if="!checkoutLoading">
+                        <span>Confirm Sale</span>
+                    </template>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.15s ease-out both; }
+</style>
+{% endblock %}

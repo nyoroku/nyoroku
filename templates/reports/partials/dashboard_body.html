@@ -1,0 +1,127 @@
+<div class="space-y-8 animate-fade-in">
+    
+    <!-- KPI Grid -->
+    <div class="grid grid-cols-2 gap-4">
+        <!-- Revenue -->
+        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+            <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Revenue</span>
+            <span class="text-2xl font-display font-extrabold text-brand-green">KES {{ revenue|floatformat:0 }}</span>
+            <div class="flex items-center gap-1.5 mt-2 opacity-60">
+                <span class="text-[10px] font-medium text-text-muted">{{ tx_count }} sales</span>
+            </div>
+        </div>
+        
+        <!-- Expenses -->
+        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+            <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Expenses</span>
+            <span class="text-2xl font-display font-extrabold text-brand-amber">KES {{ expenses|floatformat:0 }}</span>
+            <div class="flex items-center gap-1.5 mt-2 opacity-60">
+                <span class="text-[10px] font-medium text-text-muted">Stock & Ops</span>
+            </div>
+        </div>
+
+        <!-- Net Profit -->
+        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+            <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Net Profit</span>
+            <span class="text-2xl font-display font-extrabold {% if net_profit >= 0 %}text-brand-green{% else %}text-brand-red{% endif %}">
+                KES {{ net_profit|floatformat:0 }}
+            </span>
+            <div class="flex items-center gap-1.5 mt-2">
+                <span class="text-[10px] font-black {% if margin >= 0 %}text-brand-green/80{% else %}text-brand-red/80{% endif %} uppercase tracking-tight">
+                    {{ margin|floatformat:1 }}% Margin
+                </span>
+            </div>
+        </div>
+
+        <!-- Avg Basket -->
+        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+            <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Avg Basket</span>
+            <span class="text-2xl font-display font-extrabold text-text-primary">KES {{ avg_basket|floatformat:0 }}</span>
+            <div class="flex items-center gap-1.5 mt-2 opacity-60">
+                <span class="text-[10px] font-medium text-text-muted">Per Customer</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7-Day Chart -->
+    <div class="bg-surface2 border border-border rounded-3xl p-6">
+        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-8">7-Day Revenue</h4>
+        <div class="flex items-end justify-between h-32 gap-3 px-2">
+            {% for day in chart_days %}
+            <div class="flex-grow flex flex-col items-center gap-3">
+                <div class="w-full rounded-t-lg transition-all duration-500 {% if day.is_today %}bg-brand-green shadow-[0_0_12px_rgba(0,230,118,0.3)]{% else %}bg-brand-green/20{% endif %}" 
+                     style="height: calc({{ day.value }} / {{ revenue|default:1 }} * 100% + 4px);"></div>
+                <span class="text-[10px] font-bold {% if day.is_today %}text-brand-green{% else %}text-text-muted{% endif %} uppercase">{{ day.label }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Payment Breakdown -->
+    <div class="bg-surface2 border border-border rounded-3xl p-6">
+        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-6">Payment Methods</h4>
+        <div class="space-y-6">
+            <!-- Cash -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                    <span>Cash</span>
+                    <span class="text-brand-green">KES {{ payment_stats.cash|default:0|floatformat:0 }}</span>
+                </div>
+                <div class="h-2 bg-surface rounded-full overflow-hidden">
+                    <div class="h-full bg-brand-green transition-all duration-500" style="width: calc({{ payment_stats.cash|default:0 }} / {{ revenue|default:1 }} * 100%);"></div>
+                </div>
+            </div>
+            <!-- M-Pesa -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                    <span>M-Pesa</span>
+                    <span class="text-brand-amber">KES {{ payment_stats.mpesa|default:0|floatformat:0 }}</span>
+                </div>
+                <div class="h-2 bg-surface rounded-full overflow-hidden">
+                    <div class="h-full bg-brand-amber transition-all duration-500" style="width: calc({{ payment_stats.mpesa|default:0 }} / {{ revenue|default:1 }} * 100%);"></div>
+                </div>
+            </div>
+            <!-- Card -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                    <span>Card</span>
+                    <span class="text-brand-purple">KES {{ payment_stats.card|default:0|floatformat:0 }}</span>
+                </div>
+                <div class="h-2 bg-surface rounded-full overflow-hidden">
+                    <div class="h-full bg-brand-purple transition-all duration-500" style="width: calc({{ payment_stats.card|default:0 }} / {{ revenue|default:1 }} * 100%);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="bg-surface2 border border-border rounded-3xl p-6 mb-24">
+        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-6">Top 5 Products</h4>
+        <div class="space-y-5">
+            {% for item in top_products %}
+            <div class="flex items-center gap-4">
+                <div class="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center text-sm font-black text-brand-green">
+                    {{ forloop.counter }}
+                </div>
+                <div class="flex-grow min-w-0">
+                    <div class="flex justify-between items-center mb-0.5">
+                        <span class="font-bold text-sm text-text-primary truncate">{{ item.name }}</span>
+                        <span class="text-sm font-bold text-text-primary">KES {{ item.revenue|floatformat:0 }}</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-medium text-text-muted uppercase tracking-wider">
+                        <span>{{ item.qty }} units sold</span>
+                        <span>{{ item.revenue|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-center text-text-muted text-xs py-4 opacity-50">No sales in this period</p>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+<style>
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out both; }
+</style>

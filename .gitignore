@@ -1,0 +1,16 @@
+*.pyc
+__pycache__
+.env
+db.sqlite3
+.venv
+node_modules
+static/css/output.css
+.django_tailwind_cli/
+.gemini/
+.idea/
+.vscode/
+*.log
+tmp/
+C:\Users\Administrator\.gemini\antigravity\
+tailwind.exe/
+*.exe

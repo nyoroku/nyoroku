@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Receipt {{ transaction.receipt_number }}</title>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; color: #000; font-size: 13px; line-height: 1.4; }
+        .center { text-align: center; }
+        .divider { border-top: 1px dashed #000; margin: 10px 0; }
+        .items { width: 100%; border-collapse: collapse; }
+        .items td { padding: 3px 0; }
+        .total { font-weight: bold; font-size: 16px; margin-top: 10px; }
+        .footer { margin-top: 20px; font-size: 11px; }
+        @media print {
+            body { width: 100%; margin: 0; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="center">
+        <h2 style="margin-bottom: 5px;">ELI COLLECTION</h2>
+        <p style="margin: 0;">Point of Sale System</p>
+        <p style="margin: 0;">Nairobi, Kenya</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <p>
+        Receipt: {{ transaction.receipt_number }}<br>
+        Date: {{ transaction.created_at|date:"d/m/Y H:i" }}<br>
+        Cashier: {{ transaction.cashier.name }}
+    </p>
+
+    <div class="divider"></div>
+
+    <table class="items">
+        <thead>
+            <tr style="text-align: left;">
+                <th width="50%">Item</th>
+                <th width="10%">Qty</th>
+                <th width="40%" style="text-align: right;">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in transaction.items %}
+            <tr>
+                <td>{{ item.name }}</td>
+                <td>{{ item.qty }}</td>
+                <td style="text-align: right;">{{ item.price|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="total" style="display: flex; justify-content: space-between;">
+        <span>TOTAL</span>
+        <span>KES {{ transaction.total|floatformat:2 }}</span>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 5px;">
+        <span>Payment Method:</span>
+        <span style="text-transform: uppercase;">{{ transaction.payment_method }}</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="center footer">
+        <p>Asante kwa kununua!</p>
+        <p>**** Powered by Eli Collection ****</p>
+    </div>
+
+    <div class="no-print center" style="margin-top: 20px;">
+        <button onclick="window.print()" style="padding: 10px 20px;">Print Receipt</button>
+    </div>
+
+    <script>
+        // Auto print and close
+        window.onload = () => {
+            window.print();
+            // window.close(); 
+        };
+    </script>
+</body>
+</html>
