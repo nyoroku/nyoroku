@@ -79,18 +79,21 @@
         </div>
     </div> <!-- END LEFT SIDE -->
 
-    <!-- Cart FAB (MOBILE ONLY) -->
+    <!-- Cart Sticky Banner (MOBILE ONLY) -->
     <button @click="cart.open = true" 
             x-show="itemCount > 0"
             x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="translate-y-20 opacity-0"
+            x-transition:enter-start="translate-y-10 opacity-0"
             x-transition:enter-end="translate-y-0 opacity-100"
-            class="fixed bottom-24 right-5 bg-brand-green text-surface rounded-2xl shadow-glow-green px-6 py-4 flex items-center gap-3 active:scale-95 transition-all z-40 font-display font-extrabold uppercase tracking-tight btn-shimmer lg:hidden">
-        <div class="relative">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-            <span class="absolute -top-2 -right-2.5 bg-surface text-brand-green text-[9px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-brand-green font-extrabold" x-text="itemCount"></span>
+            class="fixed bottom-[84px] left-4 right-4 bg-[#7c6af7] text-white rounded-2xl shadow-[0_0_24px_rgba(124,106,247,0.35)] px-6 py-4 flex items-center justify-between active:scale-[0.98] transition-all z-40 font-display font-extrabold uppercase tracking-tight btn-shimmer lg:hidden">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                <span class="absolute -top-2 -right-2 bg-white text-[#7c6af7] text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-extrabold" x-text="itemCount"></span>
+            </div>
+            <span class="text-sm">Checkout</span>
         </div>
-        <span class="text-sm">Checkout</span>
+        <span class="text-base font-display">KES <span x-text="cartTotal.toLocaleString()"></span></span>
     </button>
 
     <!-- RIGHT SIDE: Cart Sidebar (Desktop) / Bottom Drawer (Mobile) -->
@@ -181,11 +184,11 @@
                 
                 <!-- Payment Method Selector -->
                 <div class="grid grid-cols-3 gap-2">
-                    <button @click="payment = 'cash'" :class="payment === 'cash' ? 'bg-brand-green text-black border-brand-green shadow-glow-green-sm' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                    <button @click="payment = 'cash'" :class="payment === 'cash' ? 'bg-[#7c6af7] text-white border-[#7c6af7] shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">Cash</span>
                     </button>
-                    <button @click="payment = 'mpesa'" :class="payment === 'mpesa' ? 'bg-brand-amber text-black border-brand-amber shadow-glow-amber' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
+                    <button @click="payment = 'mpesa'" :class="payment === 'mpesa' ? 'bg-[#7c6af7] text-white border-[#7c6af7] shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">M-Pesa</span>
                     </button>
