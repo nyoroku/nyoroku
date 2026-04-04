@@ -249,43 +249,43 @@
 
       <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
         <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4 mt-2">Operations</p>
-        <a href="{% url 'pos:index' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
-          <div class="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center group-hover:bg-brand-green/15 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-green"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <a href="{% url 'pos:index' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'pos' %}bg-brand-green text-black shadow-glow-green-sm{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'pos' %}bg-black/20{% else %}bg-brand-green/10 group-hover:bg-brand-green/15{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'pos' %}text-black{% else %}text-brand-green{% endif %}"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           </div>
           <span class="font-bold text-sm">Point of Sale</span>
         </a>
-        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
-          <div class="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center group-hover:bg-brand-green/15 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-green"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name != 'category_list' %}bg-brand-green text-black shadow-glow-green-sm{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name != 'category_list' %}bg-black/20{% else %}bg-brand-green/10 group-hover:bg-brand-green/15{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name != 'category_list' %}text-black{% else %}text-brand-green{% endif %}"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
           </div>
           <span class="font-bold text-sm">Stock Inventory</span>
         </a>
-        <a href="{% url 'expenses:list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
-          <div class="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center group-hover:bg-brand-green/15 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-green"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+        <a href="{% url 'expenses:list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'expenses' %}bg-brand-green text-black shadow-glow-green-sm{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'expenses' %}bg-black/20{% else %}bg-brand-green/10 group-hover:bg-brand-green/15{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'expenses' %}text-black{% else %}text-brand-green{% endif %}"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
           </div>
           <span class="font-bold text-sm">Expenses</span>
         </a>
 
         <div class="pt-6">
            <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4">Administration</p>
-           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
-             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-muted"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'reports' %}bg-brand-green text-black shadow-glow-green-sm{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
+             <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'reports' %}bg-black/20{% else %}bg-white/[0.04] group-hover:bg-white/[0.06]{% endif %}">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'reports' %}text-black{% else %}text-text-muted{% endif %}"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
              </div>
              <span class="font-bold text-sm">Analytics</span>
            </a>
-           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
-             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-muted"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}bg-brand-green text-black shadow-glow-green-sm{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
+             <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}bg-black/20{% else %}bg-white/[0.04] group-hover:bg-white/[0.06]{% endif %}">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}text-black{% else %}text-text-muted{% endif %}"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
              </div>
              <span class="font-bold text-sm">Staff</span>
            </a>
            {% if user.role == 'admin' %}
-           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
-             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-muted"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'coupon_list' %}bg-brand-green text-black shadow-glow-green-sm{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
+             <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.url_name == 'coupon_list' %}bg-black/20{% else %}bg-white/[0.04] group-hover:bg-white/[0.06]{% endif %}">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.url_name == 'coupon_list' %}text-black{% else %}text-text-muted{% endif %}"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
              </div>
              <span class="font-bold text-sm">Coupons</span>
            </a>

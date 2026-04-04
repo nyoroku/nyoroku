@@ -64,6 +64,29 @@ def add_product(request):
     return redirect('catalogue:inventory')
 
 @login_required
+@require_http_methods(["POST"])
+def edit_product(request):
+    product_id = request.POST.get('id')
+    product = get_object_or_404(Product, id=product_id)
+    
+    product.name = request.POST.get('name')
+    product.category_id = request.POST.get('category')
+    product.price = request.POST.get('price')
+    cost_price = request.POST.get('cost_price')
+    product.cost_price = cost_price if cost_price else None
+    product.stock_qty = request.POST.get('stock_qty') or 0
+    product.barcode = request.POST.get('barcode', '')
+    product.image = request.POST.get('image', '📦')
+    
+    # If edited by a non-admin, force it to pending mode again
+    if request.user.role != 'admin':
+        product.approved = False
+        product.pending_by = request.user
+        
+    product.save()
+    return redirect('catalogue:inventory')
+
+@login_required
 @require_http_methods(["POST"]) # HTMX uses POST fallback if PATCH is complex
 def approve_product(request, pk):
     if request.user.role != 'admin':
