@@ -249,11 +249,15 @@
             <div class="flex items-center justify-center gap-4 mb-8">
                 <button @click="if(addQty > 1) addQty--" class="w-14 h-14 rounded-2xl bg-surface3 border border-border flex items-center justify-center text-text-muted active:scale-95 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg></button>
                 <div class="w-20 text-center font-display font-extrabold text-4xl text-brand-green" x-text="addQty"></div>
-                <button @click="addQty++" class="w-14 h-14 rounded-2xl bg-surface3 border border-border flex items-center justify-center text-text-muted active:scale-95 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+                <button @click="
+                    let inCart = cart.items.find(i => i.id === selectedProduct.id)?.qty || 0;
+                    if(addQty < (selectedProduct.stock_qty - inCart)) { addQty++; } else { couponError = 'Max available stock reached!'; setTimeout(() => couponError='', 2000); }
+                " class="w-14 h-14 rounded-2xl bg-surface3 border border-border flex items-center justify-center text-text-muted active:scale-95 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
             </div>
+            <div x-show="couponError" class="text-brand-red text-xs font-bold text-center mb-4 min-h-[16px] animate-shake" x-text="couponError"></div>
             <div class="flex gap-3">
                 <button @click="qtyModalOpen = false" class="flex-1 py-4 font-bold text-text-muted bg-surface3 rounded-xl border border-border active:scale-95 transition-all">Cancel</button>
-                <button @click="addToCart(selectedProduct, addQty); qtyModalOpen = false;" class="flex-1 py-4 bg-brand-green text-black font-extrabold uppercase rounded-xl active:scale-95 transition-transform btn-shimmer">Add Item</button>
+                <button @click="if(addToCart(selectedProduct, addQty)) { qtyModalOpen = false; }" class="flex-1 py-4 bg-brand-green text-black font-extrabold uppercase rounded-xl active:scale-95 transition-transform btn-shimmer">Add Item</button>
             </div>
         </div>
     </div>

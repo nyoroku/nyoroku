@@ -152,18 +152,33 @@
         get cartTotal() { return Math.max(0, this.cartSubtotal - this.discountAmount); },
         
         addToCart(product, qty = 1) {
+          const available = parseInt(product.stock_qty) || 0;
           const ex = this.cart.items.find(i => i.id === product.id);
+          const currentQty = ex ? ex.qty : 0;
+          
+          if (currentQty + qty > available) {
+            alert(`Cannot add more. Only ${available} units available.`);
+            return false;
+          }
+
           if (ex) {
             ex.qty += qty;
           } else {
             this.cart.items.push({ ...product, qty: qty });
           }
+          return true;
         },
         updateQty(id, delta) {
           const item = this.cart.items.find(i => i.id === id);
-          if (item) item.qty = Math.max(0, item.qty + delta);
-          this.cart.items = this.cart.items.filter(i => i.qty > 0);
-          // Recalculate coupon if items change
+          if (item) {
+            const available = parseInt(item.stock_qty) || 0;
+            if (item.qty + delta > available) {
+               alert(`Maximum stock reached (${available} available)`);
+               return;
+            }
+            item.qty = Math.max(0, item.qty + delta);
+            this.cart.items = this.cart.items.filter(i => i.qty > 0);
+          }
           if (this.cart.items.length === 0) this.removeCoupon();
         },
         setQty(id, qty) {
