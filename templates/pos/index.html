@@ -4,10 +4,12 @@
 {% block screen_title %}Checkout{% endblock %}
 
 {% block content %}
-<div class="px-4 py-5" x-data="{ checkoutLoading: false, editingQty: null, selectedProduct: null, qtyModalOpen: false, addQty: 1 }">
+<div class="px-3 sm:px-4 py-4 lg:py-5 lg:flex lg:gap-5 lg:h-[calc(100vh-70px)]" x-data="{ checkoutLoading: false, editingQty: null, selectedProduct: null, qtyModalOpen: false, addQty: 1 }">
     
-    <!-- Search & Filters -->
-    <div class="space-y-3 mb-5" x-data="{ scanOpen: false, manualBarcode: '' }">
+    <!-- LEFT SIDE: Product Selection -->
+    <div class="lg:flex-1 lg:flex lg:flex-col lg:min-w-0" id="pos-main-pane">
+        <!-- Search & Filters -->
+        <div class="space-y-3 mb-5 shrink-0" x-data="{ scanOpen: false, manualBarcode: '' }">
         <div class="relative">
             <input type="text" 
                    name="q" 
@@ -71,18 +73,19 @@
         </div>
     </div>
 
-    <!-- Product Grid -->
-    <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger">
-        {% include 'pos/partials/product_grid.html' %}
-    </div>
+        <!-- Product Grid -->
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger lg:overflow-y-auto lg:pr-2 no-scrollbar lg:pb-16">
+            {% include 'pos/partials/product_grid.html' %}
+        </div>
+    </div> <!-- END LEFT SIDE -->
 
-    <!-- Cart FAB -->
+    <!-- Cart FAB (MOBILE ONLY) -->
     <button @click="cart.open = true" 
             x-show="itemCount > 0"
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="translate-y-20 opacity-0"
             x-transition:enter-end="translate-y-0 opacity-100"
-            class="fixed bottom-24 sm:bottom-10 right-5 sm:right-10 bg-brand-green text-surface rounded-2xl shadow-glow-green px-6 py-4 flex items-center gap-3 active:scale-95 transition-all z-30 font-display font-extrabold uppercase tracking-tight btn-shimmer">
+            class="fixed bottom-24 right-5 bg-brand-green text-surface rounded-2xl shadow-glow-green px-6 py-4 flex items-center gap-3 active:scale-95 transition-all z-40 font-display font-extrabold uppercase tracking-tight btn-shimmer lg:hidden">
         <div class="relative">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
             <span class="absolute -top-2 -right-2.5 bg-surface text-brand-green text-[9px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-brand-green font-extrabold" x-text="itemCount"></span>
@@ -90,19 +93,17 @@
         <span class="text-sm">Checkout</span>
     </button>
 
-    <!-- ═══ Cart Drawer ═══ -->
-    <div x-show="cart.open" x-cloak class="fixed inset-0 z-50 overflow-hidden">
-        <div x-show="cart.open" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="cart.open = false"></div>
-        
-        <div x-show="cart.open" x-transition:enter="transition ease-out duration-300 transform" 
-             x-transition:enter-start="translate-y-full sm:translate-y-0 sm:translate-x-full" 
-             x-transition:enter-end="translate-y-0 sm:translate-x-0" 
-             class="absolute inset-x-0 sm:inset-x-auto sm:right-0 bottom-0 sm:top-0 bg-surface2 border-t sm:border-t-0 sm:border-l border-border rounded-t-[28px] sm:rounded-none shadow-2xl flex flex-col max-h-[92vh] sm:max-h-full sm:w-[420px] sm:h-full">
+    <!-- RIGHT SIDE: Cart Sidebar (Desktop) / Bottom Drawer (Mobile) -->
+    <div x-show="cart.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[45] lg:hidden" @click="cart.open = false" x-transition.opacity></div>
+
+    <div :class="cart.open ? 'translate-y-0' : 'translate-y-full'" 
+         class="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[92vh] bg-surface2 border-t border-border rounded-t-[28px] shadow-2xl transition-transform duration-300 
+                lg:translate-y-0 lg:static lg:w-[400px] xl:w-[420px] lg:flex-shrink-0 lg:h-full lg:rounded-[24px] lg:border lg:shadow-none lg:z-auto relative">
             
-            <!-- Drag handle (mobile only) -->
-            <div class="flex sm:hidden justify-center pt-3 pb-1">
-                <div class="w-10 h-1 rounded-full bg-white/10"></div>
-            </div>
+        <!-- Drag handle (mobile only) -->
+        <div class="flex lg:hidden justify-center pt-3 pb-1 shrink-0">
+            <div class="w-10 h-1 rounded-full bg-white/10"></div>
+        </div>
             
             <div class="px-6 pb-3 flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-3">
@@ -111,7 +112,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <button @click="clearCart()" class="px-3 py-1.5 text-[10px] font-bold text-brand-red uppercase tracking-wider hover:bg-brand-red/10 rounded-lg transition-colors">Clear</button>
-                    <button @click="cart.open = false" class="text-text-muted hover:text-text-primary p-1">
+                    <button @click="cart.open = false" class="text-text-muted hover:text-text-primary p-1 lg:hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                 </div>
@@ -242,8 +243,7 @@
                     </template>
                 </button>
             </div>
-        </div>
-    </div>
+        </div> <!-- End Cart Sidebar/Drawer Content -->
 
     <!-- Qty Selector Modal -->
     <div x-show="qtyModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4">
