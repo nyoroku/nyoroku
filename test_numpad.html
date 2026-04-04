@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Numpad Test</title>
+    <style>
+        .dot { width: 16px; height: 16px; border: 2px solid #ccc; border-radius: 50%; display: inline-block; margin: 4px; }
+        .filled { background-color: #00e676; border-color: #00e676; box-shadow: 0 0 12px rgba(0, 230, 118, 0.4); }
+    </style>
+</head>
+<body>
+    <div id="dots">
+        <div id="dot-1" class="dot"></div>
+        <div id="dot-2" class="dot"></div>
+        <div id="dot-3" class="dot"></div>
+        <div id="dot-4" class="dot"></div>
+    </div>
+    <div id="numpad">
+        <button onclick="handleNumpadClick('1')">1</button>
+        <button onclick="handleNumpadClick('2')">2</button>
+        <button onclick="handleNumpadClick('3')">3</button>
+        <button onclick="handleNumpadClick('4')">4</button>
+        <button onclick="clearPin()">Clear</button>
+    </div>
+    <p id="pin-display">PIN: </p>
+
+    <script>
+        let currentPin = '';
+        function handleNumpadClick(digit) {
+            console.log('Tapped:', digit);
+            if (currentPin.length < 4) {
+                currentPin += digit;
+                console.log('Current PIN:', currentPin);
+                updateDots();
+                document.getElementById('pin-display').innerText = 'PIN: ' + currentPin;
+                if (currentPin.length === 4) {
+                    alert('Submitted: ' + currentPin);
+                }
+            }
+        }
+        function updateDots() {
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById('dot-' + i);
+                if (currentPin.length >= i) {
+                    dot.className = "dot filled";
+                } else {
+                    dot.className = "dot";
+                }
+            }
+        }
+        function clearPin() {
+            currentPin = '';
+            updateDots();
+            document.getElementById('pin-display').innerText = 'PIN: ';
+        }
+    </script>
+</body>
+</html>
