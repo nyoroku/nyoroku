@@ -36,7 +36,7 @@
                     hx-trigger="click"
                     @click="activeCat = 'all'; $el.closest('div').querySelector('[name=category]').value = 'all'"
                     class="px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.12em] whitespace-nowrap border transition-all active:scale-95"
-                    :class="activeCat === 'all' ? 'bg-brand-green border-brand-green text-black shadow-[0_0_15px_rgba(0,200,83,0.4)]' : 'bg-surface3 border-border text-text-muted hover:text-white'">
+                    :class="activeCat === 'all' ? 'bg-[#7c6af7] border-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 border-border text-text-muted hover:text-white'">
                 All Items
             </button>
             {% for cat in categories %}
@@ -45,7 +45,7 @@
                     hx-trigger="click"
                     @click="activeCat = '{{ cat.id }}'; $el.closest('div').querySelector('[name=category]').value = '{{ cat.id }}'"
                     class="px-4 py-2 rounded-xl text-[10px] font-extrabold uppercase tracking-[0.12em] whitespace-nowrap border transition-all active:scale-95"
-                    :class="activeCat === '{{ cat.id }}' ? 'bg-brand-green border-brand-green text-black shadow-[0_0_15px_rgba(0,200,83,0.4)]' : 'bg-surface3 border-border text-text-muted hover:text-white'">
+                    :class="activeCat === '{{ cat.id }}' ? 'bg-[#7c6af7] border-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 border-border text-text-muted hover:text-white'">
                 {{ cat.name }}
             </button>
             {% endfor %}
