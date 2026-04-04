@@ -151,12 +151,12 @@
         },
         get cartTotal() { return Math.max(0, this.cartSubtotal - this.discountAmount); },
         
-        addToCart(product) {
+        addToCart(product, qty = 1) {
           const ex = this.cart.items.find(i => i.id === product.id);
           if (ex) {
-            ex.qty++;
+            ex.qty += qty;
           } else {
-            this.cart.items.push({ ...product, qty: 1 });
+            this.cart.items.push({ ...product, qty: qty });
           }
         },
         updateQty(id, delta) {
