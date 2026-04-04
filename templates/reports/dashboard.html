@@ -4,34 +4,56 @@
 {% block screen_title %}Analytics{% endblock %}
 
 {% block content %}
-<div class="px-4 py-6" x-data="{ period: 'today' }">
+<div class="px-4 py-6" x-data="{ period: 'today', customOpen: false, startDate: '', endDate: '' }">
     
     <!-- Period Filters -->
-    <div class="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-        <button @click="period = 'today'" 
-                hx-get="{% url 'reports:dashboard' %}?period=today"
-                hx-target="#dashboard-body"
-                :class="period === 'today' ? 'bg-white text-surface shadow-xl' : 'bg-surface2 text-text-muted border-border'"
-                class="px-5 py-2.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap">
-            Today
-        </button>
-        <button @click="period = '7days'" 
-                hx-get="{% url 'reports:dashboard' %}?period=7days"
-                hx-target="#dashboard-body"
-                :class="period === '7days' ? 'bg-white text-surface shadow-xl' : 'bg-surface2 text-text-muted border-border'"
-                class="px-5 py-2.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap">
-            7 Days
-        </button>
-        <button @click="period = '30days'" 
-                hx-get="{% url 'reports:dashboard' %}?period=30days"
-                hx-target="#dashboard-body"
-                :class="period === '30days' ? 'bg-white text-surface shadow-xl' : 'bg-surface2 text-text-muted border-border'"
-                class="px-5 py-2.5 rounded-full text-xs font-bold transition-all border whitespace-nowrap">
-            30 Days
-        </button>
-        <button class="px-5 py-2.5 rounded-full text-xs font-bold bg-surface2 text-text-muted border-border border whitespace-nowrap">
-            Custom
-        </button>
+    <div class="flex flex-col gap-3 mb-8">
+        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <button @click="period = 'today'; customOpen = false" 
+                    hx-get="{% url 'reports:dashboard' %}?period=today"
+                    hx-target="#dashboard-body"
+                    :class="period === 'today' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
+                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
+                Today
+            </button>
+            <button @click="period = '7days'; customOpen = false" 
+                    hx-get="{% url 'reports:dashboard' %}?period=7days"
+                    hx-target="#dashboard-body"
+                    :class="period === '7days' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
+                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
+                7 Days
+            </button>
+            <button @click="period = '30days'; customOpen = false" 
+                    hx-get="{% url 'reports:dashboard' %}?period=30days"
+                    hx-target="#dashboard-body"
+                    :class="period === '30days' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
+                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
+                30 Days
+            </button>
+            <button @click="customOpen = !customOpen; if(customOpen) period = 'custom';"
+                    :class="period === 'custom' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
+                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
+                Custom Range
+            </button>
+        </div>
+        
+        <!-- Custom Range Form -->
+        <div x-show="customOpen" x-collapse class="bg-surface2 border border-border p-4 rounded-2xl">
+            <form hx-get="{% url 'reports:dashboard' %}" hx-target="#dashboard-body" class="flex flex-col sm:flex-row gap-3 items-end">
+                <input type="hidden" name="period" value="custom">
+                <div class="flex-1 w-full">
+                    <label class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block">Start Date</label>
+                    <input type="date" name="start_date" x-model="startDate" required class="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[#7c6af7] focus:ring-1 focus:ring-[#7c6af7] transition-all">
+                </div>
+                <div class="flex-1 w-full">
+                    <label class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block">End Date</label>
+                    <input type="date" name="end_date" x-model="endDate" required class="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[#7c6af7] focus:ring-1 focus:ring-[#7c6af7] transition-all">
+                </div>
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-[#7c6af7] text-white rounded-xl font-extrabold text-sm shadow-[0_0_15px_rgba(124,106,247,0.4)] active:scale-95 transition-all">
+                    Apply Filter
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Dashboard Body -->

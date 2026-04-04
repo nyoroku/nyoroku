@@ -102,8 +102,17 @@ def checkout(request):
         if not items:
             return HttpResponse('Empty cart', status=400)
             
-        subtotal = sum(Decimal(str(item['price'])) * int(item['qty']) for item in items)
-        
+        subtotal = Decimal('0')
+        for item in items:
+            # Inject current cost price for profit reporting
+            try:
+                product = Product.objects.get(id=item.get('id'))
+                item['cost_price'] = float(product.cost_price or 0)
+            except Product.DoesNotExist:
+                item['cost_price'] = 0.0
+                
+            subtotal += Decimal(str(item['price'])) * int(item.get('qty', 1))
+            
         # Process coupon
         coupon_obj = None
         coupon_discount = Decimal('0')

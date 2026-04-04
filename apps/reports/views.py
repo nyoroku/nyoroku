@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Avg, F
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pos.models import Transaction
 from expenses.models import Expense
 from catalogue.models import Product
@@ -19,6 +19,16 @@ def dashboard(request):
         start_date = end_date - timedelta(days=7)
     elif period == '30days':
         start_date = end_date - timedelta(days=30)
+    elif period == 'custom':
+        start_str = request.GET.get('start_date')
+        end_str = request.GET.get('end_date')
+        try:
+            start_date = timezone.make_aware(datetime.strptime(start_str, '%Y-%m-%d'))
+            # End date should be inclusive of the day
+            end_date = timezone.make_aware(datetime.strptime(end_str, '%Y-%m-%d')).replace(hour=23, minute=59, second=59)
+        except (ValueError, TypeError):
+            start_date = end_date - timedelta(days=30)
+            period = '30days'
     else: # today
         start_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -27,14 +37,30 @@ def dashboard(request):
     exps = Expense.objects.filter(date__range=(start_date.date(), end_date.date()))
     
     # KPIs
-    revenue = txs.aggregate(Sum('total'))['total__sum'] or 0
-    expenses = exps.aggregate(Sum('amount'))['amount__sum'] or 0
-    net_profit = revenue - expenses
-    tx_count = txs.count()
-    avg_basket = revenue / tx_count if tx_count > 0 else 0
+    revenue = txs.aggregate(Sum('total'))['total__sum'] or Decimal('0')
+    expenses = exps.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
     
-    # Margin %
-    margin = (net_profit / revenue * 100) if revenue > 0 else 0
+    # Compute Cost of Goods Sold (COGS)
+    cogs = 0.0
+    for tx in txs:
+        for item in tx.items:
+            qty = int(item.get('qty', 1))
+            if 'cost_price' in item:
+                cogs += float(item['cost_price']) * qty
+            else:
+                try:
+                    product = Product.objects.get(id=item.get('id'))
+                    cogs += float(product.cost_price or 0) * qty
+                except Product.DoesNotExist:
+                    pass
+    
+    gross_profit = float(revenue) - cogs
+    net_profit = gross_profit - float(expenses)
+    tx_count = txs.count()
+    avg_basket = float(revenue) / tx_count if tx_count > 0 else 0
+    
+    # Margin % (Gross Margin)
+    margin = (gross_profit / float(revenue) * 100) if revenue > 0 else 0
     
     # Payment breakdown
     payments = txs.values('payment_method').annotate(total=Sum('total'))
@@ -72,8 +98,12 @@ def dashboard(request):
 
     context = {
         'period': period,
-        'revenue': revenue,
-        'expenses': expenses,
+        'start_date_str': request.GET.get('start_date', ''),
+        'end_date_str': request.GET.get('end_date', ''),
+        'revenue': float(revenue),
+        'cogs': cogs,
+        'gross_profit': gross_profit,
+        'expenses': float(expenses),
         'net_profit': net_profit,
         'margin': margin,
         'avg_basket': avg_basket,

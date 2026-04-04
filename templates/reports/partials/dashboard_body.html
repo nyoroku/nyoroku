@@ -11,12 +11,32 @@
             </div>
         </div>
         
+        <!-- Cost of Goods -->
+        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+            <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Item Cost</span>
+            <span class="text-2xl font-display font-extrabold text-text-muted">KES {{ cogs|floatformat:0 }}</span>
+            <div class="flex items-center gap-1.5 mt-2 opacity-60">
+                <span class="text-[10px] font-medium text-text-muted">Cost of Goods Sold</span>
+            </div>
+        </div>
+
+        <!-- Gross Profit -->
+        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+            <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Gross Profit</span>
+            <span class="text-2xl font-display font-extrabold text-[#7c6af7]">KES {{ gross_profit|floatformat:0 }}</span>
+            <div class="flex items-center gap-1.5 mt-2">
+                <span class="text-[10px] font-black {% if margin >= 0 %}text-[#7c6af7]{% else %}text-brand-red{% endif %} uppercase tracking-tight">
+                    {{ margin|floatformat:1 }}% Margin
+                </span>
+            </div>
+        </div>
+
         <!-- Expenses -->
         <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
             <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Expenses</span>
             <span class="text-2xl font-display font-extrabold text-brand-amber">KES {{ expenses|floatformat:0 }}</span>
             <div class="flex items-center gap-1.5 mt-2 opacity-60">
-                <span class="text-[10px] font-medium text-text-muted">Stock & Ops</span>
+                <span class="text-[10px] font-medium text-text-muted">Operating Costs</span>
             </div>
         </div>
 
@@ -26,10 +46,8 @@
             <span class="text-2xl font-display font-extrabold {% if net_profit >= 0 %}text-brand-green{% else %}text-brand-red{% endif %}">
                 KES {{ net_profit|floatformat:0 }}
             </span>
-            <div class="flex items-center gap-1.5 mt-2">
-                <span class="text-[10px] font-black {% if margin >= 0 %}text-brand-green/80{% else %}text-brand-red/80{% endif %} uppercase tracking-tight">
-                    {{ margin|floatformat:1 }}% Margin
-                </span>
+            <div class="flex items-center gap-1.5 mt-2 opacity-60">
+                <span class="text-[10px] font-medium text-text-muted">Final Earnings</span>
             </div>
         </div>
 
