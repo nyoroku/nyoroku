@@ -1,42 +1,58 @@
-import re
+import json
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from .models import User
 
 def logout_view(request):
     logout(request)
     return redirect('accounts:login')
 
-from django.contrib.auth import login, logout, authenticate
-
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('pos:index')
     
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password', '')
-        
-        if not username or not password:
-            return HttpResponse('Missing credentials', status=400)
-            
-        user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                response = HttpResponse(status=204)
-                response['HX-Redirect'] = '/pos/'
-                return response
-            else:
-                return HttpResponse('Account disabled', status=403)
-        else:
-            return HttpResponse('Invalid username or password', status=401)
+    users = User.objects.filter(is_active=True).order_by('name')
+    return render(request, 'accounts/login.html', {'users': users})
 
-    return render(request, 'accounts/login.html')
+@require_http_methods(["POST"])
+def pin_auth(request):
+    """HTMX endpoint for PIN-based authentication."""
+    username = request.POST.get('username', '')
+    pin = request.POST.get('pin', '')
+    
+    if not username or not pin:
+        return HttpResponse(
+            '<div class="text-brand-red text-xs font-bold text-center animate-shake">Missing credentials</div>',
+            status=400
+        )
+    
+    try:
+        user = User.objects.get(username=username, is_active=True)
+    except User.DoesNotExist:
+        return HttpResponse(
+            '<div class="text-brand-red text-xs font-bold text-center animate-shake">User not found</div>',
+            status=401
+        )
+    
+    # Check PIN first, then fall back to password
+    if user.pin_hash and user.check_pin(pin):
+        login(request, user)
+        response = HttpResponse(status=200)
+        response['HX-Redirect'] = '/pos/'
+        return response
+    elif user.check_password(pin):
+        login(request, user)
+        response = HttpResponse(status=200)
+        response['HX-Redirect'] = '/pos/'
+        return response
+    else:
+        return HttpResponse(
+            '<div class="text-brand-red text-xs font-bold text-center animate-shake">Wrong PIN — try again</div>',
+            status=401
+        )
 
 @login_required
 def user_list(request):
@@ -54,13 +70,20 @@ def add_user(request):
         
     name = request.POST.get('name')
     role = request.POST.get('role', 'cashier')
-    password = request.POST.get('password')
+    pin = request.POST.get('pin', '1234')
     username = request.POST.get('username')
+    avatar = request.POST.get('avatar', '👤')
     
-    if not username or not password:
-        return HttpResponse('Username and Password are required', status=400)
+    if not username or not pin:
+        return HttpResponse('Username and PIN are required', status=400)
+    
+    if len(pin) != 4 or not pin.isdigit():
+        return HttpResponse('PIN must be exactly 4 digits', status=400)
         
-    User.objects.create_user(username=username, pin=password, name=name, role=role)
+    user = User.objects.create_user(username=username, pin=pin, name=name, role=role)
+    user.avatar = avatar
+    user.set_pin(pin)
+    user.save()
     return redirect('accounts:user_list')
 
 @login_required
@@ -70,7 +93,6 @@ def delete_user(request, pk):
         return HttpResponse('Unauthorized', status=403)
         
     user = get_object_or_404(User, pk=pk)
-    # Don't delete the last admin
     if user.role == 'admin' and User.objects.filter(role='admin').count() <= 1:
         return HttpResponse('Cannot delete last admin', status=400)
         

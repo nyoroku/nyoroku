@@ -6,9 +6,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Eli Collection POS</title>
+  <meta name="description" content="Eli Collection — Premium Point of Sale System">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   
   {% tailwind_css %}
   
@@ -17,10 +18,114 @@
   
   <style>
     [x-cloak] { display: none !important; }
-    body { background-color: #0a0a0f; color: #f0f0f5; }
+    
+    /* === DESIGN SYSTEM === */
+    :root {
+      --green: #00C853;
+      --green-dark: #1B5E20;
+      --green-light: #69F0AE;
+      --surface: #080808;
+      --surface-2: #0f0f0f;
+      --surface-3: #161616;
+      --text: #EAEAEA;
+      --text-muted: #555566;
+    }
+    
+    body {
+      background: #050505;
+      color: var(--text);
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    }
+    
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+    
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Typography classes */
     .syne { font-family: 'Syne', sans-serif; }
-    .dm-sans { font-family: 'DM Sans', sans-serif; }
+    .jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
     .dm-mono { font-family: 'DM Mono', monospace; }
+    
+    /* Glass effect */
+    .glass {
+      background: rgba(15,15,15,0.6);
+      backdrop-filter: blur(20px) saturate(1.2);
+      -webkit-backdrop-filter: blur(20px) saturate(1.2);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .glass-strong {
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(40px) saturate(1.4);
+      -webkit-backdrop-filter: blur(40px) saturate(1.4);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    
+    /* Green gradient text */
+    .text-gradient-green {
+      background: linear-gradient(135deg, #00C853, #69F0AE);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* Ambient glow orbs */
+    .ambient-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    /* Stagger animation helper */
+    .stagger > * { animation: fadeIn 0.3s ease-out both; }
+    .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.04s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.06s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.08s; }
+    .stagger > *:nth-child(5) { animation-delay: 0.10s; }
+    .stagger > *:nth-child(6) { animation-delay: 0.12s; }
+    .stagger > *:nth-child(7) { animation-delay: 0.14s; }
+    .stagger > *:nth-child(8) { animation-delay: 0.16s; }
+    .stagger > *:nth-child(9) { animation-delay: 0.18s; }
+    .stagger > *:nth-child(10) { animation-delay: 0.20s; }
+    .stagger > *:nth-child(11) { animation-delay: 0.22s; }
+    .stagger > *:nth-child(12) { animation-delay: 0.24s; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Safe areas for mobile */
+    .safe-top { padding-top: env(safe-area-inset-top); }
+    .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    
+    /* Shimmer button effect */
+    .btn-shimmer { position: relative; overflow: hidden; }
+    .btn-shimmer::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      animation: shimmer 2.5s ease-in-out infinite;
+    }
   </style>
 
   <script>
@@ -29,98 +134,182 @@
         sidebarOpen: false,
         cart: { items: [], open: false },
         payment: 'cash',
-        pin: '',
-        error: '',
+        couponCode: '',
+        couponDiscount: 0,
+        couponType: '',
+        couponApplied: false,
+        couponError: '',
+
         get itemCount() { return this.cart.items.reduce((s, i) => s + i.qty, 0); },
-        get cartTotal() { return this.cart.items.reduce((s, i) => s + (i.price * i.qty), 0); },
+        get cartSubtotal() { return this.cart.items.reduce((s, i) => s + (i.price * i.qty), 0); },
+        get discountAmount() {
+          if (!this.couponApplied) return 0;
+          if (this.couponType === 'percent') {
+            return Math.round(this.cartSubtotal * this.couponDiscount / 100 * 100) / 100;
+          }
+          return Math.min(this.couponDiscount, this.cartSubtotal);
+        },
+        get cartTotal() { return Math.max(0, this.cartSubtotal - this.discountAmount); },
         
         addToCart(product) {
           const ex = this.cart.items.find(i => i.id === product.id);
-          ex ? ex.qty++ : this.cart.items.push({ ...product, qty: 1 });
+          if (ex) {
+            ex.qty++;
+          } else {
+            this.cart.items.push({ ...product, qty: 1 });
+          }
         },
         updateQty(id, delta) {
           const item = this.cart.items.find(i => i.id === id);
           if (item) item.qty = Math.max(0, item.qty + delta);
           this.cart.items = this.cart.items.filter(i => i.qty > 0);
+          // Recalculate coupon if items change
+          if (this.cart.items.length === 0) this.removeCoupon();
         },
-        clearCart() { this.cart.items = []; this.cart.open = false; },
-        
-        // PIN Auth
-        addDigit(digit) {
-          if (this.pin.length < 4) {
-            this.pin += digit;
-            if (this.pin.length === 4) {
-              htmx.trigger('#pin-form', 'submit');
-            }
+        setQty(id, qty) {
+          const item = this.cart.items.find(i => i.id === id);
+          if (item) {
+            item.qty = Math.max(0, parseInt(qty) || 0);
+            this.cart.items = this.cart.items.filter(i => i.qty > 0);
           }
         },
-        clearPin() { this.pin = ''; this.error = ''; },
-        shakeError() {
-          this.error = true;
-          setTimeout(() => { this.error = false; this.pin = ''; }, 400);
-        }
+        removeItem(id) {
+          this.cart.items = this.cart.items.filter(i => i.id !== id);
+          if (this.cart.items.length === 0) this.removeCoupon();
+        },
+        clearCart() { 
+          this.cart.items = []; 
+          this.cart.open = false; 
+          this.removeCoupon();
+        },
+        async applyCoupon() {
+          if (!this.couponCode || this.couponApplied) return;
+          this.couponError = '';
+          try {
+            const csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrf = csrfEl ? csrfEl.value : '{{ csrf_token }}';
+            const fd = new FormData();
+            fd.append('code', this.couponCode);
+            fd.append('subtotal', this.cartSubtotal);
+            const resp = await fetch('/pos/coupon/validate/', {
+              method: 'POST', body: fd,
+              headers: { 'X-CSRFToken': csrf }
+            });
+            const html = await resp.text();
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const discVal = tmp.querySelector('#coupon-discount-value');
+            const discType = tmp.querySelector('#coupon-discount-type');
+            if (discVal && discType) {
+              this.couponDiscount = parseFloat(discVal.value);
+              this.couponType = discType.value;
+              this.couponApplied = true;
+              this.couponError = '';
+            } else {
+              this.couponError = tmp.textContent.trim() || 'Invalid coupon';
+              this.couponApplied = false;
+            }
+          } catch(e) {
+            this.couponError = 'Network error';
+          }
+        },
+        removeCoupon() {
+          this.couponCode = '';
+          this.couponDiscount = 0;
+          this.couponType = '';
+          this.couponApplied = false;
+          this.couponError = '';
+        },
       };
     }
   </script>
 </head>
-<body class="bg-[#0a0a0f] font-sans text-[#f0f0f5] antialiased min-h-screen flex flex-col" :class="{ 'overflow-hidden': sidebarOpen }">
+<body class="font-sans text-text-primary antialiased min-h-screen flex flex-col" :class="{ 'overflow-hidden': sidebarOpen }">
   
+  <!-- Ambient Glow Orbs -->
+  <div class="ambient-orb w-[600px] h-[600px] bg-brand-green/[0.03] -top-[200px] -left-[200px] animate-pulse-glow"></div>
+  <div class="ambient-orb w-[400px] h-[400px] bg-brand-green/[0.02] bottom-[100px] -right-[100px] animate-pulse-glow" style="animation-delay: 1.5s;"></div>
+
   <!-- Global Sidebar -->
   <div x-show="sidebarOpen" x-cloak class="fixed inset-0 z-[100] overflow-hidden">
     <div x-show="sidebarOpen" 
          x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
          @click="sidebarOpen = false"
-         class="absolute inset-0 bg-surface/80 backdrop-blur-md"></div>
+         class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
     
     <div x-show="sidebarOpen" 
          x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
          x-transition:leave="transition ease-in duration-200 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
-         class="absolute inset-y-0 left-0 w-[280px] bg-surface2 border-r border-white/5 shadow-2xl flex flex-col">
+         class="absolute inset-y-0 left-0 w-[280px] bg-surface2 border-r border-white/[0.04] shadow-2xl flex flex-col">
       
-      <div class="p-6 border-b border-white/5">
-        <h2 class="font-display font-extrabold text-2xl text-brand-green tracking-tight">Eli Collection</h2>
-        <p class="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1">Management Portal</p>
+      <div class="p-6 border-b border-white/[0.04]">
+        <h2 class="font-display font-extrabold text-2xl text-gradient-green tracking-tight">Eli Collection</h2>
+        <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.2em] mt-1">Management Portal</p>
       </div>
 
-      <nav class="flex-grow p-4 space-y-2 overflow-y-auto">
-        <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-widest mb-4">Operations</p>
-        <a href="{% url 'pos:index' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-xl text-text-primary hover:bg-white/5 transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+        <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4 mt-2">Operations</p>
+        <a href="{% url 'pos:index' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
+          <div class="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center group-hover:bg-brand-green/15 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-green"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          </div>
           <span class="font-bold text-sm">Point of Sale</span>
         </a>
-        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-xl text-text-primary hover:bg-white/5 transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
+          <div class="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center group-hover:bg-brand-green/15 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-green"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          </div>
           <span class="font-bold text-sm">Stock Inventory</span>
+        </a>
+        <a href="{% url 'expenses:list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
+          <div class="w-9 h-9 rounded-xl bg-brand-green/10 flex items-center justify-center group-hover:bg-brand-green/15 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-brand-green"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+          </div>
+          <span class="font-bold text-sm">Expenses</span>
         </a>
 
         <div class="pt-6">
-           <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-widest mb-4">Administration</p>
-           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-xl text-text-primary hover:bg-white/5 transition-all">
-             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-             <span class="font-bold text-sm">Analytics & Reports</span>
+           <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4">Administration</p>
+           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
+             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-muted"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+             </div>
+             <span class="font-bold text-sm">Analytics</span>
            </a>
-           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-xl text-text-primary hover:bg-white/5 transition-all">
-             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-             <span class="font-bold text-sm">Staff Management</span>
+           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
+             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-muted"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+             </div>
+             <span class="font-bold text-sm">Staff</span>
            </a>
-           <a href="/admin/" target="_blank" class="flex items-center gap-4 px-4 py-3.5 rounded-xl text-text-muted hover:bg-white/5 transition-all">
-             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+           {% if user.role == 'admin' %}
+           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-primary hover:bg-white/[0.03] transition-all group">
+             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-muted"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+             </div>
+             <span class="font-bold text-sm">Coupons</span>
+           </a>
+           {% endif %}
+           <a href="/admin/" target="_blank" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-muted hover:bg-white/[0.03] transition-all group">
+             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
+               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+             </div>
              <span class="font-bold text-sm">System Admin</span>
            </a>
         </div>
       </nav>
 
-      <div class="p-6 border-t border-white/5 bg-white/[0.02]">
+      <div class="p-6 border-t border-white/[0.04] bg-white/[0.01]">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-brand-green/20 border border-brand-green/30 flex items-center justify-center text-xl">
+          <div class="w-10 h-10 rounded-full bg-brand-green/10 border border-brand-green/20 flex items-center justify-center text-xl shadow-glow-green-sm">
             {{ user.avatar|default:"👤" }}
           </div>
           <div class="min-w-0">
             <p class="text-sm font-bold text-text-primary truncate">{{ user.name }}</p>
-            <p class="text-[10px] text-text-muted font-bold uppercase tracking-wider">{{ user.role }}</p>
+            <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.15em]">{{ user.role }}</p>
           </div>
         </div>
-        <a href="{% url 'accounts:logout' %}" class="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand-red/10 text-brand-red font-bold text-xs uppercase tracking-widest hover:bg-brand-red/20 transition-all">
+        <a href="{% url 'accounts:logout' %}" class="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand-red/10 text-brand-red font-bold text-xs uppercase tracking-widest hover:bg-brand-red/15 transition-all">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Sign Out
         </a>

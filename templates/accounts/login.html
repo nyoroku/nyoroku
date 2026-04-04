@@ -1,132 +1,390 @@
-{% extends 'base.html' %}
-{% load static %}
-
-{% block content %}
-<div class="flex flex-col items-center justify-center min-h-[85vh] px-6">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sign In — Eli Collection</title>
+  <meta name="description" content="Eli Collection POS — Secure PIN Login">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   
-  <div class="w-full max-w-md">
-    <!-- Brand Header -->
-    <div class="text-center mb-10">
-      <h1 class="font-display font-extrabold text-[48px] tracking-tight text-brand-green leading-none">Eli Collection</h1>
-      <p class="text-text-muted mt-3 font-medium uppercase tracking-[0.25em] text-[11px]">Point of Sale Systems</p>
-    </div>
-
-    <!-- Login Card -->
-    <div class="bg-surface2 border border-border/50 rounded-[32px] p-8 sm:p-10 shadow-2xl backdrop-blur-xl relative overflow-hidden group">
-        <!-- Subtle Glow -->
-        <div class="absolute -top-24 -right-24 w-48 h-48 bg-brand-green/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-brand-green/20 transition-all duration-700"></div>
-        
-        <div class="relative z-10">
-            <h2 class="text-2xl font-bold text-text-primary mb-2 text-center">Welcome Back</h2>
-            <p class="text-text-muted text-sm text-center mb-10">Please enter your credentials to continue</p>
-
-            <form id="login-form" 
-                  hx-post="{% url 'accounts:login' %}" 
-                  hx-swap="none" 
-                  hx-indicator="#loading"
-                  class="space-y-6">
-                {% csrf_token %}
-                
-                <!-- Username Input -->
-                <div class="space-y-2">
-                    <label for="username" class="block text-[11px] font-black text-text-muted uppercase tracking-widest ml-1">Username</label>
-                    <div class="relative group/input">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within/input:text-brand-green transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        </div>
-                        <input type="text" 
-                               name="username" 
-                               id="username" 
-                               required 
-                               autocomplete="username"
-                               autocapitalize="none"
-                               placeholder="e.g. nomad"
-                               class="w-full bg-surface/50 border border-border rounded-2xl py-4 pl-12 pr-4 text-text-primary placeholder:text-text-muted/50 focus:border-brand-green focus:ring-0 transition-all text-sm font-medium">
-                    </div>
-                </div>
-
-                <!-- Password Input -->
-                <div class="space-y-2">
-                    <div class="flex justify-between items-center px-1">
-                        <label for="password" class="block text-[11px] font-black text-text-muted uppercase tracking-widest">Password / PIN</label>
-                    </div>
-                    <div class="relative group/input">
-                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within/input:text-brand-green transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        </div>
-                        <input type="password" 
-                               name="password" 
-                               id="password" 
-                               required 
-                               autocomplete="current-password"
-                               placeholder="••••••••"
-                               class="w-full bg-surface/50 border border-border rounded-2xl py-4 pl-12 pr-4 text-text-primary placeholder:text-text-muted/50 focus:border-brand-green focus:ring-0 transition-all text-sm font-medium tracking-widest">
-                    </div>
-                </div>
-
-                <!-- Error Display -->
-                <div id="login-error" class="hidden text-brand-red text-xs font-bold bg-brand-red/10 p-4 rounded-xl text-center flex items-center justify-center gap-2 animate-shake">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <span id="error-message">Invalid credentials</span>
-                </div>
-
-                <!-- Action Button -->
-                <button type="submit" 
-                        class="w-full bg-brand-green text-surface py-5 rounded-2xl font-display font-extrabold text-sm uppercase tracking-widest shadow-[0_12px_24px_rgba(0,230,118,0.3)] hover:shadow-[0_16px_32px_rgba(0,230,118,0.4)] active:scale-[0.98] transition-all relative overflow-hidden group/btn">
-                    <span class="relative z-10">Sign In to POS</span>
-                    <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 translate-y-1 group-hover/btn:translate-y-0 transition-transform"></div>
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Footer Help -->
-    <p class="text-center text-text-muted text-[10px] uppercase font-bold mt-8 tracking-[0.2em]">
-        Forgotten credentials? Contact Administrator
-    </p>
-  </div>
-
-  <!-- Loading State -->
-  <div id="loading" class="htmx-indicator fixed top-4 right-4 z-50">
-    <div class="flex items-center gap-3 bg-surface2 border border-border px-4 py-2 rounded-full shadow-xl">
-        <div class="w-4 h-4 border-2 border-brand-green border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-[10px] font-black uppercase text-brand-green tracking-wide">Authenticating...</span>
-    </div>
-  </div>
-</div>
-
-<style>
+  {% load tailwind_cli %}
+  {% tailwind_css %}
+  
+  <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+  
+  <style>
+    [x-cloak] { display: none !important; }
+    
+    body {
+      background: #030303;
+      color: #EAEAEA;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      overflow: hidden;
+      height: 100dvh;
+    }
+    
+    .syne { font-family: 'Syne', sans-serif; }
+    
+    /* Floating ambient orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: rgba(0,200,83,0.06);
+      top: -150px; left: -100px;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 400px; height: 400px;
+      background: rgba(0,200,83,0.04);
+      bottom: -100px; right: -100px;
+      animation: orbFloat 10s ease-in-out infinite reverse;
+    }
+    .orb-3 {
+      width: 300px; height: 300px;
+      background: rgba(27,94,32,0.08);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: orbPulse 6s ease-in-out infinite;
+    }
+    
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0); }
+      33% { transform: translate(30px, -20px); }
+      66% { transform: translate(-20px, 15px); }
+    }
+    @keyframes orbPulse {
+      0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.15); }
+    }
+    
+    /* Profile card hover glow */
+    .profile-card {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .profile-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .profile-card:active {
+      transform: scale(0.97);
+    }
+    
+    /* PIN dot animations */
+    .pin-dot {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .pin-dot.filled {
+      transform: scale(1.2);
+    }
+    
+    /* Numpad button */
+    .num-btn {
+      transition: all 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .num-btn:active {
+      transform: scale(0.92);
+      background: rgba(0,200,83,0.15);
+    }
+    
+    /* Shake animation */
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-      20%, 40%, 60%, 80% { transform: translateX(5px); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+      20%, 40%, 60%, 80% { transform: translateX(6px); }
     }
-    .animate-shake {
-      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    .animate-shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+    
+    /* Success animation */
+    @keyframes successPulse {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
     }
-</style>
-
-<script>
-    document.addEventListener('htmx:afterRequest', function(evt) {
-        const errorDiv = document.getElementById('login-error');
-        const messageSpan = document.getElementById('error-message');
+    .animate-success { animation: successPulse 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+    
+    /* Noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.012;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 3px; }
+  </style>
+</head>
+<body class="antialiased" x-data="loginApp()" x-cloak>
+  
+  <!-- Ambient orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  
+  <div class="relative z-10 flex flex-col items-center justify-center min-h-screen px-5 py-8">
+    
+    <!-- ═══ STEP 1: Profile Selector ═══ -->
+    <div x-show="step === 1" 
+         x-transition:enter="transition ease-out duration-500"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0 -translate-y-8"
+         class="w-full max-w-lg">
+      
+      <!-- Brand -->
+      <div class="text-center mb-10">
+        <h1 class="syne font-extrabold text-[42px] sm:text-[52px] tracking-tight leading-none">
+          <span style="background: linear-gradient(135deg, #00C853, #69F0AE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Eli Collection</span>
+        </h1>
+        <p class="text-[#555566] mt-3 font-semibold uppercase tracking-[0.3em] text-[10px]">Select your profile to continue</p>
+      </div>
+      
+      <!-- Profile Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {% for u in users %}
+        <button @click="selectUser('{{ u.username }}', '{{ u.name|escapejs }}', '{{ u.avatar|escapejs }}', '{{ u.role }}', '{{ u.color }}')"
+                class="profile-card group relative bg-[#0e0e0e] border border-white/[0.05] rounded-[20px] p-5 flex flex-col items-center gap-3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00C853]/30"
+                style="--accent: {{ u.color }}">
+          
+          <!-- Avatar circle -->
+          <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl border-2 transition-all duration-300 group-hover:shadow-[0_0_24px_var(--accent)]"
+               style="background: linear-gradient(135deg, {{ u.color }}15, {{ u.color }}08); border-color: {{ u.color }}30;">
+            {{ u.avatar|default:"👤" }}
+          </div>
+          
+          <!-- Info -->
+          <div class="text-center">
+            <p class="font-bold text-sm text-[#EAEAEA] leading-tight">{{ u.name }}</p>
+            <span class="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[8px] font-extrabold uppercase tracking-[0.15em]"
+                  style="background: {{ u.color }}15; color: {{ u.color }};">{{ u.role }}</span>
+          </div>
+          
+          <!-- Hover border glow -->
+          <div class="absolute inset-0 rounded-[20px] border-2 border-transparent group-hover:border-white/[0.08] transition-all duration-300 pointer-events-none"></div>
+        </button>
+        {% empty %}
+        <div class="col-span-full text-center py-12 text-[#555566]">
+          <p class="text-4xl mb-3">👤</p>
+          <p class="font-bold text-sm">No users found</p>
+          <p class="text-xs mt-1">Create users via the Admin panel</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- ═══ STEP 2: PIN Entry ═══ -->
+    <div x-show="step === 2" x-cloak
+         x-transition:enter="transition ease-out duration-400"
+         x-transition:enter-start="opacity-0 translate-y-8"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         class="w-full max-w-xs">
+      
+      <!-- Back button -->
+      <button @click="goBack()" class="flex items-center gap-2 text-[#555566] hover:text-[#EAEAEA] transition-colors mb-8 group">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-active:scale-90 transition-transform"><path d="m15 18-6-6 6-6"/></svg>
+        <span class="text-xs font-bold uppercase tracking-widest">Back</span>
+      </button>
+      
+      <!-- Selected user display -->
+      <div class="text-center mb-10">
+        <div class="w-20 h-20 rounded-full flex items-center justify-center text-4xl mx-auto mb-4 border-2 transition-all"
+             :style="`background: linear-gradient(135deg, ${selectedColor}15, ${selectedColor}08); border-color: ${selectedColor}30; box-shadow: 0 0 32px ${selectedColor}15;`"
+             x-text="selectedAvatar">
+        </div>
+        <h2 class="syne font-extrabold text-2xl text-[#EAEAEA] tracking-tight" x-text="selectedName"></h2>
+        <p class="text-[10px] font-bold uppercase tracking-[0.25em] mt-1.5"
+           :style="`color: ${selectedColor}`" x-text="selectedRole"></p>
+      </div>
+      
+      <!-- PIN Dots -->
+      <div class="flex justify-center gap-4 mb-8" :class="{ 'animate-shake': pinError }">
+        <template x-for="i in 4" :key="i">
+          <div class="pin-dot w-4 h-4 rounded-full border-2 transition-all duration-200"
+               :class="pin.length >= i ? 'filled' : ''"
+               :style="pin.length >= i 
+                 ? `background: ${selectedColor}; border-color: ${selectedColor}; box-shadow: 0 0 12px ${selectedColor}40;`
+                 : 'background: transparent; border-color: rgba(255,255,255,0.12);'">
+          </div>
+        </template>
+      </div>
+      
+      <!-- Error message -->
+      <div x-show="pinErrorMsg" x-transition class="text-center mb-4">
+        <p class="text-[#FF1744] text-xs font-bold" x-text="pinErrorMsg"></p>
+      </div>
+      
+      <!-- Numpad -->
+      <div class="grid grid-cols-3 gap-3 max-w-[280px] mx-auto">
+        <template x-for="n in [1,2,3,4,5,6,7,8,9]" :key="n">
+          <button @click="addDigit(n)" 
+                  class="num-btn w-full aspect-square rounded-2xl bg-[#0f0f0f] border border-white/[0.06] flex items-center justify-center text-2xl font-bold text-[#EAEAEA] hover:bg-white/[0.04] focus:outline-none"
+                  x-text="n">
+          </button>
+        </template>
         
-        if (evt.detail.xhr.status === 401 || evt.detail.xhr.status === 403 || evt.detail.xhr.status === 400) {
-            errorDiv.classList.remove('hidden');
-            messageSpan.innerText = evt.detail.xhr.responseText || 'Invalid credentials';
+        <!-- Empty -->
+        <div></div>
+        
+        <!-- 0 -->
+        <button @click="addDigit(0)" 
+                class="num-btn w-full aspect-square rounded-2xl bg-[#0f0f0f] border border-white/[0.06] flex items-center justify-center text-2xl font-bold text-[#EAEAEA] hover:bg-white/[0.04] focus:outline-none">
+          0
+        </button>
+        
+        <!-- Backspace -->
+        <button @click="removeDigit()" 
+                class="num-btn w-full aspect-square rounded-2xl bg-[#0f0f0f] border border-white/[0.06] flex items-center justify-center text-[#555566] hover:text-[#FF1744] hover:bg-[#FF1744]/5 focus:outline-none transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5H5.236a2 2 0 0 0-1.789 1.106l-2.242 4.484a2 2 0 0 0 0 1.789l2.242 4.485A2 2 0 0 0 5.236 18H10"/><path d="M17 9l-4 6"/><path d="M13 9l4 6"/></svg>
+        </button>
+      </div>
+      
+      <!-- Footer hint -->
+      <p class="text-center text-[#555566] text-[9px] uppercase font-bold mt-8 tracking-[0.2em]">
+        Enter your 4-digit PIN
+      </p>
+    </div>
+    
+    <!-- ═══ STEP 3: Success ═══ -->
+    <div x-show="step === 3" x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-90"
+         x-transition:enter-end="opacity-100 scale-100"
+         class="text-center animate-success">
+      <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+           :style="`background: ${selectedColor}15; box-shadow: 0 0 40px ${selectedColor}20;`">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+             :style="`stroke: ${selectedColor}`"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h2 class="syne font-extrabold text-2xl text-[#EAEAEA]">Welcome back</h2>
+      <p class="text-[#555566] text-sm mt-2" x-text="selectedName"></p>
+    </div>
+    
+  </div>
+  
+  <!-- Hidden HTMX form -->
+  <form id="pin-form" 
+        hx-post="{% url 'accounts:pin_auth' %}" 
+        hx-target="#auth-feedback" 
+        hx-swap="innerHTML"
+        style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="username" x-model="selectedUsername">
+    <input type="hidden" name="pin" x-model="pin">
+  </form>
+  <div id="auth-feedback" style="display:none;"></div>
+
+  <script>
+    function loginApp() {
+      return {
+        step: 1,
+        selectedUsername: '',
+        selectedName: '',
+        selectedAvatar: '👤',
+        selectedRole: '',
+        selectedColor: '#00C853',
+        pin: '',
+        pinError: false,
+        pinErrorMsg: '',
+        isSubmitting: false,
+        
+        selectUser(username, name, avatar, role, color) {
+          this.selectedUsername = username;
+          this.selectedName = name;
+          this.selectedAvatar = avatar || '👤';
+          this.selectedRole = role;
+          this.selectedColor = color || '#00C853';
+          this.pin = '';
+          this.pinError = false;
+          this.pinErrorMsg = '';
+          this.step = 2;
+        },
+        
+        goBack() {
+          this.step = 1;
+          this.pin = '';
+          this.pinError = false;
+          this.pinErrorMsg = '';
+        },
+        
+        addDigit(digit) {
+          if (this.pin.length < 4 && !this.isSubmitting) {
+            this.pin += digit;
+            this.pinError = false;
+            this.pinErrorMsg = '';
             
-            // Hard shake
-            errorDiv.classList.remove('animate-shake');
-            void errorDiv.offsetWidth; // Trigger reflow
-            errorDiv.classList.add('animate-shake');
+            if (this.pin.length === 4) {
+              this.submitPin();
+            }
+          }
+        },
+        
+        removeDigit() {
+          this.pin = this.pin.slice(0, -1);
+          this.pinError = false;
+          this.pinErrorMsg = '';
+        },
+        
+        async submitPin() {
+          this.isSubmitting = true;
+          
+          try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const formData = new FormData();
+            formData.append('username', this.selectedUsername);
+            formData.append('pin', this.pin);
+            formData.append('csrfmiddlewaretoken', csrfToken);
             
-            // Clear password
-            document.getElementById('password').value = '';
-        } else {
-            errorDiv.classList.add('hidden');
+            const response = await fetch('{% url "accounts:pin_auth" %}', {
+              method: 'POST',
+              body: formData,
+              headers: {
+                'X-CSRFToken': csrfToken,
+              }
+            });
+            
+            if (response.ok) {
+              // Check for redirect
+              const redirect = response.headers.get('HX-Redirect');
+              this.step = 3;
+              setTimeout(() => {
+                window.location.href = redirect || '/pos/';
+              }, 600);
+            } else {
+              this.pinError = true;
+              this.pinErrorMsg = 'Wrong PIN — try again';
+              this.pin = '';
+              setTimeout(() => { this.pinError = false; }, 500);
+            }
+          } catch (e) {
+            this.pinError = true;
+            this.pinErrorMsg = 'Connection error';
+            this.pin = '';
+          }
+          
+          this.isSubmitting = false;
         }
-    });
-</script>
-{% endblock %}
-
-
+      };
+    }
+  </script>
+</body>
+</html>

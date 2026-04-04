@@ -85,21 +85,8 @@ DATABASES = {
 }
 
 
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+# Password validation — disabled for 4-digit PIN auth
+AUTH_PASSWORD_VALIDATORS = []
 
 AUTH_USER_MODEL = 'accounts.User'
 

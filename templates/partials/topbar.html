@@ -1,34 +1,29 @@
-<header class="sticky top-0 z-40 w-full bg-surface/80 backdrop-blur-md border-b border-white/[0.05] safe-top">
-  <div class="flex items-center justify-between px-4 h-16">
-    <div class="flex items-center gap-4">
+<header class="sticky top-0 z-40 w-full glass-strong safe-top">
+  <div class="flex items-center justify-between px-4 h-14">
+    <div class="flex items-center gap-3">
       <!-- Menu Trigger -->
-      <button @click="sidebarOpen = true" class="w-10 h-10 flex items-center justify-center bg-surface2 border border-border rounded-xl text-text-muted active:scale-90 transition-transform">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      <button @click="sidebarOpen = true" class="w-9 h-9 flex items-center justify-center bg-surface3 border border-border rounded-xl text-text-muted active:scale-90 transition-all hover:border-white/10">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="14" y1="6" y2="6"/><line x1="4" x2="18" y1="18" y2="18"/></svg>
       </button>
 
-      <span class="font-display font-extrabold text-xl text-text-primary hidden sm:block">
+      <span class="font-display font-extrabold text-lg text-text-primary hidden sm:block tracking-tight">
         {% block screen_title %}Eli Collection{% endblock %}
       </span>
     </div>
 
     <!-- Desktop Navigation -->
-    <nav class="hidden tablet:flex items-center gap-1 bg-surface2/50 border border-border p-1 rounded-2xl">
-      <a href="{% url 'pos:index' %}" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all {% if request.resolver_match.app_name == 'pos' %}bg-brand-green text-surface shadow-[0_8px_16px_rgba(0,230,118,0.2)]{% else %}text-text-muted hover:text-text-primary{% endif %}">POS</a>
-      <a href="{% url 'catalogue:inventory' %}" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all {% if request.resolver_match.app_name == 'catalogue' %}bg-brand-green text-surface shadow-[0_8px_16px_rgba(0,230,118,0.2)]{% else %}text-text-muted hover:text-text-primary{% endif %}">Inventory</a>
-      <a href="{% url 'expenses:list' %}" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all {% if request.resolver_match.app_name == 'expenses' %}bg-brand-green text-surface shadow-[0_8px_16px_rgba(0,230,118,0.2)]{% else %}text-text-muted hover:text-text-primary{% endif %}">Expenses</a>
-      <a href="{% url 'catalogue:category_list' %}" class="px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all {% if request.resolver_match.url_name == 'category_list' %}bg-brand-green text-surface shadow-[0_8px_16px_rgba(0,230,118,0.2)]{% else %}text-text-muted hover:text-text-primary{% endif %}">Categories</a>
+    <nav class="hidden tablet:flex items-center gap-1 bg-surface2 border border-border p-1 rounded-xl">
+      <a href="{% url 'pos:index' %}" class="px-4 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.1em] transition-all {% if request.resolver_match.app_name == 'pos' %}bg-brand-green text-surface shadow-glow-green-sm{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">POS</a>
+      <a href="{% url 'catalogue:inventory' %}" class="px-4 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.1em] transition-all {% if request.resolver_match.app_name == 'catalogue' %}bg-brand-green text-surface shadow-glow-green-sm{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">Stock</a>
+      <a href="{% url 'expenses:list' %}" class="px-4 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.1em] transition-all {% if request.resolver_match.app_name == 'expenses' %}bg-brand-green text-surface shadow-glow-green-sm{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">Expenses</a>
+      <a href="{% url 'catalogue:category_list' %}" class="px-4 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-[0.1em] transition-all {% if request.resolver_match.url_name == 'category_list' %}bg-brand-green text-surface shadow-glow-green-sm{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">Categories</a>
     </nav>
 
-    <div class="flex items-center gap-4">
-       <!-- Profile current simplified -->
-       <span class="font-bold text-xs text-text-muted hidden sm:block uppercase tracking-widest">{{ user.name }}</span>
-       <div class="w-8 h-8 rounded-full bg-brand-green/20 border border-brand-green/30 flex items-center justify-center text-sm">
+    <div class="flex items-center gap-3">
+       <span class="font-bold text-[10px] text-text-muted hidden sm:block uppercase tracking-[0.15em]">{{ user.name }}</span>
+       <div class="w-8 h-8 rounded-full bg-brand-green/10 border border-brand-green/20 flex items-center justify-center text-sm shadow-glow-green-sm">
           {{ user.avatar|default:"👤" }}
        </div>
     </div>
   </div>
 </header>
-
-<style>
-  .safe-top { padding-top: env(safe-area-inset-top); }
-</style>

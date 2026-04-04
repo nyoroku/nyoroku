@@ -4,69 +4,70 @@
 {% block screen_title %}Categories{% endblock %}
 
 {% block content %}
-<div class="px-4 py-8 max-w-2xl mx-auto" x-data="{ addModal: false }">
+<div class="px-4 py-6 max-w-2xl mx-auto" x-data="{ addModal: false }">
     
     <div class="flex items-center justify-between mb-8">
         <div>
-            <h2 class="text-2xl font-display font-extrabold text-text-primary tracking-tight">Product Categories</h2>
-            <p class="text-sm text-text-muted mt-1">Organize your inventory for faster sales</p>
+            <h2 class="text-2xl font-display font-extrabold text-text-primary tracking-tight">Categories</h2>
+            <p class="text-sm text-text-muted mt-1">Organize your inventory</p>
         </div>
-        <button @click="addModal = true" class="w-12 h-12 bg-brand-green text-surface rounded-2xl shadow-[0_8px_20px_rgba(0,230,118,0.2)] flex items-center justify-center active:scale-95 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <button @click="addModal = true" class="w-12 h-12 bg-brand-green text-surface rounded-2xl shadow-glow-green-sm flex items-center justify-center active:scale-95 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         </button>
     </div>
 
     <!-- Category List -->
-    <div class="grid gap-3">
+    <div class="grid gap-2 stagger">
         {% for cat in categories %}
-        <div class="bg-surface2 border border-border p-4 rounded-2xl flex items-center justify-between group hover:border-brand-green/30 transition-all">
+        <div class="bg-surface2 border border-border p-4 rounded-2xl flex items-center justify-between group hover:border-white/10 hover:shadow-card transition-all">
             <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-surface rounded-xl flex items-center justify-center text-lg shadow-sm">
+                <div class="w-10 h-10 bg-surface3 border border-border rounded-xl flex items-center justify-center text-lg">
                     📁
                 </div>
                 <div>
-                    <h3 class="font-bold text-text-primary">{{ cat.name }}</h3>
-                    <p class="text-[10px] text-text-muted font-bold uppercase tracking-widest">{{ cat.products.count }} Products</p>
+                    <h3 class="font-bold text-text-primary text-sm">{{ cat.name }}</h3>
+                    <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.12em]">{{ cat.products.count }} Products</p>
                 </div>
             </div>
             
-            <form action="{% url 'catalogue:delete_category' cat.id %}" method="POST" onsubmit="return confirm('Delete this category? This will not delete the products inside.')">
+            <form action="{% url 'catalogue:delete_category' cat.id %}" method="POST" onsubmit="return confirm('Delete this category?')">
                 {% csrf_token %}
-                <button type="submit" class="w-10 h-10 flex items-center justify-center text-text-muted hover:text-brand-red active:scale-90 transition-all opacity-0 group-hover:opacity-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                <button type="submit" class="w-9 h-9 flex items-center justify-center text-text-muted hover:text-brand-red hover:bg-brand-red/10 rounded-xl active:scale-90 transition-all opacity-0 group-hover:opacity-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                 </button>
             </form>
         </div>
         {% empty %}
-        <div class="text-center py-12 bg-surface2 rounded-3xl border border-dashed border-border">
-            <div class="text-4xl mb-4">📂</div>
-            <p class="text-text-muted font-bold">No categories created yet</p>
+        <div class="text-center py-16 bg-surface2 rounded-[28px] border border-dashed border-border">
+            <div class="text-4xl mb-4 opacity-30">📂</div>
+            <p class="text-text-muted font-bold">No categories yet</p>
+            <p class="text-text-muted/50 text-xs mt-1">Create one to organize products</p>
         </div>
         {% endfor %}
     </div>
 
     <!-- Add Category Modal -->
     <div x-show="addModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-6">
-        <div x-show="addModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-surface/80 backdrop-blur-md" @click="addModal = false"></div>
+        <div x-show="addModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-md" @click="addModal = false"></div>
         
         <div x-show="addModal" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100" 
-             class="relative w-full max-w-sm bg-surface2 border border-border rounded-3xl shadow-2xl p-6">
+             class="relative w-full max-w-sm bg-surface2 border border-border rounded-[28px] shadow-2xl p-6">
             
-            <h3 class="text-xl font-display font-extrabold text-text-primary mb-6">New Category</h3>
+            <h3 class="text-xl font-display font-extrabold text-text-primary mb-6 uppercase tracking-tight">New Category</h3>
             
             <form action="{% url 'catalogue:category_list' %}add/" method="POST" class="space-y-6">
                 {% csrf_token %}
                 <div>
-                    <label class="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 ml-1">Category Name</label>
+                    <label class="block text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em] mb-2 ml-1">Category Name</label>
                     <input type="text" name="name" required placeholder="e.g. Beverages, Electronics" 
-                           class="w-full bg-surface border border-border rounded-2xl px-5 py-4 text-text-primary focus:border-brand-green focus:ring-0 transition-all font-bold">
+                           class="w-full bg-surface3 border border-border rounded-2xl px-5 py-4 text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all font-bold">
                 </div>
                 
                 <div class="flex gap-3">
-                    <button type="button" @click="addModal = false" class="flex-1 py-4 bg-white/5 text-text-muted rounded-2xl font-bold active:scale-95 transition-transform">
+                    <button type="button" @click="addModal = false" class="flex-1 py-4 bg-white/[0.04] border border-border text-text-muted rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
                         Cancel
                     </button>
-                    <button type="submit" class="flex-[2] py-4 bg-brand-green text-surface rounded-2xl font-display font-extrabold shadow-[0_8px_20px_rgba(0,230,118,0.2)] active:scale-95 transition-transform">
+                    <button type="submit" class="flex-[2] py-4 bg-brand-green text-surface rounded-2xl font-display font-extrabold shadow-glow-green active:scale-95 transition-all btn-shimmer text-sm">
                         Create
                     </button>
                 </div>
