@@ -8,7 +8,7 @@
     
     <div class="mb-8">
         <p class="text-text-muted text-sm leading-relaxed">
-            Create and manage access for your staff. Each user requires a unique 4-digit PIN to log in.
+            Create and manage access for your staff. Each user requires a unique username and password to log in.
         </p>
     </div>
 
@@ -73,6 +73,11 @@
                     <input type="text" name="name" required placeholder="Staff member name" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-green focus:ring-0">
                 </div>
 
+                <div>
+                    <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Username</label>
+                    <input type="text" name="username" required placeholder="e.g. jdoe" autocapitalize="none" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-green focus:ring-0">
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Role</label>
@@ -82,8 +87,8 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">4-Digit PIN</label>
-                        <input type="password" name="pin" required maxlength="4" pattern="\d{4}" placeholder="0000" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary font-bold tracking-[0.5em] focus:border-brand-green focus:ring-0">
+                        <label class="block text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Password</label>
+                        <input type="password" name="password" required placeholder="••••••••" class="w-full bg-surface border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary font-bold focus:border-brand-green focus:ring-0">
                     </div>
                 </div>
 

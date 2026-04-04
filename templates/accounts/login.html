@@ -1,211 +1,132 @@
+{% extends 'base.html' %}
+{% load static %}
+
 {% block content %}
-<div class="flex flex-col items-center justify-center min-h-[90vh] px-6">
+<div class="flex flex-col items-center justify-center min-h-[85vh] px-6">
   
-  <div class="text-center mb-8">
-    <h1 class="font-display font-extrabold text-[42px] tracking-tight text-brand-green leading-none">Eli Collection</h1>
-    <p class="text-text-muted mt-2 font-medium uppercase tracking-[0.2em] text-[10px]">Point of Sale</p>
-  </div>
+  <div class="w-full max-w-md">
+    <!-- Brand Header -->
+    <div class="text-center mb-10">
+      <h1 class="font-display font-extrabold text-[48px] tracking-tight text-brand-green leading-none">Eli Collection</h1>
+      <p class="text-text-muted mt-3 font-medium uppercase tracking-[0.25em] text-[11px]">Point of Sale Systems</p>
+    </div>
 
-  <!-- Step 1: User Selection -->
-  <div id="step-select" class="w-full max-w-lg transition-all duration-300">
-    <h2 class="text-center text-text-primary text-xl font-bold mb-8">Who are you?</h2>
-    
-    <div class="grid grid-cols-2 sm:grid-cols-3 gap-6">
-      {% for user in users %}
-      <button type="button" 
-              onclick="selectUserVanilla('{{ user.id }}', '{{ user.name|escapejs }}', '{{ user.avatar|escapejs }}')"
-              class="flex flex-col items-center gap-3 p-4 bg-surface2 border border-border rounded-2xl hover:border-brand-green hover:shadow-[0_0_20px_rgba(0,230,118,0.15)] transition-all group scale-100 active:scale-95 cursor-pointer">
-        <div class="w-16 h-16 bg-surface1 rounded-full flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
-          {{ user.avatar }}
+    <!-- Login Card -->
+    <div class="bg-surface2 border border-border/50 rounded-[32px] p-8 sm:p-10 shadow-2xl backdrop-blur-xl relative overflow-hidden group">
+        <!-- Subtle Glow -->
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-brand-green/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-brand-green/20 transition-all duration-700"></div>
+        
+        <div class="relative z-10">
+            <h2 class="text-2xl font-bold text-text-primary mb-2 text-center">Welcome Back</h2>
+            <p class="text-text-muted text-sm text-center mb-10">Please enter your credentials to continue</p>
+
+            <form id="login-form" 
+                  hx-post="{% url 'accounts:login' %}" 
+                  hx-swap="none" 
+                  hx-indicator="#loading"
+                  class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Username Input -->
+                <div class="space-y-2">
+                    <label for="username" class="block text-[11px] font-black text-text-muted uppercase tracking-widest ml-1">Username</label>
+                    <div class="relative group/input">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within/input:text-brand-green transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </div>
+                        <input type="text" 
+                               name="username" 
+                               id="username" 
+                               required 
+                               autocomplete="username"
+                               autocapitalize="none"
+                               placeholder="e.g. nomad"
+                               class="w-full bg-surface/50 border border-border rounded-2xl py-4 pl-12 pr-4 text-text-primary placeholder:text-text-muted/50 focus:border-brand-green focus:ring-0 transition-all text-sm font-medium">
+                    </div>
+                </div>
+
+                <!-- Password Input -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center px-1">
+                        <label for="password" class="block text-[11px] font-black text-text-muted uppercase tracking-widest">Password / PIN</label>
+                    </div>
+                    <div class="relative group/input">
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within/input:text-brand-green transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        </div>
+                        <input type="password" 
+                               name="password" 
+                               id="password" 
+                               required 
+                               autocomplete="current-password"
+                               placeholder="••••••••"
+                               class="w-full bg-surface/50 border border-border rounded-2xl py-4 pl-12 pr-4 text-text-primary placeholder:text-text-muted/50 focus:border-brand-green focus:ring-0 transition-all text-sm font-medium tracking-widest">
+                    </div>
+                </div>
+
+                <!-- Error Display -->
+                <div id="login-error" class="hidden text-brand-red text-xs font-bold bg-brand-red/10 p-4 rounded-xl text-center flex items-center justify-center gap-2 animate-shake">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span id="error-message">Invalid credentials</span>
+                </div>
+
+                <!-- Action Button -->
+                <button type="submit" 
+                        class="w-full bg-brand-green text-surface py-5 rounded-2xl font-display font-extrabold text-sm uppercase tracking-widest shadow-[0_12px_24px_rgba(0,230,118,0.3)] hover:shadow-[0_16px_32px_rgba(0,230,118,0.4)] active:scale-[0.98] transition-all relative overflow-hidden group/btn">
+                    <span class="relative z-10">Sign In to POS</span>
+                    <div class="absolute inset-x-0 bottom-0 h-1 bg-white/20 translate-y-1 group-hover/btn:translate-y-0 transition-transform"></div>
+                </button>
+            </form>
         </div>
-        <span class="text-sm font-semibold text-text-primary truncate w-full text-center">{{ user.name }}</span>
-      </button>
-      {% endfor %}
     </div>
+
+    <!-- Footer Help -->
+    <p class="text-center text-text-muted text-[10px] uppercase font-bold mt-8 tracking-[0.2em]">
+        Forgotten credentials? Contact Administrator
+    </p>
   </div>
 
-  <!-- Step 2: PIN Entry -->
-  <div id="step-pin" style="display: none; opacity: 0; transform: scale(0.95);" class="flex-col items-center w-full transition-all duration-300">
-    <div class="flex flex-col items-center mb-8">
-        <div class="w-20 h-20 bg-surface2 rounded-full flex items-center justify-center text-4xl mb-3 shadow-xl">
-            <span id="selected-avatar"></span>
-        </div>
-        <h2 id="selected-name" class="text-text-primary text-xl font-bold"></h2>
-        <button type="button" onclick="goBackVanilla()" class="text-text-muted text-xs font-medium uppercase tracking-widest mt-2 hover:text-brand-green transition-colors flex items-center gap-1 cursor-pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            Switch User
-        </button>
+  <!-- Loading State -->
+  <div id="loading" class="htmx-indicator fixed top-4 right-4 z-50">
+    <div class="flex items-center gap-3 bg-surface2 border border-border px-4 py-2 rounded-full shadow-xl">
+        <div class="w-4 h-4 border-2 border-brand-green border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-[10px] font-black uppercase text-brand-green tracking-wide">Authenticating...</span>
     </div>
-
-    <!-- PIN Dots -->
-    <div id="dots-container" class="flex gap-6 mb-12">
-      <div id="dot-1" class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"></div>
-      <div id="dot-2" class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"></div>
-      <div id="dot-3" class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"></div>
-      <div id="dot-4" class="w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200"></div>
-    </div>
-
-    <!-- Numpad -->
-    <form id="pin-form" hx-post="{% url 'accounts:login' %}" hx-swap="none" hx-indicator="#loading">
-      {% csrf_token %}
-      <input type="hidden" name="user_id" id="user_id_input">
-      <input type="hidden" name="pin" id="pin_input">
-      
-      <div class="grid grid-cols-3 gap-4 max-w-[280px]">
-        {% for n in "123456789" %}
-          <button type="button" 
-                  onclick="handleNumpadClick('{{ n }}')"
-                  class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-90 transition-transform cursor-pointer">
-            <span>{{ n }}</span>
-          </button>
-        {% endfor %}
-        <div class="col-span-1"></div>
-        <button type="button" 
-                onclick="handleNumpadClick('0')"
-                class="w-[76px] h-[76px] bg-surface2 border border-border rounded-[16px] flex items-center justify-center text-[22px] font-semibold text-text-primary active:scale-90 transition-transform cursor-pointer">
-          0
-        </button>
-        <button type="button" 
-                onclick="clearPinVanilla()"
-                class="w-[76px] h-[76px] flex items-center justify-center text-text-muted active:scale-90 transition-transform cursor-pointer">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <style>
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-      20%, 40%, 60%, 80% { transform: translateX(10px); }
-    }
-    .animate-shake {
-      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both !important;
-    }
-  </style>
-
-  <div id="loading" class="htmx-indicator fixed top-4 right-4">
-    <div class="w-2 h-2 bg-brand-green rounded-full animate-ping"></div>
   </div>
 </div>
 
-<script>
-  console.log('Login Script Initialized (Vanilla v2)');
-  let currentPin = '';
-  let currentUserId = null;
-
-  function selectUserVanilla(id, name, avatar) {
-      console.log('User selected:', name, id);
-      currentUserId = id;
-      document.getElementById('user_id_input').value = id;
-      document.getElementById('pin_input').value = '';
-      currentPin = '';
-      updateDots();
-      
-      // Animations
-      const sel = document.getElementById('step-select');
-      const pin = document.getElementById('step-pin');
-      
-      sel.style.opacity = '0';
-      sel.style.transform = 'scale(0.95)';
-      
-      setTimeout(() => {
-          sel.style.display = 'none';
-          pin.style.display = 'flex';
-          
-          document.getElementById('selected-avatar').innerText = avatar;
-          document.getElementById('selected-name').innerText = 'Welcome back, ' + name;
-          
-          requestAnimationFrame(() => {
-              pin.style.opacity = '1';
-              pin.style.transform = 'scale(1)';
-          });
-      }, 300);
-  }
-
-  function handleNumpadClick(digit) {
-      console.log('Digit clicked:', digit);
-      if (currentPin.length < 4) {
-          currentPin += digit;
-          updateDots();
-          if (currentPin.length === 4) {
-              console.log('PIN complete, submitting...');
-              document.getElementById('pin_input').value = currentPin;
-              setTimeout(() => {
-                  htmx.trigger('#pin-form', 'submit');
-              }, 100);
-          }
-      }
-  }
-
-  function updateDots() {
-      console.log('Updating dots, length:', currentPin.length);
-      for (let i = 1; i <= 4; i++) {
-          const dot = document.getElementById('dot-' + i);
-          if (currentPin.length >= i) {
-              dot.className = "w-4 h-4 rounded-full border-2 transition-all duration-200 bg-brand-green border-brand-green shadow-[0_0_12px_rgba(0,230,118,0.4)]";
-          } else {
-              dot.className = "w-4 h-4 rounded-full border-2 border-surface2 transition-all duration-200";
-          }
-      }
-  }
-
-  function goBackVanilla() {
-      currentPin = '';
-      currentUserId = null;
-      document.getElementById('user_id_input').value = '';
-      document.getElementById('pin_input').value = '';
-      updateDots();
-      
-      const pin = document.getElementById('step-pin');
-      const sel = document.getElementById('step-select');
-      
-      pin.style.opacity = '0';
-      pin.style.transform = 'scale(0.95)';
-      
-      setTimeout(() => {
-          pin.style.display = 'none';
-          sel.style.display = 'block';
-          
-          requestAnimationFrame(() => {
-              sel.style.opacity = '1';
-              sel.style.transform = 'scale(1)';
-          });
-      }, 300);
-  }
-
-  function clearPinVanilla() {
-      console.log('PIN cleared');
-      currentPin = '';
-      document.getElementById('pin_input').value = '';
-      updateDots();
-  }
-
-  function triggerError() {
-      console.log('Login failed, triggering error animation');
-      const dotsContainer = document.getElementById('dots-container');
-      dotsContainer.classList.add('animate-shake');
-      clearPinVanilla();
-      setTimeout(() => {
-          dotsContainer.classList.remove('animate-shake');
-      }, 500);
-  }
-
-  document.addEventListener('htmx:afterRequest', (e) => {
-    console.log('HTMX request complete, status:', e.detail.xhr.status);
-    if (e.detail.xhr.status === 401) {
-       triggerError();
+<style>
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
     }
-  });
+    .animate-shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+</style>
 
-  document.addEventListener('keydown', (e) => {
-     if (currentUserId && e.key >= '0' && e.key <= '9') {
-        handleNumpadClick(e.key);
-     }
-     if (currentUserId && e.key === 'Backspace') {
-        clearPinVanilla();
-     }
-  });
+<script>
+    document.addEventListener('htmx:afterRequest', function(evt) {
+        const errorDiv = document.getElementById('login-error');
+        const messageSpan = document.getElementById('error-message');
+        
+        if (evt.detail.xhr.status === 401 || evt.detail.xhr.status === 403 || evt.detail.xhr.status === 400) {
+            errorDiv.classList.remove('hidden');
+            messageSpan.innerText = evt.detail.xhr.responseText || 'Invalid credentials';
+            
+            // Hard shake
+            errorDiv.classList.remove('animate-shake');
+            void errorDiv.offsetWidth; // Trigger reflow
+            errorDiv.classList.add('animate-shake');
+            
+            // Clear password
+            document.getElementById('password').value = '';
+        } else {
+            errorDiv.classList.add('hidden');
+        }
+    });
 </script>
 {% endblock %}
+
+

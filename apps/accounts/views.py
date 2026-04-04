@@ -10,34 +10,33 @@ def logout_view(request):
     logout(request)
     return redirect('accounts:login')
 
-def pin_login(request):
+from django.contrib.auth import login, logout, authenticate
+
+def login_view(request):
     if request.user.is_authenticated:
         return redirect('pos:index')
     
     if request.method == 'POST':
-        user_id = request.POST.get('user_id')
-        pin = request.POST.get('pin', '')
+        username = request.POST.get('username')
+        password = request.POST.get('password', '')
         
-        # Basic validation
-        if not re.fullmatch(r'\d{4}', pin):
-            return HttpResponse('Invalid PIN format', status=400)
-        
-        if not user_id:
-            return HttpResponse('User not selected', status=400)
+        if not username or not password:
+            return HttpResponse('Missing credentials', status=400)
             
-        # Authenticate specific user
-        user = get_object_or_404(User, id=user_id, is_active=True)
+        user = authenticate(request, username=username, password=password)
         
-        if user.check_password(pin):
-            login(request, user)
-            response = HttpResponse(status=204)
-            response['HX-Redirect'] = '/pos/'
-            return response
+        if user is not None:
+            if user.is_active:
+                login(request, user)
+                response = HttpResponse(status=204)
+                response['HX-Redirect'] = '/pos/'
+                return response
+            else:
+                return HttpResponse('Account disabled', status=403)
         else:
-            return HttpResponse('Incorrect PIN', status=401)
+            return HttpResponse('Invalid username or password', status=401)
 
-    users = User.objects.filter(is_active=True).order_by('name')
-    return render(request, 'accounts/login.html', {'users': users})
+    return render(request, 'accounts/login.html')
 
 @login_required
 def user_list(request):
@@ -55,12 +54,13 @@ def add_user(request):
         
     name = request.POST.get('name')
     role = request.POST.get('role', 'cashier')
-    pin = request.POST.get('pin')
+    password = request.POST.get('password')
+    username = request.POST.get('username')
     
-    if not re.fullmatch(r'\d{4}', pin):
-        return HttpResponse('Invalid PIN', status=400)
+    if not username or not password:
+        return HttpResponse('Username and Password are required', status=400)
         
-    User.objects.create_user(pin=pin, name=name, role=role)
+    User.objects.create_user(username=username, pin=password, name=name, role=role)
     return redirect('accounts:user_list')
 
 @login_required
