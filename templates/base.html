@@ -142,7 +142,7 @@
         amountTendered: null,
 
         get itemCount() { return this.cart.items.reduce((s, i) => s + i.qty, 0); },
-        get cartSubtotal() { return this.cart.items.reduce((s, i) => s + (i.price * i.qty), 0); },
+        get cartSubtotal() { return this.cart.items.reduce((s, i) => s + ((i.price - (i.discount || 0)) * i.qty), 0); },
         get discountAmount() {
           if (!this.couponApplied) return 0;
           if (this.couponType === 'percent') {
@@ -165,7 +165,7 @@
           if (ex) {
             ex.qty += qty;
           } else {
-            this.cart.items.push({ ...product, qty: qty });
+            this.cart.items.push({ ...product, qty: qty, discount: 0 });
           }
           return true;
         },
@@ -198,6 +198,12 @@
               this.removeCoupon();
               this.cart.open = false;
           }
+        },
+        setLineDiscount(id, amount) {
+            const item = this.cart.items.find(i => i.id === id);
+            if (item) {
+                item.discount = Math.max(0, Math.min(item.price, parseFloat(amount) || 0));
+            }
         },
         clearCart() { 
           this.cart.items = []; 

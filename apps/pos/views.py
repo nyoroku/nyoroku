@@ -103,6 +103,7 @@ def checkout(request):
             return HttpResponse('Empty cart', status=400)
             
         subtotal = Decimal('0')
+        line_discounts_total = Decimal('0')
         for item in items:
             # Inject current cost price for profit reporting
             try:
@@ -111,7 +112,12 @@ def checkout(request):
             except Product.DoesNotExist:
                 item['cost_price'] = 0.0
                 
-            subtotal += Decimal(str(item['price'])) * int(item.get('qty', 1))
+            qty = int(item.get('qty', 1))
+            line_price = Decimal(str(item['price']))
+            line_discount = Decimal(str(item.get('discount', 0)))
+            
+            line_discounts_total += line_discount * qty
+            subtotal += (line_price - line_discount) * qty
             
         # Process coupon
         coupon_obj = None
@@ -145,7 +151,8 @@ def checkout(request):
         transaction = Transaction.objects.create(
             cashier=request.user,
             items=items,
-            subtotal=subtotal,
+            subtotal=subtotal + line_discounts_total,
+            discount=line_discounts_total,
             coupon=coupon_obj,
             coupon_discount=coupon_discount,
             total=total,

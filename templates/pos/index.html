@@ -108,8 +108,15 @@
                     <div class="flex-grow min-w-0">
                         <h4 class="font-bold text-sm text-text-primary truncate mb-0.5" x-text="item.name"></h4>
                         <div class="flex items-center gap-2">
-                            <span class="text-xs text-brand-green font-bold">KES <span x-text="item.price"></span></span>
-                            <span class="text-[10px] text-text-muted">× <span x-text="item.qty"></span> = <span class="text-text-primary font-bold" x-text="(item.price * item.qty).toLocaleString()"></span></span>
+                            <span class="text-xs text-brand-green font-bold cursor-pointer hover:opacity-80 active:scale-95 transition-all" 
+                                  @click="let d = prompt('Enter discount per unit for ' + item.name + ':', item.discount || 0); if(d !== null) setLineDiscount(item.id, d)"
+                                  title="Click to apply discount">
+                                KES <span x-text="(item.price - (item.discount || 0)).toLocaleString()"></span>
+                                <template x-if="item.discount > 0">
+                                    <span class="line-through text-text-muted text-[10px] ml-1" x-text="'KES ' + item.price"></span>
+                                </template>
+                            </span>
+                            <span class="text-[10px] text-text-muted">× <span x-text="item.qty"></span> = <span class="text-text-primary font-bold" x-text="((item.price - (item.discount || 0)) * item.qty).toLocaleString()"></span></span>
                         </div>
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
