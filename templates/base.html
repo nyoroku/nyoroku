@@ -15,6 +15,7 @@
   
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
   <script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   
   <style>
     [x-cloak] { display: none !important; }
@@ -141,6 +142,38 @@
         couponError: '',
         amountTendered: null,
         splitPayments: [],
+        
+        handleBarcode(code) {
+            if (!code) return;
+            const product = this.findProductByBarcode(code);
+            if (product) {
+                // If product has variants, open variant modal
+                if (product.has_variants) {
+                    this.variantModalProduct = product;
+                    this.variantModalOpen = true;
+                } else {
+                    // Otherwise just add to cart or open qty modal?
+                    // User said: "when you click item to add it should open the increase decrease form"
+                    // So we open the addModal
+                    this.addModalProduct = product;
+                    this.addQty = 1;
+                    this.addModalOpen = true;
+                }
+                return true;
+            }
+            return false;
+        },
+
+        findProductByBarcode(code) {
+           // This will be implemented in index.html to have access to the product list data from Django
+           // Or we can try to find it in the DOM or global windows object if we inject it there.
+           // For now, let's assume index.html will provide the find logic or we find it in the grid.
+           const grid = document.getElementById('product-grid');
+           if (!grid) return null;
+           // We might need a better way to store product data for searching.
+           // For now, let's trigger a search input change in index.html or use a global products array.
+           return window.allProducts ? window.allProducts.find(p => p.barcode === code) : null;
+        },
         
         get totalPaid() {
             return this.splitPayments.reduce((s, p) => s + p.amount, 0);

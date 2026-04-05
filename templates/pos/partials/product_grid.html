@@ -6,54 +6,57 @@
             price: {{ product.price }},
             image: '{{ product.image }}',
             stock_qty: {{ product.total_stock }},
-            variants: {% if product.has_variants %}{{ product.variants_json|safe }}{% else %}[]{% endif %}
+            variants: {% if product.has_variants %}{{ product.variants_json|safe }}{% else %}[]{% endif %},
+            barcode: '{{ product.barcode }}'
         };
         selectedVariant = null;
         addQty = 1;
         addModalOpen = true;
     "
-     class="bg-[#111118] border border-white/[0.08] rounded-[28px] p-5 cursor-pointer text-left transition-all hover:bg-[#1a1a24] hover:border-[#00e676]/40 active:scale-[0.96] w-full relative group shadow-lg flex flex-col items-center {% if product.total_stock == 0 %}opacity-30 pointer-events-none grayscale{% endif %}">
+     class="bg-[#111118] border-2 border-white/[0.06] rounded-[32px] p-6 cursor-pointer text-left transition-all hover:bg-[#1a1a24] hover:border-[#00e676]/30 active:scale-[0.96] w-full relative group shadow-lg flex flex-col items-center {% if product.total_stock == 0 %}opacity-20 pointer-events-none grayscale{% endif %}">
     
     {% if product.total_stock == 0 %}
-    <div class="absolute inset-0 bg-[#0a0a0f]/60 backdrop-blur-[3px] rounded-[28px] flex items-center justify-center z-10 transition-opacity">
-        <span class="px-4 py-2 bg-[#ff1744]/20 text-[#ff1744] text-[11px] font-black uppercase tracking-[0.2em] rounded-xl border border-[#ff1744]/30 shadow-xl">Sold Out</span>
+    <div class="absolute inset-0 bg-[#0a0a0f]/60 backdrop-blur-[3px] rounded-[32px] flex items-center justify-center z-10 transition-opacity">
+        <span class="px-5 py-2.5 bg-[#ff1744]/20 text-[#ff1744] text-[12px] font-black uppercase tracking-[0.2em] rounded-2xl border-2 border-[#ff1744]/40 shadow-2xl">Sold Out</span>
     </div>
     {% endif %}
 
-    <div class="relative bg-black/30 rounded-[24px] p-5 mb-4 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 border border-white/[0.04] shadow-inner">
-        <div class="text-6xl drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] select-none">{{ product.image }}</div>
+    <div class="relative bg-black/40 rounded-[30px] p-6 mb-5 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-2 border-2 border-white/[0.03] shadow-inner">
+        <div class="text-7xl drop-shadow-[0_15px_15px_rgba(0,0,0,0.6)] select-none">
+            {{ product.image }}
+        </div>
         
-        <!-- Cart Qty Badge -->
+        <!-- Cart Qty Badge (Bolder) -->
         <template x-if="cart.items.find(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}')">
-             <span class="absolute -top-2.5 -right-2.5 bg-[#00e676] text-[#0a0a0f] rounded-full min-w-[28px] h-[28px] px-2 text-[12px] font-black flex items-center justify-center shadow-[0_4px_12px_rgba(37,211,102,0.5)] border-[3px] border-[#111118] animate-scale-in"
+             <span class="absolute -top-4 -right-4 bg-[#00e676] text-black rounded-full min-w-[34px] h-[34px] px-2 text-[14px] font-black flex items-center justify-center shadow-[0_4px_15px_rgba(37,211,102,0.5)] border-4 border-[#111118] animate-scale-in"
                   x-text="cart.items.filter(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}').reduce((sum, i) => sum + i.qty, 0)">
              </span>
          </template>
     </div>
 
-    <div class="text-white font-extrabold text-[15px] leading-tight text-center w-full truncate mb-1.5 px-2 drop-shadow-sm">{{ product.name }}</div>
-    <div class="text-[#00e676] font-display font-black text-lg mb-2 flex items-center gap-1.5 leading-none">
+    <div class="text-white font-black text-lg leading-none text-center w-full truncate mb-2.5 px-3 drop-shadow-sm uppercase tracking-tight">{{ product.name }}</div>
+    
+    <div class="text-[#00e676] font-display font-black text-2xl mb-3 flex items-center gap-2 leading-none">
         KES {{ product.price|floatformat:0 }} 
         {% if product.has_variants %}
-        <div class="bg-[#00e676]/10 text-[#00e676] text-[9px] px-1.5 py-0.5 rounded-md font-black tracking-tighter shadow-sm">+ opts</div>
+        <div class="bg-[#00e676]/10 text-[#00e676] text-[10px] px-2 py-1 rounded-lg font-black tracking-widest shadow-sm uppercase">+ Op</div>
         {% endif %}
     </div>
     
-    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase transition-all shadow-sm"
-         :class="{% if product.total_stock <= product.reorder_level %} 'bg-[#ffab00]/20 text-[#ffab00] border border-[#ffab00]/20 animate-pulse' {% else %} 'bg-white/5 text-muted border border-white/5 group-hover:bg-white/10' {% endif %}">
+    <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[11px] font-black tracking-wider uppercase transition-all shadow-md"
+         :class="{% if product.total_stock <= product.reorder_level %} 'bg-[#ffab00]/20 text-[#ffab00] border-2 border-[#ffab00]/20 animate-pulse' {% else %} 'bg-white/5 text-muted/60 border-2 border-white/5 group-hover:bg-white/10' {% endif %}">
         {% if product.total_stock <= product.reorder_level %}
-        <span class="text-[9px]">⚠️</span> <span x-text="'Low Stock: ' + {{ product.total_stock }}"></span>
+        <span class="text-[10px]">☢</span> <span x-text="'Low: ' + {{ product.total_stock }}"></span>
         {% else %}
-        <span x-text="'In Stock: ' + {{ product.total_stock }}"></span>
+        <span x-text="'Avail: ' + {{ product.total_stock }}"></span>
         {% endif %}
     </div>
 </button>
 {% empty %}
-<div class="col-span-full py-40 flex flex-col items-center justify-center text-muted/30">
-    <div class="bg-white/5 p-8 rounded-full mb-6 border border-white/5 shadow-inner">
-       <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="opacity-20"><path d="m2 2 20 20"/><path d="M7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+<div class="col-span-full py-48 flex flex-col items-center justify-center text-muted/30">
+    <div class="bg-white/5 p-10 rounded-full mb-8 border-2 border-white/5 shadow-inner">
+       <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="opacity-20"><path d="m2 2 20 20"/><path d="M7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
     </div>
-    <p class="font-display font-black text-xl tracking-tighter text-white/50">Catalogue is Empty</p>
-    <p class="text-[12px] font-bold text-muted mt-2 uppercase tracking-widest">Add products to your inventory first</p>
+    <p class="font-display font-black text-2xl tracking-tighter text-white/40 uppercase">No Inventory Found</p>
 </div>
 {% endfor %}
