@@ -73,26 +73,11 @@
         </div>
     </div>
 
-        <!-- Product Grid — extra bottom padding on mobile so products aren't hidden behind cart banner + bottom nav -->
-        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger lg:overflow-y-auto lg:pr-2 no-scrollbar pb-36 lg:pb-16">
+        <!-- Product Grid -->
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger lg:overflow-y-auto lg:pr-2 no-scrollbar pb-20 lg:pb-4">
             {% include 'pos/partials/product_grid.html' %}
         </div>
     </div> <!-- END LEFT SIDE -->
-
-    <!-- Cart Sticky Banner (MOBILE ONLY) — only injected into DOM when cart has items -->
-    <template x-if="itemCount > 0">
-        <button @click="cart.open = true" 
-                class="fixed bottom-20 left-3 right-3 bg-[#7c6af7] text-white rounded-2xl shadow-[0_4px_24px_rgba(124,106,247,0.45)] px-5 py-3.5 flex items-center justify-between active:scale-[0.98] transition-all z-30 font-display font-extrabold uppercase tracking-tight btn-shimmer lg:hidden">
-            <div class="flex items-center gap-3">
-                <div class="relative">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-                    <span class="absolute -top-1.5 -right-1.5 bg-white text-[#7c6af7] text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-extrabold leading-none" x-text="itemCount"></span>
-                </div>
-                <span class="text-[13px]">Cart</span>
-            </div>
-            <span class="text-[13px] font-display">KES <span x-text="cartTotal.toLocaleString()"></span></span>
-        </button>
-    </template>
 
     <!-- RIGHT SIDE: Cart Sidebar (Desktop) / Bottom Drawer (Mobile) -->
     <div x-show="cart.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[45] lg:hidden" @click="cart.open = false" x-transition.opacity></div>
