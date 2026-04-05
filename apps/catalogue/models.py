@@ -47,6 +47,22 @@ class Product(models.Model):
             return self.variants.aggregate(Sum('stock_qty'))['stock_qty__sum'] or 0
         return self.stock_qty
 
+    @property
+    def variants_json(self):
+        import json
+        if not self.has_variants:
+            return "[]"
+        vs = []
+        for v in self.variants.filter(stock_qty__gt=0):
+            vs.append({
+                'id': str(v.id),
+                'name': v.name,
+                'options': list(v.options.values()),
+                'price': float(v.price),
+                'stock_qty': v.stock_qty,
+            })
+        return json.dumps(vs)
+
     def __str__(self):
         return self.name
 

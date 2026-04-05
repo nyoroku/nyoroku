@@ -4,7 +4,7 @@
 {% block screen_title %}Checkout{% endblock %}
 
 {% block content %}
-<div class="px-3 sm:px-4 py-4 lg:py-5 lg:flex lg:gap-5 lg:h-[calc(100vh-70px)]" x-data="{ checkoutLoading: false, editingQty: null, selectedProduct: null, qtyModalOpen: false, addQty: 1 }">
+<div class="px-3 sm:px-4 py-4 lg:py-5 lg:flex lg:gap-5 lg:h-[calc(100vh-70px)]" x-data="{ checkoutLoading: false, editingQty: null, selectedProduct: null, qtyModalOpen: false, addQty: 1, variantModalOpen: false, variantModalProduct: null, selectedVariant: null }">
     
     <!-- LEFT SIDE: Product Selection -->
     <div class="lg:flex-1 lg:flex lg:flex-col lg:min-w-0" id="pos-main-pane">
@@ -251,6 +251,60 @@
             <div class="flex gap-3">
                 <button @click="qtyModalOpen = false" class="flex-1 py-4 font-bold text-text-muted bg-surface3 rounded-xl border border-border active:scale-95 transition-all">Cancel</button>
                 <button @click="if(addToCart(selectedProduct, addQty)) { qtyModalOpen = false; }" class="flex-1 py-4 bg-brand-green text-black font-extrabold uppercase rounded-xl active:scale-95 transition-transform btn-shimmer">Add Item</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Variant Selector Modal -->
+    <div x-show="variantModalOpen" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="variantModalOpen = false"></div>
+        <div class="relative bg-surface2 border border-border rounded-3xl w-full max-w-sm shadow-2xl flex flex-col max-h-[80vh]" x-show="variantModalOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100">
+            <div class="p-6 pb-2 shrink-0 border-b border-border flex justify-between items-center">
+                <div>
+                   <h3 class="font-display font-extrabold text-xl mb-1" x-text="variantModalProduct?.name"></h3>
+                   <p class="text-xs text-text-muted">Select an option</p>
+                </div>
+                <button @click="variantModalOpen = false" class="text-text-muted hover:text-white p-2">✕</button>
+            </div>
+            
+            <div class="p-6 space-y-3 overflow-y-auto no-scrollbar">
+                <template x-for="v in variantModalProduct?.variants" :key="v.id">
+                    <button @click="selectedVariant = v; addQty = 1;"
+                            class="w-full px-4 py-3 rounded-2xl border flex items-center justify-between transition-all"
+                            :class="selectedVariant?.id === v.id ? 'bg-brand-green/10 border-brand-green text-brand-green ring-1 ring-brand-green/50' : 'bg-surface3 border-border hover:border-text-muted text-text-primary'">
+                        <span class="font-bold text-[13px]" x-text="v.options.join(' / ') || 'Default'"></span>
+                        <div class="text-right">
+                           <span class="block text-xs font-extrabold" x-text="'KES ' + v.price"></span>
+                           <span class="block text-[9px]" :class="v.stock_qty <= v.reorder_level ? 'text-brand-amber font-extrabold' : 'text-text-muted/60'" x-text="v.stock_qty + ' in stock'"></span>
+                        </div>
+                    </button>
+                </template>
+            </div>
+            
+            <div x-show="selectedVariant" x-collapse>
+               <div class="p-6 pt-0 shrink-0">
+                   <div class="flex items-center justify-center gap-4 mb-5 border-t border-border pt-5">
+                        <button @click="if(addQty > 1) addQty--" class="w-12 h-12 rounded-xl bg-surface3 border border-border flex items-center justify-center text-text-muted active:scale-95 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg></button>
+                        <div class="w-16 text-center font-display font-extrabold text-3xl text-brand-green" x-text="addQty"></div>
+                        <button @click="
+                            let inCart = cart.items.find(i => i.id === selectedVariant.id)?.qty || 0;
+                            if(addQty < (selectedVariant.stock_qty - inCart)) { addQty++; } else { couponError = 'Max available stock reached!'; setTimeout(() => couponError='', 2000); }
+                        " class="w-12 h-12 rounded-xl bg-surface3 border border-border flex items-center justify-center text-text-muted active:scale-95 transition-transform"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+                    </div>
+                    <div x-show="couponError" class="text-brand-red text-[11px] font-bold text-center mb-3 min-h-[16px] animate-shake" x-text="couponError"></div>
+                    <button @click="
+                            if(addToCart({
+                                id: selectedVariant.id,
+                                parent_id: variantModalProduct.id,
+                                name: selectedVariant.name,
+                                price: selectedVariant.price,
+                                stock_qty: selectedVariant.stock_qty,
+                                image: variantModalProduct.image
+                            }, addQty)) { variantModalOpen = false; selectedVariant = null; }
+                        " class="w-full py-4 bg-brand-green text-black font-extrabold uppercase tracking-wider rounded-xl active:scale-95 transition-transform shadow-glow-green btn-shimmer">
+                        Add to Cart
+                    </button>
+                </div>
             </div>
         </div>
     </div>

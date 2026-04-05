@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from catalogue.models import Product, Category
+from catalogue.models import Product, Category, ProductVariant
 from .models import Transaction, Coupon
 
 @login_required
@@ -155,12 +155,24 @@ def checkout(request):
         
         # Deduct stock
         for item in items:
+            item_id = item.get('id')
+            qty = int(item.get('qty', 0))
+            if not item_id or qty <= 0:
+                continue
+                
             try:
-                product = Product.objects.get(id=item['id'])
-                product.stock_qty = max(0, product.stock_qty - int(item['qty']))
-                product.save()
-            except Product.DoesNotExist:
-                pass
+                # First check if it's a Variant
+                variant = ProductVariant.objects.get(id=item_id)
+                variant.stock_qty = max(0, variant.stock_qty - qty)
+                variant.save(update_fields=['stock_qty'])
+            except ProductVariant.DoesNotExist:
+                # Fallback to Product
+                try:
+                    product = Product.objects.get(id=item_id)
+                    product.stock_qty = max(0, product.stock_qty - qty)
+                    product.save(update_fields=['stock_qty'])
+                except Product.DoesNotExist:
+                    pass
                 
         return render(request, 'pos/partials/receipt_modal.html', {'transaction': transaction})
         
