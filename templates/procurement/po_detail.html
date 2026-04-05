@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}PO Details: {{ po.lpo_number }}{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 max-w-7xl mx-auto space-y-10 animate-fade-in">
+
+    <!-- Top Navigation & Status -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="flex items-center gap-6">
+            <a href="{% url 'procurement:po_list' %}" class="w-14 h-14 rounded-2xl bg-white/[0.04] text-text-muted hover:bg-brand-whatsapp hover:text-white transition-all flex items-center justify-center shadow-md active:scale-90 border border-white/[0.04]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </a>
+            <div>
+                <h1 class="font-display font-800 text-5xl text-white tracking-tight leading-none">{{ po.lpo_number }}</h1>
+                <div class="flex items-center gap-4 mt-3">
+                    <span class="inline-flex items-center px-4 py-2 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] border border-white/[0.08] shadow-sm
+                        {% if po.status == 'draft' %}bg-white/5 text-text-muted
+                        {% elif po.status == 'approved' %}bg-brand-whatsapp/10 text-brand-whatsapp border-brand-whatsapp/20 shadow-glow-green-sm
+                        {% elif po.status == 'pending' %}bg-brand-amber/10 text-brand-amber border-brand-amber/20
+                        {% elif po.status == 'received' %}bg-blue-500/10 text-blue-500 border-blue-500/20
+                        {% elif po.status == 'cancelled' %}bg-brand-red/10 text-brand-red border-brand-red/20
+                        {% endif %}">
+                        <span class="w-1.5 h-1.5 rounded-full mr-2 
+                            {% if po.status == 'draft' %}bg-text-muted
+                            {% elif po.status == 'approved' %}bg-brand-whatsapp animate-pulse
+                            {% elif po.status == 'pending' %}bg-brand-amber
+                            {% elif po.status == 'received' %}bg-blue-500
+                            {% elif po.status == 'cancelled' %}bg-brand-red
+                            {% endif %}"></span>
+                        {{ po.get_status_display }}
+                    </span>
+                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em]">Created {{ po.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex gap-4">
+            {% if po.status == 'draft' %}
+            <button class="h-16 px-10 bg-brand-whatsapp text-white rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest flex items-center gap-3 transition-all active:scale-95 shadow-[0_12px_40px_rgba(37,211,102,0.3)] hover:brightness-110">
+                Submit For Approval
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4 20-7Z"/></svg>
+            </button>
+            {% endif %}
+            <button onclick="window.print()" class="h-16 w-16 bg-surface2 border border-white/[0.04] text-text-muted rounded-3xl flex items-center justify-center transition-all hover:text-white active:scale-90 shadow-card">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Details Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left: Supplier & Meta -->
+        <div class="space-y-8 lg:col-span-1">
+            <div class="bg-surface2 border border-white/[0.04] p-8 rounded-[48px] shadow-card relative overflow-hidden group">
+                <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none"></div>
+                <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mb-6 ml-1">Supplier Cycle</p>
+                
+                <div class="flex items-start gap-6">
+                    <div class="w-16 h-16 rounded-[22px] bg-brand-whatsapp/10 flex items-center justify-center text-brand-whatsapp border border-brand-whatsapp/20 shadow-glow-green-sm transition-transform group-hover:scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-800 text-2xl text-white tracking-tight leading-tight mb-2">{{ po.supplier.name }}</h3>
+                        <p class="text-[13px] text-text-muted font-medium mb-1">{{ po.supplier.phone }}</p>
+                        <p class="text-[13px] text-text-muted font-medium opacity-60">{{ po.supplier.email }}</p>
+                    </div>
+                </div>
+                
+                {% if po.supplier.address %}
+                <div class="mt-8 pt-8 border-t border-white/[0.04]">
+                    <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3">Origin Address</p>
+                    <p class="text-[13px] text-text-muted font-semibold leading-relaxed">{{ po.supplier.address }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="bg-surface2/50 border border-white/[0.04] p-8 rounded-[40px] shadow-card">
+                 <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mb-6">Nexus Signatures</p>
+                 <div class="space-y-6">
+                     <div class="flex justify-between items-center">
+                         <span class="text-[12px] font-bold text-text-muted uppercase tracking-widest">Submitted By</span>
+                         <span class="font-bold text-white text-sm">{{ po.submitted_by.name|default:po.submitted_by.username }}</span>
+                     </div>
+                     <div class="flex justify-between items-center">
+                         <span class="text-[12px] font-bold text-text-muted uppercase tracking-widest">Approved By</span>
+                         <span class="font-bold text-white text-sm opacity-40">{{ po.approved_by.name|default:"---" }}</span>
+                     </div>
+                 </div>
+            </div>
+        </div>
+
+        <!-- Right: Line Items -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-surface2 border border-white/[0.04] rounded-[52px] overflow-hidden shadow-card animate-slide-up">
+                <div class="p-10 border-b border-white/[0.04] flex items-center justify-between bg-white/[0.01]">
+                    <h2 class="font-display font-800 text-3xl text-white tracking-tight">Nexus Line Items</h2>
+                    {% if po.status == 'draft' %}
+                    <button class="h-12 px-6 bg-white/[0.04] text-brand-whatsapp border border-brand-whatsapp/20 rounded-2xl font-bold text-[12px] uppercase tracking-widest flex items-center gap-3 transition-all hover:bg-brand-whatsapp hover:text-white shadow-glow-green-sm active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add Lifecycle Item
+                    </button>
+                    {% endif %}
+                </div>
+
+                <div class="overflow-x-auto no-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-white/[0.04] bg-white/[0.005]">
+                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em]">Item Specification</th>
+                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-center">Qty</th>
+                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-right">Unit Flux</th>
+                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-right">Extension Sum</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/[0.04]">
+                            {% for item in po.items %}
+                            <tr class="hover:bg-white/[0.01] transition-all group">
+                                <td class="px-10 py-6">
+                                    <span class="font-bold text-white text-sm tracking-wide">{{ item.name|default:"Internal ID: " }}{{ item.product_id }}</span>
+                                </td>
+                                <td class="px-10 py-6 text-center">
+                                    <span class="font-display font-800 text-white text-lg tabular-nums">{{ item.qty }}</span>
+                                </td>
+                                <td class="px-10 py-6 text-right">
+                                    <span class="font-bold text-text-muted text-sm tabular-nums">KES {{ item.unit_cost|floatformat:2 }}</span>
+                                </td>
+                                <td class="px-10 py-6 text-right">
+                                    <span class="font-display font-800 text-brand-whatsapp text-lg tabular-nums">KES {{ item.total_cost|default:"0.00" }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-10 py-32 text-center">
+                                    <div class="flex flex-col items-center justify-center opacity-20">
+                                        <div class="w-20 h-20 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mb-6">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                                        </div>
+                                        <p class="font-display font-800 uppercase tracking-[0.4em] text-lg">Empty Cycle Vector</p>
+                                        <p class="text-sm font-medium mt-2">Initialize line items to proceed with procurement</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if po.items %}
+                        <tfoot>
+                            <tr class="bg-white/[0.02]">
+                                <td colspan="3" class="px-10 py-10 text-right">
+                                    <span class="text-[12px] font-display font-800 text-text-muted uppercase tracking-[0.5em] mr-4">Nexus Total Collective</span>
+                                </td>
+                                <td class="px-10 py-10 text-right bg-brand-whatsapp/5">
+                                    <span class="font-display font-800 text-4xl text-brand-whatsapp tracking-tighter tabular-nums drop-shadow-md">KES {{ po.total_cost|default:"0" }}</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
