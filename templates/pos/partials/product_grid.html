@@ -13,50 +13,50 @@
         addQty = 1;
         addModalOpen = true;
     "
-     class="bg-white border-2 border-transparent rounded-[32px] p-6 cursor-pointer text-left transition-all hover:shadow-xl hover:border-[#25D366]/20 active:scale-[0.96] w-full relative group shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex flex-col items-center {% if product.total_stock == 0 %}opacity-40 pointer-events-none grayscale{% endif %}">
+     class="bg-[#111118] border-2 border-white/[0.08] rounded-[36px] p-6 cursor-pointer text-left transition-all hover:bg-[#1a1a24] hover:border-[#25D366]/40 active:scale-[0.96] w-full relative group shadow-[0_15px_40px_rgba(0,0,0,0.4)] flex flex-col items-center {% if product.total_stock == 0 %}opacity-30 pointer-events-none grayscale{% endif %}">
     
     {% if product.total_stock == 0 %}
-    <div class="absolute inset-0 bg-white/60 backdrop-blur-[2px] rounded-[32px] flex items-center justify-center z-10">
-        <span class="px-5 py-2.5 bg-red-50 text-red-600 text-[11px] font-black uppercase tracking-widest rounded-2xl border-2 border-red-100 shadow-sm">Sold Out</span>
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-[3px] rounded-[36px] flex items-center justify-center z-10 transition-opacity">
+        <span class="px-6 py-3 bg-[#ff1744]/20 text-[#ff1744] text-[12px] font-black uppercase tracking-[0.2em] rounded-2xl border-2 border-[#ff1744]/30 shadow-2xl">Sold Out</span>
     </div>
     {% endif %}
 
-    <div class="relative bg-gray-50/50 rounded-[30px] p-6 mb-5 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-1 border-2 border-black/[0.01] shadow-inner">
-        <div class="text-7xl drop-shadow-md select-none">
+    <div class="relative bg-black/40 rounded-[32px] p-7 mb-6 transition-all duration-500 group-hover:scale-110 group-hover:-rotate-2 border-2 border-white/[0.04] shadow-inner">
+        <div class="text-7xl drop-shadow-[0_15px_20px_rgba(0,0,0,0.6)] select-none">
             {{ product.image }}
         </div>
         
         <!-- Cart Qty Badge -->
         <template x-if="cart.items.find(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}')">
-             <span class="absolute -top-3 -right-3 bg-[#25D366] text-black rounded-full min-w-[34px] h-[34px] px-2 text-[14px] font-black flex items-center justify-center shadow-lg border-4 border-white animate-scale-in"
+             <span class="absolute -top-4 -right-4 bg-[#25D366] text-black rounded-full min-w-[36px] h-[36px] px-2 text-[15px] font-black flex items-center justify-center shadow-[0_4px_15px_rgba(37,211,102,0.5)] border-4 border-[#111118] animate-scale-in"
                   x-text="cart.items.filter(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}').reduce((sum, i) => sum + i.qty, 0)">
              </span>
          </template>
     </div>
 
-    <div class="text-black font-black text-lg leading-none text-center w-full truncate mb-2.5 px-3 uppercase tracking-tight">{{ product.name }}</div>
+    <div class="text-white font-black text-xl leading-none text-center w-full truncate mb-3 px-4 drop-shadow-sm uppercase tracking-tight">{{ product.name }}</div>
     
-    <div class="text-[#25D366] font-display font-black text-2xl mb-3 flex items-center gap-2 leading-none">
+    <div class="text-[#25D366] font-display font-black text-2xl mb-4 flex items-center gap-3 leading-none">
         KES {{ product.price|floatformat:0 }} 
         {% if product.has_variants %}
-        <div class="bg-gray-100 text-gray-400 text-[9px] px-2 py-1 rounded-lg font-black tracking-widest shadow-sm uppercase">+ OP</div>
+        <div class="bg-black/40 text-gray-500 text-[10px] px-2.5 py-1 rounded-xl font-black tracking-widest shadow-sm uppercase">+ OP</div>
         {% endif %}
     </div>
     
-    <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[11px] font-black tracking-wider uppercase transition-all shadow-sm"
-         :class="{% if product.total_stock <= product.reorder_level %} 'bg-amber-50 text-amber-600 border-2 border-amber-100' {% else %} 'bg-gray-50 text-gray-400 border-2 border-gray-100 group-hover:bg-[#25D366]/10 group-hover:text-[#25D366]' {% endif %}">
+    <div class="inline-flex items-center gap-3 px-5 py-2 rounded-full text-[12px] font-black tracking-widest uppercase transition-all shadow-md"
+         :class="{% if product.total_stock <= product.reorder_level %} 'bg-amber-900/40 text-amber-500 border-2 border-amber-500/20 animate-pulse' {% else %} 'bg-white/5 text-gray-500 border-2 border-white/5 group-hover:bg-[#25D366]/10 group-hover:text-[#25D366]' {% endif %}">
         {% if product.total_stock <= product.reorder_level %}
-        <span>⚠️</span> <span x-text="'Low: ' + {{ product.total_stock }}"></span>
+        <span>☢</span> <span x-text="'Low: ' + {{ product.total_stock }}"></span>
         {% else %}
-        <span x-text="'Avail: ' + {{ product.total_stock }}"></span>
+        <span x-text="'Stock: ' + {{ product.total_stock }}"></span>
         {% endif %}
     </div>
 </button>
 {% empty %}
-<div class="col-span-full py-48 flex flex-col items-center justify-center text-gray-300">
-    <div class="bg-white p-12 rounded-full mb-8 border-2 border-gray-50 shadow-sm">
-       <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="opacity-30"><path d="m2 2 20 20"/><path d="M7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+<div class="col-span-full py-60 flex flex-col items-center justify-center text-gray-700">
+    <div class="bg-white/5 p-16 rounded-full mb-10 border-2 border-white/5 shadow-inner">
+       <svg xmlns="http://www.w3.org/2000/svg" width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="opacity-20"><path d="m2 2 20 20"/><path d="M7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
     </div>
-    <p class="font-display font-black text-2xl tracking-tighter uppercase opacity-50">Empty Catalogue</p>
+    <p class="font-display font-black text-3xl tracking-tighter uppercase opacity-30">No Products Listed</p>
 </div>
 {% endfor %}
