@@ -97,6 +97,7 @@ def checkout(request):
         data = json.loads(request.body)
         items = data.get('items', [])
         payment_method = data.get('payment_method', 'cash')
+        split_payments = data.get('split_payments', [])
         coupon_code = data.get('coupon_code', '').strip().upper()
         
         if not items:
@@ -157,6 +158,7 @@ def checkout(request):
             coupon_discount=coupon_discount,
             total=total,
             payment_method=payment_method,
+            split_payments=split_payments if payment_method == 'split' else None,
             status='complete'
         )
         

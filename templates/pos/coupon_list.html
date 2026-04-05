@@ -8,7 +8,7 @@
     
     <div class="flex items-center justify-between mb-8">
         <div>
-            <h2 class="text-2xl font-display font-extrabold text-text-primary tracking-tight">Coupon Manager</h2>
+            <h2 class="text-2xl font-display font-extrabold text-black tracking-tight">Coupon Manager</h2>
             <p class="text-sm text-text-muted mt-1">{{ active_count }} active coupon{{ active_count|pluralize }}</p>
         </div>
         <button @click="couponModal = true" class="flex items-center gap-2 px-5 py-3 bg-brand-green text-surface rounded-2xl font-display font-extrabold text-xs uppercase tracking-wider shadow-glow-green active:scale-95 transition-all btn-shimmer">
@@ -20,7 +20,7 @@
     <!-- Coupon List -->
     <div class="space-y-3 stagger">
         {% for coupon in coupons %}
-        <div class="bg-surface2 border border-border rounded-2xl p-5 flex items-center gap-4 transition-all hover:border-white/10 hover:shadow-card group" id="coupon-{{ coupon.id }}">
+        <div class="bg-white2 border border-border rounded-2xl p-5 flex items-center gap-4 transition-all hover:border-white/10 hover:shadow-card group" id="coupon-{{ coupon.id }}">
             <!-- Icon -->
             <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 {% if coupon.is_active %}bg-brand-green/10 text-brand-green{% else %}bg-white/[0.04] text-text-muted{% endif %}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
@@ -29,7 +29,7 @@
             <!-- Info -->
             <div class="flex-grow min-w-0">
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="font-bold text-sm text-text-primary dm-mono tracking-wider">{{ coupon.code }}</span>
+                    <span class="font-bold text-sm text-black dm-mono tracking-wider">{{ coupon.code }}</span>
                     {% if not coupon.is_valid %}
                     <span class="px-1.5 py-0.5 bg-brand-red/10 text-brand-red text-[8px] font-extrabold rounded-md uppercase tracking-wider">Expired</span>
                     {% elif coupon.is_active %}
@@ -72,7 +72,7 @@
             </div>
         </div>
         {% empty %}
-        <div class="text-center py-16 bg-surface2 rounded-[28px] border border-dashed border-border">
+        <div class="text-center py-16 bg-white2 rounded-[28px] border border-dashed border-border">
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 text-text-muted/20"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
             <p class="text-text-muted font-bold">No coupons created yet</p>
             <p class="text-text-muted/50 text-xs mt-1">Create one to offer discounts</p>
@@ -85,11 +85,11 @@
         <div x-show="couponModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="couponModal = false"></div>
         
         <div x-show="couponModal" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full sm:translate-y-0 sm:scale-95" x-transition:enter-end="translate-y-0 sm:scale-100" 
-             class="relative w-full max-w-lg bg-surface2 border-t sm:border border-border rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden p-6" x-data="{ discType: 'fixed' }">
+             class="relative w-full max-w-lg bg-white2 border-t sm:border border-border rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden p-6" x-data="{ discType: 'fixed' }">
             
             <div class="flex justify-between items-center mb-6">
-                <h3 class="font-display font-extrabold text-xl text-text-primary uppercase tracking-tight">New Coupon</h3>
-                <button @click="couponModal = false" class="text-text-muted hover:text-text-primary p-1">
+                <h3 class="font-display font-extrabold text-xl text-black uppercase tracking-tight">New Coupon</h3>
+                <button @click="couponModal = false" class="text-text-muted hover:text-black p-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>
@@ -100,19 +100,19 @@
                 <div>
                     <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Coupon Code</label>
                     <input type="text" name="code" required placeholder="e.g. SAVE20, WELCOME" 
-                           class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary placeholder:text-text-muted/40 focus:border-brand-green/40 focus:ring-0 transition-all uppercase font-bold tracking-wider dm-mono">
+                           class="w-full bg-white3 border border-border rounded-xl px-4 py-3.5 text-sm text-black placeholder:text-text-muted/40 focus:border-brand-green/40 focus:ring-0 transition-all uppercase font-bold tracking-wider dm-mono">
                 </div>
 
                 <div>
                     <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Description (Optional)</label>
                     <input type="text" name="description" placeholder="Holiday sale, First-time customer..." 
-                           class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary placeholder:text-text-muted/40 focus:border-brand-green/40 focus:ring-0 transition-all">
+                           class="w-full bg-white3 border border-border rounded-xl px-4 py-3.5 text-sm text-black placeholder:text-text-muted/40 focus:border-brand-green/40 focus:ring-0 transition-all">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Discount Type</label>
-                        <select name="discount_type" x-model="discType" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                        <select name="discount_type" x-model="discType" class="w-full bg-white3 border border-border rounded-xl px-4 py-3.5 text-sm text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                             <option value="fixed">Fixed Amount (KES)</option>
                             <option value="percent">Percentage (%)</option>
                         </select>
@@ -123,7 +123,7 @@
                             <span x-show="discType === 'percent'">Percentage</span>
                         </label>
                         <input type="number" step="0.01" name="discount_value" required placeholder="0" 
-                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm font-bold focus:border-brand-green/40 focus:ring-0 transition-all"
+                               class="w-full bg-white3 border border-border rounded-xl px-4 py-3.5 text-sm font-bold focus:border-brand-green/40 focus:ring-0 transition-all"
                                :class="discType === 'percent' ? 'text-brand-purple' : 'text-brand-amber'">
                     </div>
                 </div>
@@ -132,23 +132,23 @@
                     <div>
                         <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Min Order (Optional)</label>
                         <input type="number" step="0.01" name="min_order" placeholder="No minimum" 
-                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                               class="w-full bg-white3 border border-border rounded-xl px-4 py-3.5 text-sm text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                     </div>
                     <div>
                         <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Max Uses (Optional)</label>
                         <input type="number" name="max_uses" placeholder="Unlimited" 
-                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                               class="w-full bg-white3 border border-border rounded-xl px-4 py-3.5 text-sm text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Expires On (Optional)</label>
                     <input type="datetime-local" name="valid_until" 
-                           class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                           class="w-full bg-white3 border border-border rounded-xl px-4 py-3.5 text-sm text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                 </div>
 
                 <div class="pt-3 flex gap-3">
-                    <button type="button" @click="couponModal = false" class="flex-1 px-4 py-4 bg-white/[0.04] border border-border text-text-primary rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
+                    <button type="button" @click="couponModal = false" class="flex-1 px-4 py-4 bg-white/[0.04] border border-border text-black rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
                         Cancel
                     </button>
                     <button type="submit" class="flex-[2] px-4 py-4 bg-brand-green text-surface rounded-2xl font-display font-extrabold text-sm shadow-glow-green active:scale-95 transition-all btn-shimmer">

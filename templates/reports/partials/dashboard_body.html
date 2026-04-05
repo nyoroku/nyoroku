@@ -3,7 +3,7 @@
     <!-- KPI Grid -->
     <div class="grid grid-cols-2 gap-4">
         <!-- Revenue -->
-        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+        <div class="bg-white2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
             <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Revenue</span>
             <span class="text-2xl font-display font-extrabold text-brand-green">KES {{ revenue|floatformat:0 }}</span>
             <div class="flex items-center gap-1.5 mt-2 opacity-60">
@@ -12,7 +12,7 @@
         </div>
         
         <!-- Cost of Goods -->
-        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+        <div class="bg-white2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
             <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Item Cost</span>
             <span class="text-2xl font-display font-extrabold text-text-muted">KES {{ cogs|floatformat:0 }}</span>
             <div class="flex items-center gap-1.5 mt-2 opacity-60">
@@ -21,18 +21,18 @@
         </div>
 
         <!-- Gross Profit -->
-        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+        <div class="bg-white2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
             <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Gross Profit</span>
-            <span class="text-2xl font-display font-extrabold text-[#7c6af7]">KES {{ gross_profit|floatformat:0 }}</span>
+            <span class="text-2xl font-display font-extrabold text-[#25d366]">KES {{ gross_profit|floatformat:0 }}</span>
             <div class="flex items-center gap-1.5 mt-2">
-                <span class="text-[10px] font-black {% if margin >= 0 %}text-[#7c6af7]{% else %}text-brand-red{% endif %} uppercase tracking-tight">
+                <span class="text-[10px] font-black {% if margin >= 0 %}text-[#25d366]{% else %}text-brand-red{% endif %} uppercase tracking-tight">
                     {{ margin|floatformat:1 }}% Margin
                 </span>
             </div>
         </div>
 
         <!-- Expenses -->
-        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+        <div class="bg-white2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
             <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Expenses</span>
             <span class="text-2xl font-display font-extrabold text-brand-amber">KES {{ expenses|floatformat:0 }}</span>
             <div class="flex items-center gap-1.5 mt-2 opacity-60">
@@ -41,7 +41,7 @@
         </div>
 
         <!-- Net Profit -->
-        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+        <div class="bg-white2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
             <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Net Profit</span>
             <span class="text-2xl font-display font-extrabold {% if net_profit >= 0 %}text-brand-green{% else %}text-brand-red{% endif %}">
                 KES {{ net_profit|floatformat:0 }}
@@ -52,9 +52,9 @@
         </div>
 
         <!-- Avg Basket -->
-        <div class="bg-surface2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
+        <div class="bg-white2 border border-border rounded-3xl p-5 flex flex-col gap-1 shadow-lg">
             <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-1">Avg Basket</span>
-            <span class="text-2xl font-display font-extrabold text-text-primary">KES {{ avg_basket|floatformat:0 }}</span>
+            <span class="text-2xl font-display font-extrabold text-black">KES {{ avg_basket|floatformat:0 }}</span>
             <div class="flex items-center gap-1.5 mt-2 opacity-60">
                 <span class="text-[10px] font-medium text-text-muted">Per Customer</span>
             </div>
@@ -62,8 +62,8 @@
     </div>
 
     <!-- 7-Day Chart -->
-    <div class="bg-surface2 border border-border rounded-3xl p-6">
-        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-8">7-Day Revenue</h4>
+    <div class="bg-white2 border border-border rounded-3xl p-6">
+        <h4 class="text-sm font-display font-extrabold text-black uppercase tracking-tight mb-8">7-Day Revenue</h4>
         <div class="flex items-end justify-between h-32 gap-3 px-2">
             {% for day in chart_days %}
             <div class="flex-grow flex flex-col items-center gap-3">
@@ -76,8 +76,8 @@
     </div>
 
     <!-- Payment Breakdown -->
-    <div class="bg-surface2 border border-border rounded-3xl p-6">
-        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-6">Payment Methods</h4>
+    <div class="bg-white2 border border-border rounded-3xl p-6">
+        <h4 class="text-sm font-display font-extrabold text-black uppercase tracking-tight mb-6">Payment Methods</h4>
         <div class="space-y-6">
             <!-- Cash -->
             <div class="space-y-2">
@@ -85,7 +85,7 @@
                     <span>Cash</span>
                     <span class="text-brand-green">KES {{ payment_stats.cash|default:0|floatformat:0 }}</span>
                 </div>
-                <div class="h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-2 bg-white rounded-full overflow-hidden">
                     <div class="h-full bg-brand-green transition-all duration-500" style="width: calc({{ payment_stats.cash|default:0 }} / {{ revenue|default:1 }} * 100%);"></div>
                 </div>
             </div>
@@ -95,7 +95,7 @@
                     <span>M-Pesa</span>
                     <span class="text-brand-amber">KES {{ payment_stats.mpesa|default:0|floatformat:0 }}</span>
                 </div>
-                <div class="h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-2 bg-white rounded-full overflow-hidden">
                     <div class="h-full bg-brand-amber transition-all duration-500" style="width: calc({{ payment_stats.mpesa|default:0 }} / {{ revenue|default:1 }} * 100%);"></div>
                 </div>
             </div>
@@ -105,7 +105,7 @@
                     <span>Card</span>
                     <span class="text-brand-purple">KES {{ payment_stats.card|default:0|floatformat:0 }}</span>
                 </div>
-                <div class="h-2 bg-surface rounded-full overflow-hidden">
+                <div class="h-2 bg-white rounded-full overflow-hidden">
                     <div class="h-full bg-brand-purple transition-all duration-500" style="width: calc({{ payment_stats.card|default:0 }} / {{ revenue|default:1 }} * 100%);"></div>
                 </div>
             </div>
@@ -113,18 +113,18 @@
     </div>
 
     <!-- Top Products -->
-    <div class="bg-surface2 border border-border rounded-3xl p-6 mb-24">
-        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-6">Top 5 Products</h4>
+    <div class="bg-white2 border border-border rounded-3xl p-6 mb-24">
+        <h4 class="text-sm font-display font-extrabold text-black uppercase tracking-tight mb-6">Top 5 Products</h4>
         <div class="space-y-5">
             {% for item in top_products %}
             <div class="flex items-center gap-4">
-                <div class="w-8 h-8 rounded-lg bg-surface border border-border flex items-center justify-center text-sm font-black text-brand-green">
+                <div class="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center text-sm font-black text-brand-green">
                     {{ forloop.counter }}
                 </div>
                 <div class="flex-grow min-w-0">
                     <div class="flex justify-between items-center mb-0.5">
-                        <span class="font-bold text-sm text-text-primary truncate">{{ item.name }}</span>
-                        <span class="text-sm font-bold text-text-primary">KES {{ item.revenue|floatformat:0 }}</span>
+                        <span class="font-bold text-sm text-black truncate">{{ item.name }}</span>
+                        <span class="text-sm font-bold text-black">KES {{ item.revenue|floatformat:0 }}</span>
                     </div>
                     <div class="flex justify-between text-[10px] font-medium text-text-muted uppercase tracking-wider">
                         <span>{{ item.qty }} units sold</span>
@@ -140,7 +140,7 @@
     
     <!-- Low Stock Alerts -->
     {% if low_stock_products or low_stock_variants %}
-    <div class="bg-surface2 border border-brand-amber/30 rounded-3xl p-6 mb-24 relative overflow-hidden">
+    <div class="bg-white2 border border-brand-amber/30 rounded-3xl p-6 mb-24 relative overflow-hidden">
         <div class="absolute inset-0 bg-brand-amber/5"></div>
         <h4 class="relative text-sm font-display font-extrabold text-brand-amber uppercase tracking-tight mb-6 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -149,20 +149,20 @@
         <div class="relative space-y-4">
             {% for p in low_stock_products %}
             <div class="flex justify-between items-center text-sm">
-                <span class="font-bold text-text-primary truncate pr-4">{{ p.name }}</span>
+                <span class="font-bold text-black truncate pr-4">{{ p.name }}</span>
                 <span class="font-black text-brand-amber text-xs whitespace-nowrap">{{ p.stock_qty }} left</span>
             </div>
             {% endfor %}
             {% for v in low_stock_variants %}
             <div class="flex justify-between items-center text-sm">
-                <span class="font-bold text-text-primary truncate pr-4">{{ v.parent.name }} - <span class="text-text-muted">{{ v.name }}</span></span>
+                <span class="font-bold text-black truncate pr-4">{{ v.parent.name }} - <span class="text-text-muted">{{ v.name }}</span></span>
                 <span class="font-black text-brand-amber text-xs whitespace-nowrap">{{ v.stock_qty }} left</span>
             </div>
             {% endfor %}
         </div>
     </div>
     {% else %}
-    <div class="bg-surface2 border border-border rounded-3xl p-6 mb-24">
+    <div class="bg-white2 border border-border rounded-3xl p-6 mb-24">
         <h4 class="text-sm font-display font-extrabold text-brand-green uppercase tracking-tight flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
             Stock Levels Healthy

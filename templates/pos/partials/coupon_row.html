@@ -1,10 +1,10 @@
-<div class="bg-surface2 border border-border rounded-2xl p-5 flex items-center gap-4 transition-all hover:border-white/10 hover:shadow-card group" id="coupon-{{ coupon.id }}">
+<div class="bg-white2 border border-border rounded-2xl p-5 flex items-center gap-4 transition-all hover:border-white/10 hover:shadow-card group" id="coupon-{{ coupon.id }}">
     <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 {% if coupon.is_active %}bg-brand-green/10 text-brand-green{% else %}bg-white/[0.04] text-text-muted{% endif %}">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
     </div>
     <div class="flex-grow min-w-0">
         <div class="flex items-center gap-2 mb-1">
-            <span class="font-bold text-sm text-text-primary dm-mono tracking-wider">{{ coupon.code }}</span>
+            <span class="font-bold text-sm text-black dm-mono tracking-wider">{{ coupon.code }}</span>
             {% if not coupon.is_valid %}
             <span class="px-1.5 py-0.5 bg-brand-red/10 text-brand-red text-[8px] font-extrabold rounded-md uppercase tracking-wider">Expired</span>
             {% elif coupon.is_active %}

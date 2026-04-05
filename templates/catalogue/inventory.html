@@ -8,22 +8,22 @@
     
     <!-- Status Tabs -->
     {% if user.role == 'admin' %}
-    <div class="flex gap-2 mb-6 p-1 bg-surface2 border border-border rounded-2xl max-w-xs">
+    <div class="flex gap-2 mb-6 p-1 bg-white2 border border-border rounded-2xl max-w-xs">
         <a href="?status=all" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 {% if active_status == 'all' %}bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
+           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 {% if active_status == 'all' %}bg-[#25d366] text-black shadow-[0_0_15px_rgba(124,106,247,0.4)]{% else %}text-text-muted hover:text-black hover:bg-white/[0.03]{% endif %}">
             <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Active</span>
             <span class="text-[11px] font-bold mt-0.5">All Products</span>
         </a>
         <a href="?status=pending" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative {% if active_status == 'pending' %}bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
+           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative {% if active_status == 'pending' %}bg-[#25d366] text-black shadow-[0_0_15px_rgba(124,106,247,0.4)]{% else %}text-text-muted hover:text-black hover:bg-white/[0.03]{% endif %}">
             <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Review</span>
             <span class="text-[11px] font-bold mt-0.5">Products</span>
             {% if pending_count > 0 %}
-            <span class="absolute -top-1 -right-1 w-5 h-5 bg-brand-red text-white text-[9px] font-extrabold rounded-full flex items-center justify-center border-2 border-surface2 animate-pulse">{{ pending_count }}</span>
+            <span class="absolute -top-1 -right-1 w-5 h-5 bg-brand-red text-black text-[9px] font-extrabold rounded-full flex items-center justify-center border-2 border-surface2 animate-pulse">{{ pending_count }}</span>
             {% endif %}
         </a>
         <a href="{% url 'catalogue:pending_actions' %}" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative text-text-muted hover:text-text-primary hover:bg-white/[0.03]">
+           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative text-text-muted hover:text-black hover:bg-white/[0.03]">
             <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Queue</span>
             <span class="text-[11px] font-bold mt-0.5">Actions</span>
         </a>
@@ -39,7 +39,7 @@
                hx-target="#product-list"
                hx-push-url="true"
                placeholder="Search products..."
-               class="w-full bg-surface2 border border-border rounded-2xl px-12 py-4 text-sm text-text-primary placeholder:text-text-muted/60 focus:border-brand-green/40 focus:ring-0 focus:shadow-glow-green-sm transition-all">
+               class="w-full bg-white2 border border-border rounded-2xl px-12 py-4 text-sm text-black placeholder:text-text-muted/60 focus:border-brand-green/40 focus:ring-0 focus:shadow-glow-green-sm transition-all">
         <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         </div>
@@ -60,11 +60,11 @@
         <div x-show="addModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="addModal = false"></div>
         
         <div x-show="addModal" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full sm:translate-y-0 sm:scale-95" x-transition:enter-end="translate-y-0 sm:scale-100" 
-             class="relative w-full max-w-lg bg-surface2 border-t sm:border border-border rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden p-6">
+             class="relative w-full max-w-lg bg-white2 border-t sm:border border-border rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden p-6">
             
             <div class="flex justify-between items-center mb-6">
-                <h3 class="font-display font-extrabold text-xl text-text-primary uppercase tracking-tight" x-text="isEdit ? 'Edit Product' : 'New Product'"></h3>
-                <button @click="addModal = false" class="text-text-muted hover:text-text-primary p-1">
+                <h3 class="font-display font-extrabold text-xl text-black uppercase tracking-tight" x-text="isEdit ? 'Edit Product' : 'New Product'"></h3>
+                <button @click="addModal = false" class="text-text-muted hover:text-black p-1">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>
@@ -73,19 +73,19 @@
                 {% csrf_token %}
                 <template x-if="isEdit"><input type="hidden" name="id" :value="editForm.id"></template>
                 
-                <div class="flex items-center gap-4 bg-surface3 border border-border p-4 rounded-2xl">
-                    <div class="w-14 h-14 bg-surface border border-border rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-brand-green/30 transition-colors shrink-0" id="emoji-display" title="Click to change">📦</div>
+                <div class="flex items-center gap-4 bg-white3 border border-border p-4 rounded-2xl">
+                    <div class="w-14 h-14 bg-white border border-border rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-brand-green/30 transition-colors shrink-0" id="emoji-display" title="Click to change">📦</div>
                     <input type="hidden" name="image" id="emoji-input" value="📦">
                     <div class="flex-grow">
                         <label class="block text-[10px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1">Product Name</label>
-                        <input type="text" name="name" x-model="editForm.name" required placeholder="Milk, Bread, etc." class="w-full bg-transparent border-none p-0 text-text-primary focus:ring-0 font-bold text-lg placeholder:text-text-muted/30">
+                        <input type="text" name="name" x-model="editForm.name" required placeholder="Milk, Bread, etc." class="w-full bg-transparent border-none p-0 text-black focus:ring-0 font-bold text-lg placeholder:text-text-muted/30">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Category</label>
-                        <select name="category" x-model="editForm.category" required class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                        <select name="category" x-model="editForm.category" required class="w-full bg-white3 border border-border rounded-xl px-4 py-3 text-sm text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                             {% for cat in categories %}
                                 <option value="{{ cat.id }}">{{ cat.name }}</option>
                             {% endfor %}
@@ -93,28 +93,28 @@
                     </div>
                     <div>
                         <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Price (KES)</label>
-                        <input type="number" step="0.01" name="price" x-model="editForm.price" required placeholder="0.00" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-brand-green font-bold focus:border-brand-green/40 focus:ring-0 transition-all">
+                        <input type="number" step="0.01" name="price" x-model="editForm.price" required placeholder="0.00" class="w-full bg-white3 border border-border rounded-xl px-4 py-3 text-sm text-brand-green font-bold focus:border-brand-green/40 focus:ring-0 transition-all">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Cost (Optional)</label>
-                        <input type="number" step="0.01" name="cost_price" x-model="editForm.cost_price" placeholder="0.00" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                        <input type="number" step="0.01" name="cost_price" x-model="editForm.cost_price" placeholder="0.00" class="w-full bg-white3 border border-border rounded-xl px-4 py-3 text-sm text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                     </div>
                     <div>
                         <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Initial Stock</label>
-                        <input type="number" name="stock_qty" x-model="editForm.stock_qty" required class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                        <input type="number" name="stock_qty" x-model="editForm.stock_qty" required class="w-full bg-white3 border border-border rounded-xl px-4 py-3 text-sm text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Barcode / SKU</label>
-                    <input type="text" name="barcode" x-model="editForm.barcode" placeholder="Optional — auto-generated if blank" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm dm-mono text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
+                    <input type="text" name="barcode" x-model="editForm.barcode" placeholder="Optional — auto-generated if blank" class="w-full bg-white3 border border-border rounded-xl px-4 py-3 text-sm dm-mono text-black focus:border-brand-green/40 focus:ring-0 transition-all">
                 </div>
 
                 <div class="pt-3 flex gap-3">
-                    <button type="button" @click="addModal = false" class="flex-1 px-4 py-4 bg-white/[0.04] border border-border text-text-primary rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
+                    <button type="button" @click="addModal = false" class="flex-1 px-4 py-4 bg-white/[0.04] border border-border text-black rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
                         Cancel
                     </button>
                     <button type="submit" class="flex-[2] px-4 py-4 bg-brand-green text-black rounded-2xl font-display font-extrabold text-sm shadow-glow-green active:scale-95 transition-all btn-shimmer" x-text="isEdit ? 'Save Changes' : 'Create Product'">

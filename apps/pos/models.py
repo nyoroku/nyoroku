@@ -90,6 +90,7 @@ class Transaction(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2)
     
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
+    split_payments = models.JSONField(blank=True, null=True) # e.g. [{"method": "cash", "amount": 500}, {"method": "mpesa", "amount": 1000}]
     mpesa_ref = models.CharField(max_length=100, null=True, blank=True)
     
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='complete')
