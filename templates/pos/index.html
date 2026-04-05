@@ -7,7 +7,7 @@
 <div class="px-3 sm:px-4 py-4 lg:py-5 lg:flex lg:gap-5 lg:h-[calc(100vh-70px)]" x-data="{ checkoutLoading: false, editingQty: null, selectedProduct: null, qtyModalOpen: false, addQty: 1, variantModalOpen: false, variantModalProduct: null, selectedVariant: null }">
     
     <!-- LEFT SIDE: Product Selection -->
-    <div class="lg:flex-1 lg:flex lg:flex-col lg:min-w-0" id="pos-main-pane">
+    <div class="flex-grow flex flex-col min-w-0" id="pos-main-pane">
         <!-- Search & Filters -->
         <div class="space-y-3 mb-5 shrink-0" x-data="{ scanOpen: false, manualBarcode: '' }">
         <div class="relative">
@@ -74,17 +74,16 @@
     </div>
 
         <!-- Product Grid -->
-        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger lg:overflow-y-auto lg:pr-2 no-scrollbar pb-20 lg:pb-4">
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 stagger lg:overflow-y-auto lg:pr-2 no-scrollbar pb-20 lg:pb-4">
             {% include 'pos/partials/product_grid.html' %}
         </div>
     </div> <!-- END LEFT SIDE -->
 
-    <!-- RIGHT SIDE: Cart Panel — slides from RIGHT on mobile, static sidebar on desktop -->
-    <div x-show="cart.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[55] lg:hidden" @click="cart.open = false" x-transition.opacity></div>
+    <!-- RIGHT SIDE: Cart Panel -->
+    <div x-show="cart.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[55]" @click="cart.open = false" x-transition.opacity></div>
 
-    <div :class="cart.open ? 'translate-x-0' : 'translate-x-full'" 
-         class="fixed top-0 right-0 bottom-0 w-[85vw] max-w-[380px] z-[60] flex flex-col bg-surface2 border-l border-border shadow-2xl transition-transform duration-300 ease-out
-                lg:translate-x-0 lg:static lg:w-[400px] xl:w-[420px] lg:flex-shrink-0 lg:h-full lg:rounded-[24px] lg:border lg:shadow-none lg:z-auto relative">
+    <div :class="cart.open ? 'translate-x-0' : 'translate-x-[110%]'" 
+         class="fixed top-0 right-0 bottom-0 w-[85vw] max-w-[420px] z-[60] flex flex-col bg-surface2 shadow-2xl transition-transform duration-300 ease-out border-l border-border">
             
         <!-- Header -->
         <div class="px-5 pt-5 pb-3 flex justify-between items-center shrink-0 border-b border-border">
@@ -94,7 +93,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <button @click="clearCart()" class="px-3 py-1.5 text-[10px] font-bold text-brand-red uppercase tracking-wider hover:bg-brand-red/10 rounded-lg transition-colors">Clear</button>
-                <button @click="cart.open = false" class="w-8 h-8 flex items-center justify-center rounded-xl bg-surface3 border border-border text-text-muted hover:text-text-primary lg:hidden active:scale-90 transition-all">
+                <button @click="cart.open = false" class="w-8 h-8 flex items-center justify-center rounded-xl bg-surface3 border border-border text-text-muted hover:text-text-primary active:scale-90 transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
             </div>

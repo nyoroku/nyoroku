@@ -179,7 +179,10 @@
             item.qty = Math.max(0, item.qty + delta);
             this.cart.items = this.cart.items.filter(i => i.qty > 0);
           }
-          if (this.cart.items.length === 0) this.removeCoupon();
+          if (this.cart.items.length === 0) {
+              this.removeCoupon();
+              this.cart.open = false;
+          }
         },
         setQty(id, qty) {
           const item = this.cart.items.find(i => i.id === id);
@@ -190,7 +193,10 @@
         },
         removeItem(id) {
           this.cart.items = this.cart.items.filter(i => i.id !== id);
-          if (this.cart.items.length === 0) this.removeCoupon();
+          if (this.cart.items.length === 0) {
+              this.removeCoupon();
+              this.cart.open = false;
+          }
         },
         clearCart() { 
           this.cart.items = []; 

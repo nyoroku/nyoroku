@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Avg, F
 from django.utils import timezone
 from datetime import timedelta, datetime
+from decimal import Decimal
 from pos.models import Transaction
 from expenses.models import Expense
 from catalogue.models import Product
