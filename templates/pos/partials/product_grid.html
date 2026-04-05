@@ -1,50 +1,56 @@
 {% for product in products %}
 <button @click="
-        if ({{ product.has_variants|yesno:'true,false' }}) {
-            variantModalProduct = { 
-                id: '{{ product.id }}', 
-                name: '{{ product.name|escapejs }}', 
-                image: '{{ product.image }}',
-                variants: {{ product.variants_json|safe }} 
-            };
-            variantModalOpen = true;
-        } else {
-            addToCart({ id: '{{ product.id }}', name: '{{ product.name|escapejs }}', price: {{ product.price }}, image: '{{ product.image }}', stock_qty: {{ product.total_stock }} });
-        }
+        addModalProduct = { 
+            id: '{{ product.id }}', 
+            name: '{{ product.name|escapejs }}', 
+            price: {{ product.price }},
+            image: '{{ product.image }}',
+            stock_qty: {{ product.total_stock }},
+            variants: {% if product.has_variants %}{{ product.variants_json|safe }}{% else %}[]{% endif %}
+        };
+        selectedVariant = null;
+        addQty = 1;
+        addModalOpen = true;
     "
-     class="bg-surface border border-border rounded-[16px] p-[14px_12px] cursor-pointer text-left transition-all active:scale-95 active:border-brand-whatsapp w-full relative {% if product.total_stock == 0 %}opacity-50 pointer-events-none{% endif %}">
+     class="bg-[#111118]/80 backdrop-blur-sm border border-white/5 rounded-[24px] p-[16px_14px] cursor-pointer text-left transition-all hover:bg-[#1a1a24] hover:border-white/10 active:scale-[0.96] active:border-brand-whatsapp/50 w-full relative group shadow-sm flex flex-col items-center {% if product.total_stock == 0 %}opacity-50 pointer-events-none grayscale{% endif %}">
     
     {% if product.total_stock == 0 %}
     <!-- Sold Out Overlay -->
-    <div class="absolute inset-0 bg-surface/60 rounded-[16px] flex items-center justify-center z-10">
-        <span class="px-3 py-1 bg-brand-red/20 text-brand-red text-[9px] font-extrabold uppercase tracking-wider rounded-lg border border-brand-red/20">Sold Out</span>
+    <div class="absolute inset-0 bg-[#0a0a0f]/60 backdrop-blur-[2px] rounded-[24px] flex items-center justify-center z-10 transition-opacity">
+        <span class="px-3 py-1.5 bg-brand-red/20 text-brand-red text-[10px] font-extrabold uppercase tracking-[0.1em] rounded-xl border border-brand-red/30 backdrop-blur-md shadow-lg">Sold Out</span>
     </div>
     {% endif %}
 
-    <div class="relative inline-block">
-        <span class="text-[34px]">{{ product.image }}</span>
-        <!-- Cart Badge -->
+    <div class="relative inline-block bg-[#1a1a24] rounded-[20px] p-[16px] mb-[12px] group-hover:scale-105 transition-transform duration-300">
+        <span class="text-[44px] drop-shadow-lg leading-none block">{{ product.image }}</span>
+        
+        <!-- Cart Badge Overlap -->
         <template x-if="cart.items.find(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}')">
-            <span class="absolute -top-[4px] -right-[6px] bg-brand-whatsapp text-[#0a0a0f] rounded-full w-[20px] h-[20px] text-[11px] font-[800] flex items-center justify-center"
-                 x-text="cart.items.filter(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}').reduce((sum, i) => sum + i.qty, 0)">
-            </span>
-        </template>
+             <span class="absolute -top-[8px] -right-[8px] bg-brand-whatsapp text-[#0a0a0f] rounded-full min-w-[24px] h-[24px] px-[6px] text-[12px] font-[800] flex items-center justify-center shadow-[0_4px_12px_rgba(37,211,102,0.4)] border-[3px] border-[#111118] transition-transform animate-scale-in"
+                  x-text="cart.items.filter(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}').reduce((sum, i) => sum + i.qty, 0)">
+             </span>
+         </template>
     </div>
 
-    <div class="text-text-primary font-[600] text-[13px] leading-[1.3] mt-[8px]">{{ product.name }}</div>
-    <div class="text-brand-whatsapp font-[700] text-[15px] mt-[4px]">KES {{ product.price }} {% if product.has_variants %}<span class="text-[9px] text-text-muted">+</span>{% endif %}</div>
+    <div class="text-white font-[600] text-[14px] leading-[1.3] text-center w-full truncate px-1">{{ product.name }}</div>
+    <div class="text-brand-whatsapp font-[800] text-[15px] mt-[6px] flex items-center gap-1 font-display">
+        KES {{ product.price }} 
+        {% if product.has_variants %}
+        <span class="bg-brand-whatsapp/15 text-brand-whatsapp text-[9px] px-[4px] py-[2px] rounded-md font-bold ml-1">+</span>
+        {% endif %}
+    </div>
     
-    <div class="text-text-muted text-[11px] mt-[2px] {% if product.total_stock <= product.reorder_level and product.total_stock > 0 %}text-brand-amber{% endif %}">
+    <div class="text-text-muted text-[11px] mt-[4px] font-medium bg-white/5 px-2 py-0.5 rounded-full {% if product.total_stock <= product.reorder_level and product.total_stock > 0 %}text-brand-amber bg-brand-amber/10{% endif %}">
         {% if product.total_stock <= product.reorder_level and product.total_stock > 0 %}
-        ⚠ Stock: {{ product.total_stock }}
+        ⚠ {{ product.total_stock }} left
         {% else %}
-        Stock: {{ product.total_stock }}
+        {{ product.total_stock }} in stock
         {% endif %}
     </div>
 </button>
 {% empty %}
-<div class="col-span-full py-20 text-center text-text-muted">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 opacity-20"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-    <p class="font-bold">No products for sale</p>
+<div class="col-span-full py-24 flex flex-col items-center justify-center text-text-muted/40">
+    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="mb-5 opacity-40"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+    <p class="font-display font-medium text-[16px] text-white/40">No items available</p>
 </div>
 {% endfor %}
