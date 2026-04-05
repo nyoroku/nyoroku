@@ -4,115 +4,114 @@
 {% block screen_title %}Checkout{% endblock %}
 
 {% block content %}
-<div class="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#0a0a0f]" 
+<div class="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#0a0a0f] relative" 
      x-data="{ checkoutLoading: false, editingQty: null, addModalOpen: false, addModalProduct: null, selectedVariant: null, addQty: 1, scanOpen: false, manualBarcode: '' }">
     
     <!-- Top Action Bar (Search & Cart) -->
-    <div class="px-3.5 py-3 flex items-center gap-2.5 bg-[#111118] border-b border-white/[0.07] shrink-0">
+    <div class="px-4 py-3 flex items-center gap-3 bg-[#111118] border-b border-white/[0.08] shrink-0">
         <div class="flex-1 relative group">
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted/60 transition-colors group-focus-within:text-[#00e676]">
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-muted/50 transition-colors group-focus-within:text-[#00e676]">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </span>
             <input type="text" name="q" hx-get="{% url 'pos:index' %}" hx-trigger="input changed delay:200ms" hx-target="#product-grid" hx-include="[name='category']" placeholder="Search for items..."
-                class="w-full bg-[#1a1a24] border border-white/[0.07] rounded-xl py-3 pr-3 pl-10 text-[14px] text-white focus:ring-1 focus:ring-[#00e676]/30 focus:border-[#00e676]/60 transition-all placeholder:text-muted/40">
+                class="w-full bg-[#1a1a24] border border-white/[0.08] rounded-xl py-3.5 pr-4 pl-11 text-[15px] text-white focus:ring-1 focus:ring-[#00e676]/20 focus:border-[#00e676]/50 transition-all placeholder:text-muted/30">
         </div>
         
-        <button @click="scanOpen = true" class="bg-[#1a1a24] border border-white/[0.07] rounded-xl w-[48px] h-[48px] flex items-center justify-center cursor-pointer text-muted hover:text-[#00e676] transition-colors active:scale-95">
+        <button @click="scanOpen = true" class="bg-[#1a1a24] border border-white/[0.08] rounded-xl w-[50px] h-[50px] flex items-center justify-center cursor-pointer text-muted/60 hover:text-[#00e676] transition-colors active:scale-95 shadow-sm">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V6a2 2 0 0 1 2-2h2"/><path d="M21 9V6a2 2 0 0 0-2-2h-2"/><path d="M3 15v3a2 2 0 0 0 2 2h2"/><path d="M21 15v3a2 2 0 0 0-2 2h-2"/><line x1="7" y1="12" x2="7" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12"/></svg>
         </button>
 
-        <!-- Cart Trigger Pill (Premium High-Contrast) -->
+        <!-- Cart Trigger Pill (Amazon Style - Bold & Distinct) -->
         <button x-show="itemCount > 0" x-transition.scale.origin.right x-cloak @click="cart.open = true" 
-            class="bg-[#00e676] border-none rounded-2xl h-[48px] px-4 cursor-pointer text-[#0a0a0f] flex items-center justify-center gap-2 font-display font-extrabold text-[15px] shadow-[0_4px_20px_rgba(37,211,102,0.4)] active:scale-95 transition-all outline-none">
-            <span class="text-lg">🛒</span>
-            <span x-text="itemCount" class="bg-black/10 px-1.5 py-0.5 rounded-lg"></span>
+            class="bg-[#00e676] border-none rounded-2xl h-[50px] px-5 cursor-pointer text-[#0a0a0f] flex items-center justify-center gap-3 font-display font-extrabold text-[15px] shadow-[0_4px_24px_rgba(37,211,102,0.4)] active:scale-[0.98] transition-all outline-none">
+            <span class="text-xl">🛒</span>
+            <span class="flex items-center gap-1.5">
+                <span x-text="itemCount" class="bg-black/10 px-2 py-0.5 rounded-lg text-[13px]"></span>
+            </span>
         </button>
     </div>
 
-    <!-- Category Tabs (Restored Solid Green) -->
-    <div class="flex gap-2 px-3.5 py-3 overflow-x-auto shrink-0 no-scrollbar whitespace-nowrap bg-[#0a0a0f] border-b border-white/[0.07]" x-data="{ activeCat: '{{ active_category|default:'all' }}' }">
+    <!-- Category Tabs (Solid Brand Color) -->
+    <div class="flex gap-2.5 px-4 py-3.5 overflow-x-auto shrink-0 no-scrollbar whitespace-nowrap bg-[#0a0a0f] border-b border-white/[0.08]" x-data="{ activeCat: '{{ active_category|default:'all' }}' }">
         <input type="hidden" name="category" :value="activeCat">
         <button hx-get="{% url 'pos:index' %}?category=all" hx-target="#product-grid" @click="activeCat = 'all'; $el.closest('div').querySelector('[name=category]').value = 'all'"
-            class="rounded-xl px-5 py-2.5 text-[13px] font-extrabold transition-all cursor-pointer border"
-            :class="activeCat === 'all' ? 'bg-[#00e676] border-[#00e676] text-[#0a0a0f] shadow-[0_4px_15px_rgba(37,211,102,0.3)]' : 'bg-[#1a1a24] border-white/[0.07] text-muted hover:text-white'">
+            class="rounded-xl px-6 py-2.5 text-[14px] font-extrabold transition-all cursor-pointer border shadow-sm"
+            :class="activeCat === 'all' ? 'bg-[#00e676] border-[#00e676] text-[#0a0a0f] shadow-[0_4px_16px_rgba(37,211,102,0.3)]' : 'bg-[#1a1a24] border-white/[0.08] text-muted/80 hover:text-white'">
             All Items
         </button>
         {% for cat in categories %}
         <button hx-get="{% url 'pos:index' %}?category={{ cat.id }}" hx-target="#product-grid" @click="activeCat = '{{ cat.id }}'; $el.closest('div').querySelector('[name=category]').value = '{{ cat.id }}'"
-            class="rounded-xl px-5 py-2.5 text-[13px] font-extrabold transition-all cursor-pointer border"
-            :class="activeCat === '{{ cat.id }}' ? 'bg-[#00e676] border-[#00e676] text-[#0a0a0f] shadow-[0_4px_15px_rgba(37,211,102,0.3)]' : 'bg-[#1a1a24] border-white/[0.07] text-muted hover:text-white'">
+            class="rounded-xl px-6 py-2.5 text-[14px] font-extrabold transition-all cursor-pointer border shadow-sm"
+            :class="activeCat === '{{ cat.id }}' ? 'bg-[#00e676] border-[#00e676] text-[#0a0a0f] shadow-[0_4px_16px_rgba(37,211,102,0.3)]' : 'bg-[#1a1a24] border-white/[0.08] text-muted/80 hover:text-white'">
             {{ cat.name }}
         </button>
         {% endfor %}
     </div>
 
-    <!-- Main Grid -->
-    <div id="product-grid" class="flex-1 overflow-auto px-3.5 py-4 pb-24 grid grid-cols-2 lg:grid-cols-4 gap-3 content-start bg-[#0a0a0f]">
+    <!-- Product Grid -->
+    <div id="product-grid" class="flex-1 overflow-auto px-4 py-5 pb-32 grid grid-cols-2 lg:grid-cols-4 gap-4 content-start bg-[#0a0a0f]">
         {% include 'pos/partials/product_grid.html' %}
     </div>
 
-    <!-- Universal Add Sheet (Premium Bottom-Sheet) -->
+    <!-- Item Add Bottom Sheet -->
     <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[120] flex flex-col justify-end">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="addModalOpen = false" x-transition.opacity></div>
         
-        <div class="relative bg-[#111118] border-t border-white/[0.07] rounded-t-[32px] w-full max-w-lg mx-auto shadow-[0_-15px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden max-h-[90vh]" 
+        <div class="relative bg-[#111118] border-t border-white/[0.08] rounded-t-[32px] w-full max-w-lg mx-auto shadow-[0_-20px_50px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden max-h-[90vh]" 
              x-show="addModalOpen" 
              x-transition:enter="transition transform duration-400 cubic-bezier(0.2, 0.8, 0.2, 1)" 
              x-transition:enter-start="translate-y-full" 
              x-transition:enter-end="translate-y-0">
             
-            <div class="p-6 flex flex-col items-center shrink-0">
-                <div class="w-12 h-1.5 bg-white/10 rounded-full mb-6"></div>
-                
-                <div class="w-full flex items-start gap-5">
-                    <div class="w-20 h-20 shrink-0 bg-[#1a1a24] rounded-2xl flex items-center justify-center text-5xl border border-white/[0.05]">
+            <div class="p-7 flex flex-col items-center shrink-0">
+                <div class="w-12 h-1.5 bg-white/10 rounded-full mb-7"></div>
+                <div class="w-full flex items-start gap-6">
+                    <div class="w-24 h-24 shrink-0 bg-[#1a1a24] rounded-2xl flex items-center justify-center text-5xl border border-white/[0.05] shadow-lg">
                         <span x-text="addModalProduct?.image"></span>
                     </div>
-                    <div class="flex-1 pt-1">
-                        <h3 class="font-display font-extrabold text-2xl text-white tracking-tight mb-1" x-text="addModalProduct?.name"></h3>
-                        <p class="text-lg font-extrabold text-[#00e676]" x-text="'KES ' + (selectedVariant ? selectedVariant.price : addModalProduct?.price).toLocaleString()"></p>
+                    <div class="flex-1 pt-2">
+                        <h3 class="font-display font-extrabold text-2xl text-white tracking-tight mb-1.5" x-text="addModalProduct?.name"></h3>
+                        <div class="text-xl font-display font-extrabold text-[#00e676]" x-text="'KES ' + (selectedVariant ? selectedVariant.price : addModalProduct?.price).toLocaleString()"></div>
+                        <div class="text-[11px] font-extrabold text-muted uppercase tracking-widest mt-2 bg-white/5 inline-block px-2 py-0.5 rounded" x-text="'Stock: ' + (selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty)"></div>
                     </div>
                 </div>
             </div>
 
             <!-- Variants Area -->
             <template x-if="addModalProduct?.variants && addModalProduct.variants.length > 0">
-                <div class="px-6 pb-4">
-                    <h4 class="text-[11px] font-extrabold text-muted uppercase tracking-widest mb-3">Choose Variant</h4>
-                    <div class="flex flex-wrap gap-2">
+                <div class="px-7 pb-5">
+                    <h4 class="text-[11px] font-extrabold text-muted uppercase tracking-[0.15em] mb-4">Choose Preference</h4>
+                    <div class="flex flex-wrap gap-3">
                         <template x-for="v in addModalProduct?.variants" :key="v.id">
                             <button @click="selectedVariant = v; addQty = 1;"
-                                    class="px-4 py-3 rounded-2xl border-2 transition-all cursor-pointer min-w-[80px]"
-                                    :class="selectedVariant?.id === v.id ? 'bg-[#00e676]/10 border-[#00e676] text-[#00e676]' : 'bg-[#1a1a24] border-transparent text-white/70 hover:border-white/10'">
-                                <div class="font-extrabold text-sm" x-text="v.options.join(' / ')"></div>
-                                <div class="text-[10px] font-bold opacity-60 mt-0.5" x-text="'KES ' + v.price.toLocaleString()"></div>
+                                    class="px-5 py-3.5 rounded-2xl border-2 transition-all cursor-pointer min-w-[90px] flex flex-col items-center gap-1 active:scale-[0.98]"
+                                    :class="selectedVariant?.id === v.id ? 'bg-[#00e676] border-[#00e676] text-[#0a0a0f] shadow-lg' : 'bg-[#1a1a24] border-transparent text-white/80 hover:border-white/10'">
+                                <div class="font-black text-sm" x-text="v.options.join(' / ')"></div>
+                                <div class="text-[10px] font-bold" x-text="'KES ' + v.price.toLocaleString()" :class="selectedVariant?.id === v.id ? 'text-black/60' : 'text-muted/80'"></div>
                             </button>
                         </template>
                     </div>
                 </div>
             </template>
 
-            <!-- Quantity & Actions -->
+            <!-- Quantity Stepper -->
             <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" x-transition.opacity>
-                <div class="p-6 pt-2 bg-[#1a1a24]/30">
-                    <div class="flex items-center justify-between bg-black/40 rounded-3xl p-2 border border-white/[0.05] mb-8">
-                         <button @click="if(addQty > 1) addQty--" class="w-16 h-16 rounded-2xl bg-[#1a1a24] border border-white/[0.05] flex items-center justify-center text-white/50 active:scale-95 transition-all cursor-pointer">
-                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                         </button>
+                <div class="p-7 pt-2 bg-[#1a1a24]/40 border-t border-white/[0.05]">
+                    <div class="flex items-center justify-between bg-black/40 rounded-3xl p-2.5 border border-white/[0.06] mb-8 shadow-inner">
+                         <button @click="if(addQty > 1) addQty--" class="w-16 h-16 rounded-2xl bg-[#1e1e28] border border-white/[0.08] flex items-center justify-center text-white/40 active:scale-90 transition-all cursor-pointer hover:text-[#ff1744]"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
                          <div class="flex flex-col items-center">
-                             <span class="text-4xl font-extrabold text-white tabular-nums" x-text="addQty"></span>
-                             <span class="text-[10px] font-bold text-muted uppercase tracking-wider mt-1">Quantity</span>
+                             <span class="text-4xl font-display font-black text-white tabular-nums tracking-tighter" x-text="addQty"></span>
+                             <span class="text-[10px] font-extrabold text-muted uppercase tracking-[0.2em] mt-1.5 opacity-60">Selection</span>
                          </div>
                          <button @click="
                              let maxStock = selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty;
                              let currentId = selectedVariant ? selectedVariant.id : addModalProduct?.id;
                              let inCart = cart.items.find(i => i.id === currentId)?.qty || 0;
-                             if(addQty < (maxStock - inCart)) { addQty++; } else { alert('Max available stock reached'); }
-                         " class="w-16 h-16 rounded-2xl bg-[#1a1a24] border border-white/[0.05] flex items-center justify-center text-white/50 active:scale-95 transition-all cursor-pointer">
-                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                         </button>
+                             if(addQty < (maxStock - inCart)) { addQty++; } else { alert('Limit reached'); }
+                         " class="w-16 h-16 rounded-2xl bg-[#1e1e28] border border-white/[0.08] flex items-center justify-center text-white/40 active:scale-90 transition-all cursor-pointer hover:text-[#00e676]"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
                     </div>
 
+                    <!-- Add Button -->
                     <button @click="
                             let p = selectedVariant ? {
                                 id: selectedVariant.id,
@@ -130,75 +129,130 @@
                             };
                             if(addToCart(p, addQty)) { addModalOpen = false; }
                         " 
-                        class="w-full py-5 bg-[#00e676] text-[#0a0a0f] font-extrabold text-lg rounded-2xl shadow-[0_10px_30px_rgba(37,211,102,0.3)] active:scale-[0.98] transition-all border-none cursor-pointer flex items-center justify-center gap-3">
-                        <span>Add to Sale</span>
-                        <span class="w-1 h-1 rounded-full bg-black/20"></span>
+                        class="w-full h-[68px] bg-[#00e676] text-[#0a0a0f] font-extrabold text-[17px] rounded-2xl shadow-[0_12px_36px_rgba(37,211,102,0.3)] active:scale-[0.98] transition-all border-none cursor-pointer flex items-center justify-center gap-3.5 uppercase tracking-wide">
+                        <span>Add to sale</span>
+                        <div class="h-1.5 w-1.5 rounded-full bg-black/20"></div>
                         <span x-text="'KES ' + ((selectedVariant ? selectedVariant.price : addModalProduct?.price) * addQty).toLocaleString()"></span>
                     </button>
-                    <div class="h-6"></div>
+                    <div class="h-8"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Cart Bottom Sheet -->
+    <!-- Main Cart Sheet -->
     <div x-show="cart.open" x-cloak class="fixed inset-0 z-[150] flex flex-col justify-end">
         <div class="absolute inset-0 bg-black/85 backdrop-blur-md" @click="cart.open = false" x-transition.opacity></div>
         
-        <div class="relative bg-[#111118] border-t border-white/[0.07] rounded-t-[32px] w-full max-w-lg mx-auto shadow-[0_-20px_50px_rgba(0,0,0,0.6)] flex flex-col max-h-[92vh]" 
+        <div class="relative bg-[#111118] border-t border-white/[0.08] rounded-t-[36px] w-full max-w-lg mx-auto shadow-[0_-25px_60px_rgba(0,0,0,0.7)] flex flex-col max-h-[94vh]" 
              x-transition:enter="transition transform duration-400 ease-out" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
             
-            <div class="p-6 flex flex-col items-center shrink-0 border-b border-white/[0.05]">
-                <div class="w-12 h-1.5 bg-white/10 rounded-full mb-6"></div>
-                <div class="w-full flex items-center justify-between">
-                    <h2 class="font-display font-extrabold text-2xl text-white">Your Cart</h2>
-                    <button @click="clearCart()" class="px-4 py-2 bg-brand-red/10 text-brand-red text-xs font-bold uppercase rounded-lg border-none cursor-pointer active:scale-95 transition-all">Clear All</button>
+            <div class="p-7 flex flex-col items-center shrink-0 border-b border-white/[0.06]">
+                <div class="w-12 h-1.5 bg-white/10 rounded-full mb-7"></div>
+                <div class="w-full flex items-end justify-between">
+                    <div>
+                        <h2 class="font-display font-extrabold text-2xl text-white tracking-tight leading-none">Order Basket</h2>
+                        <div class="text-[11px] font-extrabold text-[#00e676] uppercase tracking-widest mt-2" x-text="itemCount + ' items selected'"></div>
+                    </div>
+                    <button @click="clearCart()" class="px-5 py-2.5 bg-brand-red/10 text-brand-red text-[11px] font-extrabold uppercase rounded-xl border border-brand-red/20 cursor-pointer active:scale-95 transition-all outline-none">Clear Cart</button>
                 </div>
             </div>
 
-            <!-- Payment Toggle -->
-            <div class="px-6 py-4 shrink-0 bg-[#0a0a0f]/50">
-                <div class="bg-black/30 p-1 rounded-2xl flex gap-1 border border-white/[0.05]">
-                    <template x-for="mode in ['cash','mpesa','card','split']" :key="mode">
-                        <button @click="payment = mode" 
-                                class="flex-1 py-3 text-[11px] font-extrabold uppercase tracking-widest rounded-xl transition-all border-none cursor-pointer"
-                                :class="payment === mode ? 'bg-[#00e676] text-[#0a0a0f] shadow-lg scale-105' : 'bg-transparent text-white/40 hover:text-white/70'">
-                            <span x-text="mode"></span>
-                        </button>
-                    </template>
+            <!-- Payment Row (Amazon Style Segmented Control) -->
+            <div class="px-7 py-5 shrink-0 bg-[#0a0a0f]/40 border-b border-white/[0.04]">
+                <div class="bg-black/30 p-1.5 rounded-[20px] flex gap-1 border border-white/[0.08] shadow-inner relative h-[56px] items-stretch">
+                   <button @click="payment = 'cash'" class="flex-1 rounded-[16px] text-[11px] font-black uppercase tracking-widest transition-all duration-300 border-none cursor-pointer" :class="payment === 'cash' ? 'bg-[#00e676] text-black shadow-[0_4px_12px_rgba(0,0,0,0.3)]' : 'bg-transparent text-muted/60 hover:text-white'">Cash</button>
+                   <button @click="payment = 'mpesa'" class="flex-1 rounded-[16px] text-[11px] font-black uppercase tracking-widest transition-all duration-300 border-none cursor-pointer" :class="payment === 'mpesa' ? 'bg-[#00e676] text-black shadow-[0_4px_12px_rgba(0,0,0,0.3)]' : 'bg-transparent text-muted/60 hover:text-white'">M-Pesa</button>
+                   <button @click="payment = 'card'" class="flex-1 rounded-[16px] text-[11px] font-black uppercase tracking-widest transition-all duration-300 border-none cursor-pointer" :class="payment === 'card' ? 'bg-[#00e676] text-black shadow-[0_4px_12px_rgba(0,0,0,0.3)]' : 'bg-transparent text-muted/60 hover:text-white'">Card</button>
+                   <button @click="payment = 'split'" class="flex-1 rounded-[16px] text-[11px] font-black uppercase tracking-widest transition-all duration-300 border-none cursor-pointer" :class="payment === 'split' ? 'bg-[#00e676] text-black shadow-[0_4px_12px_rgba(0,0,0,0.3)]' : 'bg-transparent text-muted/60 hover:text-white'">Split</button>
                 </div>
             </div>
 
-            <!-- Items -->
-            <div class="flex-1 overflow-auto px-6 py-2 custom-scrollbar">
+            <!-- Items List -->
+            <div class="flex-1 overflow-auto px-7 py-4 custom-scrollbar bg-black/10">
                 <template x-for="item in cart.items" :key="item.id">
-                    <div class="flex items-center gap-4 py-4 border-b border-white/[0.03]">
-                        <div class="w-14 h-14 shrink-0 bg-[#1a1a24] rounded-xl flex items-center justify-center text-3xl border border-white/[0.03]" x-text="item.image"></div>
+                    <div class="flex items-center gap-5 py-5 border-b border-white/[0.04] first:pt-0 last:border-b-0 animate-fade-in group">
+                        <div class="w-16 h-16 shrink-0 bg-[#1a1a24] rounded-2xl flex items-center justify-center text-4xl border border-white/[0.04] shadow-sm transform group-hover:scale-105 transition-transform" x-text="item.image"></div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-white font-bold text-sm truncate mb-1" x-text="item.name"></div>
-                            <div class="text-[#00e676] text-xs font-extrabold flex items-center gap-2 cursor-pointer" @click="let d = prompt('Item Discount?', item.discount || 0); if(d!==null) setLineDiscount(item.id, d)">
+                            <div class="text-white font-extrabold text-[15px] truncate mb-1" x-text="item.name"></div>
+                            <div class="text-[#00e676] text-sm font-black flex items-center gap-2 cursor-pointer transition-opacity hover:opacity-80" @click="let d = prompt('Enter item discount:', item.discount || 0); if(d!==null) setLineDiscount(item.id, d)">
                                 KES <span x-text="(item.price - (item.discount || 0)).toLocaleString()"></span>
                                 <template x-if="item.discount > 0">
-                                    <span class="line-through text-white/20 text-[10px]" x-text="'KES ' + item.price"></span>
+                                    <span class="line-through text-white/10 text-[10px]" x-text="'KES ' + item.price"></span>
                                 </template>
                             </div>
                         </div>
-                        <div class="flex items-center bg-[#1a1a24] rounded-xl p-1 gap-1">
-                            <button @click="updateQty(item.id, -1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#22222d] text-white/50 border-none cursor-pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-                            <span class="w-6 text-center text-sm font-extrabold text-white" x-text="item.qty"></span>
-                            <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#22222d] text-white/50 border-none cursor-pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                        <div class="flex flex-col items-end gap-3">
+                            <div class="flex items-center bg-[#1a1a24] rounded-[14px] p-1.5 gap-1.5 border border-white/[0.05] shadow-sm">
+                                <button @click="updateQty(item.id, -1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#22222d] text-white/40 hover:text-white border-none cursor-pointer transition-colors active:scale-90"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                                <span class="w-6 text-center text-[15px] font-black text-white tabular-nums" x-text="item.qty"></span>
+                                <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#22222d] text-white/40 hover:text-white border-none cursor-pointer transition-colors active:scale-90"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                            </div>
+                            <div class="text-[12px] font-black text-white/40" x-text="'Sub: ' + ((item.price - (item.discount || 0)) * item.qty).toLocaleString()"></div>
                         </div>
                     </div>
                 </template>
+                
+                <!-- SPLIT PAYMENT ROW SECTION -->
+                <div x-show="payment === 'split'" x-transition:enter="transition ease-out duration-300" class="mt-8 mb-4">
+                    <div class="p-6 bg-[#1a1a24] border border-white/[0.08] rounded-[28px] shadow-2xl">
+                        <div class="flex justify-between items-center mb-5">
+                            <h4 class="font-display font-extrabold text-[15px] text-white tracking-tight">Split Breakdown</h4>
+                            <button @click="splitPayments.push({method:'cash', amount:0})" class="px-4 py-2 bg-[#00e676] text-[#0a0a0f] text-[10px] font-black uppercase rounded-xl border-none shadow-glow-green cursor-pointer active:scale-95 transition-all">Add Method</button>
+                        </div>
+                        
+                        <div class="space-y-4 max-h-[250px] overflow-y-auto no-scrollbar pr-1">
+                            <template x-for="(sp, idx) in splitPayments" :key="idx">
+                                <div class="flex gap-2.5 items-center bg-black/20 p-2.5 rounded-2xl border border-white/[0.03]">
+                                    <div class="w-[45%] relative">
+                                        <select x-model="sp.method" class="w-full p-3.5 bg-[#111118] border border-white/[0.08] rounded-xl text-[13px] text-white font-bold appearance-none focus:border-[#00e676]/50 outline-none">
+                                            <option value="cash">Cash</option>
+                                            <option value="mpesa">M-Pesa</option>
+                                            <option value="card">Card</option>
+                                        </select>
+                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-80">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 relative">
+                                        <input type="number" x-model.number="sp.amount" placeholder="Amount"
+                                               class="w-full p-3.5 pr-10 bg-[#111118] text-[#00e676] font-display font-black border border-white/[0.08] rounded-xl text-right text-[15px] focus:ring-1 focus:ring-[#00e676]/30 outline-none">
+                                        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-muted/30">KES</div>
+                                    </div>
+                                    <button @click="splitPayments.splice(idx, 1)" class="w-10 h-10 flex items-center justify-center rounded-xl bg-brand-red/10 text-brand-red hover:bg-brand-red shadow-sm transition-all cursor-pointer border-none active:scale-90">✕</button>
+                                </div>
+                            </template>
+                            
+                            <template x-if="splitPayments.length === 0">
+                                <div class="py-6 text-center border-2 border-dashed border-white/5 rounded-2xl text-[11px] font-extrabold text-muted uppercase tracking-widest">No split rows added</div>
+                            </template>
+                        </div>
+                        
+                        <div class="flex justify-between items-center mt-6 pt-5 border-t border-white/[0.06]">
+                            <span class="text-muted/60 font-black text-xs uppercase tracking-widest">Total Collected</span>
+                            <div class="text-right">
+                                <div class="text-[18px] font-display font-black transition-colors" :class="totalPaid >= cartTotal ? 'text-[#00e676] drop-shadow-glow' : 'text-[#ff1744]'">
+                                    KES <span x-text="totalPaid.toLocaleString()"></span>
+                                </div>
+                                <div x-show="totalPaid < cartTotal" class="text-[10px] font-bold text-[#ff1744]/60 mt-1 uppercase" x-text="'Short by: ' + (cartTotal - totalPaid).toLocaleString()"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Total & Checkout -->
-            <div class="p-6 bg-[#0a0a0f] border-t border-white/[0.05] shrink-0">
-                <div class="flex justify-between items-end mb-6">
-                    <span class="text-white/40 font-bold mb-1">Total Pay</span>
-                    <div class="text-right">
-                        <div class="text-[10px] font-extrabold text-muted uppercase tracking-widest mb-1">Including Tax</div>
-                        <div class="text-3xl font-display font-extrabold text-[#00e676] leading-none">KES <span x-text="cartTotal.toLocaleString()"></span></div>
+            <!-- Footer Area (Final Charge) -->
+            <div class="p-8 bg-[#0a0a0f] border-t border-white/[0.08] shrink-0 shadow-2xl">
+                <div class="flex justify-between items-end mb-7">
+                    <div>
+                        <h5 class="text-white/30 text-[11px] font-black uppercase tracking-[0.25em] mb-1.5">Grand Total</h5>
+                        <div class="text-4xl font-display font-black text-[#00e676] leading-none tracking-tighter shadow-sm">KES <span x-text="cartTotal.toLocaleString()"></span></div>
+                    </div>
+                    <div class="text-right pb-1">
+                        <div class="inline-flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg">
+                           <div class="w-1.5 h-1.5 rounded-full bg-[#00e676] animate-pulse"></div>
+                           <span class="text-white/40 font-black text-[10px] uppercase tracking-widest" x-text="payment"></span>
+                        </div>
                     </div>
                 </div>
                 
@@ -214,29 +268,38 @@
                               checkoutLoading = false;
                               clearCart();
                           }).catch(err => { checkoutLoading = false; });"
-                  :disabled="checkoutLoading || itemCount === 0"
-                  class="w-full py-5 bg-[#00e676] text-[#0a0a0f] font-extrabold text-xl rounded-2xl shadow-[0_10px_25px_rgba(37,211,102,0.3)] border-none cursor-pointer active:scale-[0.98] relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <span x-show="!checkoutLoading">Process Payment</span>
-                    <span x-show="checkoutLoading">Processing...</span>
+                  :disabled="checkoutLoading || itemCount === 0 || (payment === 'split' && totalPaid < cartTotal)"
+                  class="w-full h-[72px] bg-[#00e676] text-[#0a0a0f] font-black text-xl rounded-[22px] shadow-[0_15px_45px_rgba(37,211,102,0.35)] border-none cursor-pointer active:scale-95 transition-all relative overflow-hidden group disabled:opacity-30 disabled:grayscale disabled:scale-100 uppercase tracking-wider">
+                    <div class="absolute inset-0 bg-white/25 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span x-show="!checkoutLoading" class="flex items-center justify-center gap-3">
+                        <span>Capture Payment</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </span>
+                    <span x-show="checkoutLoading" class="flex gap-3 items-center justify-center">
+                        <svg class="animate-spin h-6 w-6 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Verifying...
+                    </span>
                 </button>
-                <div class="h-4"></div>
+                <div class="h-6"></div>
             </div>
         </div>
     </div>
 
-    <!-- Scan overlay -->
-    <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[200] bg-black Backdrop-blur-md flex flex-col items-center justify-center p-6" x-transition.opacity>
-        <div class="relative w-full max-w-xs aspect-square border-2 border-[#00e676]/30 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(37,211,102,0.1)]">
+    <!-- Scan Barcode overlay -->
+    <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[200] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-8" x-transition.opacity>
+        <div class="relative w-full max-w-xs aspect-square border-2 border-[#00e676]/30 rounded-[40px] overflow-hidden shadow-glow-green">
             <video id="video" class="w-full h-full object-cover"></video>
-            <div class="absolute inset-0 border-[40px] border-black/40"></div>
-            <div class="absolute top-8 left-8 w-8 h-8 border-t-4 border-l-4 border-[#00e676] rounded-tl-xl drop-shadow-glow"></div>
-            <div class="absolute top-8 right-8 w-8 h-8 border-t-4 border-r-4 border-[#00e676] rounded-tr-xl drop-shadow-glow"></div>
-            <div class="absolute bottom-8 left-8 w-8 h-8 border-b-4 border-l-4 border-[#00e676] rounded-bl-xl drop-shadow-glow"></div>
-            <div class="absolute bottom-8 right-8 w-8 h-8 border-b-4 border-r-4 border-[#00e676] rounded-br-xl drop-shadow-glow"></div>
+            <div class="absolute inset-0 border-[50px] border-black/50"></div>
+            <!-- Laser -->
+            <div class="absolute inset-x-8 top-1/2 h-[3px] bg-[#00e676]/60 shadow-[0_0_15px_rgba(37,211,102,1)] rounded-full animate-[pulse_1s_infinite]"></div>
+            
+            <div class="absolute top-10 left-10 w-10 h-10 border-t-4 border-l-4 border-[#00e676] rounded-tl-2xl"></div>
+            <div class="absolute top-10 right-10 w-10 h-10 border-t-4 border-r-4 border-[#00e676] rounded-tr-2xl"></div>
+            <div class="absolute bottom-10 left-10 w-10 h-10 border-b-4 border-l-4 border-[#00e676] rounded-bl-2xl"></div>
+            <div class="absolute bottom-10 right-10 w-10 h-10 border-b-4 border-r-4 border-[#00e676] rounded-br-2xl"></div>
         </div>
-        <p class="text-white/80 font-bold mt-10 text-center tracking-wide">Align barcode to scan</p>
-        <button @click="scanOpen = false" class="mt-10 py-4 px-10 text-white/40 font-extrabold uppercase text-xs tracking-widest hover:text-white transition-all bg-transparent border-none cursor-pointer">Cancel</button>
+        <p class="text-white/70 font-display font-black mt-12 text-center text-lg tracking-tight">Ready for Barcode</p>
+        <button @click="scanOpen = false" class="mt-12 py-5 px-14 text-white/30 font-black uppercase text-[11px] tracking-[0.3em] hover:text-[#ff1744] transition-colors bg-transparent border-2 border-white/5 rounded-full cursor-pointer active:scale-95">Cancel</button>
     </div>
 
 </div>
