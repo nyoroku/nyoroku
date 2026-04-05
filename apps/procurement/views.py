@@ -65,7 +65,7 @@ def supplier_edit(request, pk):
 
 # --- PO BUILDER (Dynamic) ---
 from django.http import HttpResponse
-from apps.catalogue.models import Product, ProductVariant
+from catalogue.models import Product, ProductVariant
 
 @login_required
 def product_search(request):
