@@ -29,16 +29,20 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
         ('admin', 'Admin'),
+        ('manager', 'Manager'),
         ('cashier', 'Cashier'),
+        ('stock_clerk', 'Stock Clerk'),
     )
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='cashier')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='cashier')
     avatar = models.CharField(max_length=2, default='👤') 
     color = models.CharField(max_length=10, default='#00C853')
     pin_hash = models.CharField(max_length=128, blank=True, default='')
+    failed_pin_attempts = models.IntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

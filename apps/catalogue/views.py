@@ -74,7 +74,6 @@ def edit_product(request):
     product.price = request.POST.get('price')
     cost_price = request.POST.get('cost_price')
     product.cost_price = cost_price if cost_price else None
-    product.stock_qty = request.POST.get('stock_qty') or 0
     product.barcode = request.POST.get('barcode', '')
     product.image = request.POST.get('image', '📦')
     

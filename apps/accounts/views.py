@@ -4,6 +4,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from .models import User
 
 def logout_view(request):
@@ -36,19 +37,31 @@ def pin_auth(request):
             '<div class="text-brand-red text-xs font-bold text-center animate-shake">User not found</div>',
             status=401
         )
+        
+    if user.locked_until and user.locked_until > timezone.now():
+        remaining = int((user.locked_until - timezone.now()).total_seconds() / 60)
+        return HttpResponse(
+            f'<div class="text-brand-red text-xs font-bold text-center animate-shake">Account locked. Try again in {remaining} min</div>',
+            status=401
+        )
     
     # Check PIN first, then fall back to password
-    if user.pin_hash and user.check_pin(pin):
+    if (user.pin_hash and user.check_pin(pin)) or user.check_password(pin):
         login(request, user)
-        response = HttpResponse(status=200)
-        response['HX-Redirect'] = '/pos/'
-        return response
-    elif user.check_password(pin):
-        login(request, user)
+        # Reset lockout counters
+        user.failed_pin_attempts = 0
+        user.locked_until = None
+        user.save(update_fields=['failed_pin_attempts', 'locked_until'])
+        
         response = HttpResponse(status=200)
         response['HX-Redirect'] = '/pos/'
         return response
     else:
+        user.failed_pin_attempts += 1
+        if user.failed_pin_attempts >= 5:
+            user.locked_until = timezone.now() + timezone.timedelta(minutes=15)
+        user.save(update_fields=['failed_pin_attempts', 'locked_until'])
+        
         return HttpResponse(
             '<div class="text-brand-red text-xs font-bold text-center animate-shake">Wrong PIN — try again</div>',
             status=401
