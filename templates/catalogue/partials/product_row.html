@@ -1,14 +1,14 @@
-<div class="relative bg-white2 border border-border rounded-2xl p-4 flex items-center gap-4 transition-all hover:border-white/10 hover:shadow-card {% if not product.approved %}border-l-[3px] border-l-brand-amber ring-1 ring-brand-amber/5{% endif %} group">
+<div class="relative bg-surface2 border border-border rounded-2xl p-4 flex items-center gap-4 transition-all hover:border-white/10 hover:shadow-card {% if not product.approved %}border-l-[3px] border-l-brand-amber ring-1 ring-brand-amber/5{% endif %} group">
     
     <!-- Emoji / Icon -->
-    <div class="w-12 h-12 rounded-xl bg-white3 border border-border flex items-center justify-center text-2xl shrink-0">
+    <div class="w-12 h-12 rounded-xl bg-surface3 border border-border flex items-center justify-center text-2xl shrink-0">
         {{ product.image }}
     </div>
 
     <!-- Info -->
     <div class="flex-grow min-w-0">
         <div class="flex items-center gap-2 mb-0.5">
-            <h4 class="font-bold text-sm text-black truncate">{{ product.name }}</h4>
+            <h4 class="font-bold text-sm text-text-primary truncate">{{ product.name }}</h4>
             {% if not product.approved %}
             <span class="px-1.5 py-0.5 bg-brand-amber/10 text-brand-amber text-[8px] font-extrabold rounded-md tracking-wider uppercase">Pending</span>
             {% endif %}
@@ -29,7 +29,7 @@
     <!-- Actions -->
     <div class="flex items-center gap-1.5 shrink-0">
         <button @click="openEdit({ id: '{{ product.id }}', name: '{{ product.name|escapejs }}', category: '{{ product.category.id }}', price: '{{ product.price }}', cost_price: '{{ product.cost_price|default:'' }}', stock_qty: '{{ product.stock_qty }}', barcode: '{{ product.barcode|escapejs }}', image: '{{ product.image }}' })" 
-                class="w-8 h-8 rounded-xl bg-white3 border border-border text-text-muted flex items-center justify-center active:scale-90 transition-all hover:text-black hover:border-white/20"
+                class="w-8 h-8 rounded-xl bg-surface3 border border-border text-text-muted flex items-center justify-center active:scale-90 transition-all hover:text-text-primary hover:border-white/20"
                 title="Edit Product & Stock">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>
         </button>

@@ -12,44 +12,44 @@
             <button @click="period = 'today'; customOpen = false" 
                     hx-get="{% url 'reports:dashboard' %}?period=today"
                     hx-target="#dashboard-body"
-                    :class="period === 'today' ? 'bg-[#25d366] text-black shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#25d366]' : 'bg-white2 text-text-muted border-border'"
+                    :class="period === 'today' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 Today
             </button>
             <button @click="period = '7days'; customOpen = false" 
                     hx-get="{% url 'reports:dashboard' %}?period=7days"
                     hx-target="#dashboard-body"
-                    :class="period === '7days' ? 'bg-[#25d366] text-black shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#25d366]' : 'bg-white2 text-text-muted border-border'"
+                    :class="period === '7days' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 7 Days
             </button>
             <button @click="period = '30days'; customOpen = false" 
                     hx-get="{% url 'reports:dashboard' %}?period=30days"
                     hx-target="#dashboard-body"
-                    :class="period === '30days' ? 'bg-[#25d366] text-black shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#25d366]' : 'bg-white2 text-text-muted border-border'"
+                    :class="period === '30days' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 30 Days
             </button>
             <button @click="customOpen = !customOpen; if(customOpen) period = 'custom';"
-                    :class="period === 'custom' ? 'bg-[#25d366] text-black shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#25d366]' : 'bg-white2 text-text-muted border-border'"
+                    :class="period === 'custom' ? 'bg-[#7c6af7] text-white shadow-[0_0_15px_rgba(124,106,247,0.4)] border-[#7c6af7]' : 'bg-surface2 text-text-muted border-border'"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 Custom Range
             </button>
         </div>
         
         <!-- Custom Range Form -->
-        <div x-show="customOpen" x-collapse class="bg-white2 border border-border p-4 rounded-2xl">
+        <div x-show="customOpen" x-collapse class="bg-surface2 border border-border p-4 rounded-2xl">
             <form hx-get="{% url 'reports:dashboard' %}" hx-target="#dashboard-body" class="flex flex-col sm:flex-row gap-3 items-end">
                 <input type="hidden" name="period" value="custom">
                 <div class="flex-1 w-full">
                     <label class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block">Start Date</label>
-                    <input type="date" name="start_date" x-model="startDate" required class="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-[#25d366] focus:ring-1 focus:ring-[#25d366] transition-all">
+                    <input type="date" name="start_date" x-model="startDate" required class="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[#7c6af7] focus:ring-1 focus:ring-[#7c6af7] transition-all">
                 </div>
                 <div class="flex-1 w-full">
                     <label class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block">End Date</label>
-                    <input type="date" name="end_date" x-model="endDate" required class="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-black focus:outline-none focus:border-[#25d366] focus:ring-1 focus:ring-[#25d366] transition-all">
+                    <input type="date" name="end_date" x-model="endDate" required class="w-full bg-surface border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:outline-none focus:border-[#7c6af7] focus:ring-1 focus:ring-[#7c6af7] transition-all">
                 </div>
-                <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-[#25d366] text-black rounded-xl font-extrabold text-sm shadow-[0_0_15px_rgba(124,106,247,0.4)] active:scale-95 transition-all">
+                <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-[#7c6af7] text-white rounded-xl font-extrabold text-sm shadow-[0_0_15px_rgba(124,106,247,0.4)] active:scale-95 transition-all">
                     Apply Filter
                 </button>
             </form>

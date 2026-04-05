@@ -4,7 +4,7 @@
         {% for sale in sales %}
         <div class="bg-brand-amber/5 border border-brand-amber/20 rounded-xl p-3 flex items-center justify-between group">
             <div>
-                <span class="block text-xs font-bold text-black mb-0.5">
+                <span class="block text-xs font-bold text-text-primary mb-0.5">
                     {% if sale.customer_identifier %}{{ sale.customer_identifier }}{% else %}Cart #{{ sale.id|stringformat:"s"|slice:":4"|upper }}{% endif %}
                 </span>
                 <span class="block text-[10px] text-text-muted">{{ sale.parked_at|date:"H:i" }} — {{ sale.items|length }} items</span>

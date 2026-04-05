@@ -9,23 +9,23 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          green:     '#25D366', // WhatsApp green
-          greenDark: '#128C7E',
-          greenLight:'#4FCE5D',
-          greenGlow: 'rgba(37,211,102,0.15)',
+          green:     '#00C853',
+          greenDark: '#1B5E20',
+          greenLight:'#69F0AE',
+          greenGlow: 'rgba(0,200,83,0.15)',
           amber:     '#FFB300',
           red:       '#FF1744',
-          purple:    '#25D366', // removed purple
+          purple:    '#7C4DFF',
           dark:      '#050505',
         },
-        surface:  '#FFFFFF',
-        surface2: '#F0F2F5', // WhatsApp web background
-        surface3: '#E9EDF0',
-        surface4: '#D1D7DB',
-        border:   'rgba(0,0,0,0.1)',
+        surface:  '#080808',
+        surface2: '#0f0f0f',
+        surface3: '#161616',
+        surface4: '#1c1c1c',
+        border:   'rgba(255,255,255,0.06)',
         text: {
-          primary: '#000000',
-          muted:   '#333333',
+          primary: '#EAEAEA',
+          muted:   '#555566',
         }
       },
       fontFamily: {
@@ -40,8 +40,8 @@ module.exports = {
         '4xl':'2rem',
       },
       boxShadow: {
-        'glow-green': '0 0 30px rgba(37,211,102,0.15), 0 0 60px rgba(37,211,102,0.05)',
-        'glow-green-sm': '0 0 15px rgba(37,211,102,0.12)',
+        'glow-green': '0 0 30px rgba(0,200,83,0.15), 0 0 60px rgba(0,200,83,0.05)',
+        'glow-green-sm': '0 0 15px rgba(0,200,83,0.12)',
         'glow-amber': '0 0 30px rgba(255,179,0,0.12)',
         'glow-red':   '0 0 20px rgba(255,23,68,0.15)',
         'card':       '0 4px 24px rgba(0,0,0,0.4)',
