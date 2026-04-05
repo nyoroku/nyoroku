@@ -51,6 +51,20 @@ class Coupon(models.Model):
         return f"{self.code} ({self.display_value})"
 
 
+class ParkedSale(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cashier = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='parked_sales')
+    customer_identifier = models.CharField(max_length=50, blank=True, help_text="Optional name or tag for the parked sale")
+    items = models.JSONField(default=list)
+    parked_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-parked_at']
+        
+    def __str__(self):
+        return f"Parked by {self.cashier} at {self.parked_at.strftime('%Y-%m-%d %H:%M')}"
+
+
 class Transaction(models.Model):
     PAYMENT_CHOICES = (
         ('cash', 'Cash'),

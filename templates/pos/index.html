@@ -10,6 +10,7 @@
     <div class="flex-grow flex flex-col min-w-0" id="pos-main-pane">
         <!-- Search & Filters -->
         <div class="space-y-3 mb-5 shrink-0" x-data="{ scanOpen: false, manualBarcode: '' }">
+            <div id="parked-sales-container" hx-get="{% url 'pos:parked_sales_list' %}" hx-trigger="load, reloadParked from:body"></div>
         <div class="relative">
             <input type="text" 
                    name="q" 
@@ -219,6 +220,21 @@
                 </div>
             </div>
 
+            <div class="flex gap-2">
+                <button @click="
+                    if(!confirm('Park this sale?')) return;
+                    fetch('{% url 'pos:park_sale' %}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ items: cart.items, customer_identifier: prompt('Optional name for this parked sale:') || '' })
+                    }).then(r => {
+                        if(r.ok) { clearCart(); document.body.dispatchEvent(new Event('reloadParked')); }
+                        else { r.text().then(t => alert(t)); }
+                    });
+                " :disabled="itemCount === 0" class="flex-1 py-4 rounded-2xl text-text-muted font-bold text-sm uppercase tracking-tight active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 bg-surface3 border border-border">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Park
+                </button>
             <button @click="checkoutLoading = true; 
                             fetch('{% url 'pos:checkout' %}', {
                                 method: 'POST',
@@ -241,7 +257,7 @@
                             })
                             .catch(err => { checkoutLoading = false; });"
                     :disabled="checkoutLoading || itemCount === 0 || (payment === 'cash' && amountTendered !== null && amountTendered < cartTotal)"
-                    class="w-full py-4 rounded-2xl text-surface font-display font-extrabold text-base uppercase tracking-tight shadow-glow-green active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 btn-shimmer bg-brand-green">
+                    class="flex-[2] py-4 rounded-2xl text-surface font-display font-extrabold text-base uppercase tracking-tight shadow-glow-green active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 btn-shimmer bg-brand-green">
                 <template x-if="checkoutLoading">
                     <svg class="animate-spin h-5 w-5 text-surface" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                 </template>
@@ -249,6 +265,7 @@
                     <span>Confirm Sale</span>
                 </template>
             </button>
+            </div>
         </div>
     </div> <!-- End Cart Panel -->
 

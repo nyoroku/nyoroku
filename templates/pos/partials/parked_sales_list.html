@@ -1,0 +1,29 @@
+{% if sales %}
+    <div class="space-y-2 mt-4 px-1" id="parked-sales-list">
+        <h4 class="text-[10px] font-extrabold uppercase tracking-wider text-brand-amber mb-2">Parked Sales ({{ sales.count }}/5)</h4>
+        {% for sale in sales %}
+        <div class="bg-brand-amber/5 border border-brand-amber/20 rounded-xl p-3 flex items-center justify-between group">
+            <div>
+                <span class="block text-xs font-bold text-text-primary mb-0.5">
+                    {% if sale.customer_identifier %}{{ sale.customer_identifier }}{% else %}Cart #{{ sale.id|stringformat:"s"|slice:":4"|upper }}{% endif %}
+                </span>
+                <span class="block text-[10px] text-text-muted">{{ sale.parked_at|date:"H:i" }} — {{ sale.items|length }} items</span>
+            </div>
+            <div class="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                <!-- Resume Button -->
+                <button @click="
+                    fetch('{% url 'pos:resume_sale' sale.id %}')
+                    .then(r => r.json())
+                    .then(items => { cart.items = items; htmx.ajax('GET', '{% url 'pos:parked_sales_list' %}', '#parked-sales-container'); cart.open = true; });
+                " class="p-2 bg-brand-green/10 text-brand-green rounded-lg hover:bg-brand-green hover:text-black transition-colors" title="Resume Sale">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+                <!-- Delete Button -->
+                <button hx-post="{% url 'pos:delete_parked_sale' sale.id %}" hx-target="#parked-sales-container" class="p-2 text-text-muted hover:bg-brand-red/10 hover:text-brand-red rounded-lg transition-colors" title="Discard">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% endif %}

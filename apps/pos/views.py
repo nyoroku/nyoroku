@@ -6,7 +6,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from catalogue.models import Product, Category, ProductVariant
-from .models import Transaction, Coupon
+from .models import Transaction, Coupon, ParkedSale
 
 @login_required
 def index(request):
@@ -258,3 +258,45 @@ def delete_coupon(request, pk):
     if request.headers.get('HX-Request'):
         return HttpResponse('')
     return redirect('pos:coupon_list')
+
+@login_required
+@require_http_methods(["POST"])
+def park_sale(request):
+    try:
+        data = json.loads(request.body)
+        items = data.get('items', [])
+        customer = data.get('customer_identifier', '')
+        
+        if not items:
+            return HttpResponse('Cart is empty', status=400)
+            
+        # Max limit check
+        if ParkedSale.objects.filter(cashier=request.user).count() >= 5:
+            return HttpResponse('Maximum 5 parked sales per cashier allowed.', status=400)
+            
+        sale = ParkedSale.objects.create(
+            cashier=request.user,
+            customer_identifier=customer,
+            items=items
+        )
+        return JsonResponse({'status': 'success', 'parked_id': sale.id})
+    except Exception as e:
+        return HttpResponse(str(e), status=400)
+
+@login_required
+def parked_sales_list(request):
+    sales = ParkedSale.objects.filter(cashier=request.user)
+    return render(request, 'pos/partials/parked_sales_list.html', {'sales': sales})
+
+@login_required
+def resume_sale(request, pk):
+    sale = get_object_or_404(ParkedSale, pk=pk, cashier=request.user)
+    items_json = json.dumps(sale.items)
+    sale.delete()  # Remove from parked once resumed
+    return HttpResponse(items_json, content_type="application/json")
+
+@login_required
+def delete_parked_sale(request, pk):
+    sale = get_object_or_404(ParkedSale, pk=pk, cashier=request.user)
+    sale.delete()
+    return parked_sales_list(request)
