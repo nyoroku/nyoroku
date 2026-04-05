@@ -36,7 +36,7 @@
     
     <div class="text-text-muted text-[11px] mt-[2px] {% if product.total_stock <= product.reorder_level and product.total_stock > 0 %}text-brand-amber{% endif %}">
         {% if product.total_stock <= product.reorder_level and product.total_stock > 0 %}
-        ? Stock: {{ product.total_stock }}
+        ⚠ Stock: {{ product.total_stock }}
         {% else %}
         Stock: {{ product.total_stock }}
         {% endif %}

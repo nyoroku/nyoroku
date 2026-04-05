@@ -3,8 +3,8 @@
          class="bg-surface rounded-t-[24px] w-full max-w-[480px] border border-border overflow-hidden">
         
         <div class="bg-brand-whatsapp p-[22px_24px] text-center">
-            <div class="font-display text-[22px] font-[800] text-[#0a0a0f]">? Payment Complete</div>
-            <div class="text-black/55 text-[13px] mt-[4px] font-bold uppercase transition">{{ transaction.payment_method }} · KES {{ transaction.total }}</div>
+            <div class="font-display text-[22px] font-[800] text-[#0a0a0f]">âœ“ Payment Complete</div>
+            <div class="text-black/55 text-[13px] mt-[4px] font-bold uppercase transition">{{ transaction.payment_method }} Â· KES {{ transaction.total }}</div>
         </div>
         
         <div class="p-[20px_24px] font-mono">
@@ -18,7 +18,7 @@
             
             {% for item in items %}
             <div class="flex justify-between text-[13px] text-text-primary py-[4px]">
-                <span>{{ item.product.name }} × {{ item.qty }}</span>
+                <span>{{ item.product.name }} Ã— {{ item.qty }}</span>
                 <span class="font-[600]">KES {% widthratio item.price 1 item.qty %}</span>
             </div>
             {% empty %}
