@@ -62,6 +62,27 @@ def add_product(request):
         pending_by=request.user if not is_approved else None
     )
     
+    variants_json = request.POST.get('variants_json')
+    if variants_json:
+        import json
+        try:
+            variants = json.loads(variants_json)
+            for v in variants:
+                ProductVariant.objects.create(
+                    product=product,
+                    options={"Variant": v.get('name', '')},
+                    price_override=v.get('price', price),
+                    cost_price=v.get('cost_price') or None,
+                    barcode=v.get('barcode', ''),
+                    stock_qty=v.get('stock_qty', 0),
+                    reorder_level=v.get('reorder_level', 5)
+                )
+            if variants:
+                product.has_variants = True
+                product.save()
+        except json.JSONDecodeError:
+            pass
+    
     return redirect('catalogue:inventory')
 
 @login_required
@@ -84,6 +105,42 @@ def edit_product(request):
         product.pending_by = request.user
         
     product.save()
+
+    variants_json = request.POST.get('variants_json')
+    if variants_json:
+        import json
+        try:
+            variants = json.loads(variants_json)
+            # Remove existing variants not in the new list (if they have IDs)
+            keep_ids = [v.get('id') for v in variants if v.get('id')]
+            product.variants.exclude(id__in=keep_ids).delete()
+            
+            for v in variants:
+                if v.get('id'):
+                    variant_obj = ProductVariant.objects.filter(id=v['id'], product=product).first()
+                    if variant_obj:
+                        variant_obj.options = {"Variant": v.get('name', '')}
+                        variant_obj.price_override = v.get('price', product.price)
+                        variant_obj.cost_price = v.get('cost_price') or None
+                        variant_obj.barcode = v.get('barcode', '')
+                        variant_obj.stock_qty = v.get('stock_qty', 0)
+                        variant_obj.reorder_level = v.get('reorder_level', 5)
+                        variant_obj.save()
+                else:
+                    ProductVariant.objects.create(
+                        product=product,
+                        options={"Variant": v.get('name', '')},
+                        price_override=v.get('price', product.price),
+                        cost_price=v.get('cost_price') or None,
+                        barcode=v.get('barcode', ''),
+                        stock_qty=v.get('stock_qty', 0),
+                        reorder_level=v.get('reorder_level', 5)
+                    )
+            product.has_variants = bool(variants)
+            product.save()
+        except json.JSONDecodeError:
+            pass
+            
     return redirect('catalogue:inventory')
 
 @login_required
