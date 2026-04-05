@@ -73,44 +73,42 @@
         </div>
     </div>
 
-        <!-- Product Grid -->
-        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger lg:overflow-y-auto lg:pr-2 no-scrollbar lg:pb-16">
+        <!-- Product Grid — extra bottom padding on mobile so products aren't hidden behind cart banner + bottom nav -->
+        <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3 stagger lg:overflow-y-auto lg:pr-2 no-scrollbar pb-36 lg:pb-16">
             {% include 'pos/partials/product_grid.html' %}
         </div>
     </div> <!-- END LEFT SIDE -->
 
-    <!-- Cart Sticky Banner (MOBILE ONLY) -->
-    <button @click="cart.open = true" 
-            x-show="itemCount > 0"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="translate-y-10 opacity-0"
-            x-transition:enter-end="translate-y-0 opacity-100"
-            class="fixed bottom-[84px] left-4 right-4 bg-[#7c6af7] text-white rounded-2xl shadow-[0_0_24px_rgba(124,106,247,0.35)] px-6 py-4 flex items-center justify-between active:scale-[0.98] transition-all z-40 font-display font-extrabold uppercase tracking-tight btn-shimmer lg:hidden">
-        <div class="flex items-center gap-3">
-            <div class="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
-                <span class="absolute -top-2 -right-2 bg-white text-[#7c6af7] text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-extrabold" x-text="itemCount"></span>
+    <!-- Cart Sticky Banner (MOBILE ONLY) — only injected into DOM when cart has items -->
+    <template x-if="itemCount > 0">
+        <button @click="cart.open = true" 
+                class="fixed bottom-20 left-3 right-3 bg-[#7c6af7] text-white rounded-2xl shadow-[0_4px_24px_rgba(124,106,247,0.45)] px-5 py-3.5 flex items-center justify-between active:scale-[0.98] transition-all z-30 font-display font-extrabold uppercase tracking-tight btn-shimmer lg:hidden">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                    <span class="absolute -top-1.5 -right-1.5 bg-white text-[#7c6af7] text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-extrabold leading-none" x-text="itemCount"></span>
+                </div>
+                <span class="text-[13px]">Cart</span>
             </div>
-            <span class="text-sm">Checkout</span>
-        </div>
-        <span class="text-base font-display">KES <span x-text="cartTotal.toLocaleString()"></span></span>
-    </button>
+            <span class="text-[13px] font-display">KES <span x-text="cartTotal.toLocaleString()"></span></span>
+        </button>
+    </template>
 
     <!-- RIGHT SIDE: Cart Sidebar (Desktop) / Bottom Drawer (Mobile) -->
     <div x-show="cart.open" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[45] lg:hidden" @click="cart.open = false" x-transition.opacity></div>
 
     <div :class="cart.open ? 'translate-y-0' : 'translate-y-full'" 
-         class="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[92vh] bg-surface2 border-t border-border rounded-t-[28px] shadow-2xl transition-transform duration-300 
-                lg:translate-y-0 lg:static lg:w-[400px] xl:w-[420px] lg:flex-shrink-0 lg:h-full lg:rounded-[24px] lg:border lg:shadow-none lg:z-auto relative">
+         class="fixed inset-x-0 bottom-0 z-50 flex flex-col max-h-[85vh] bg-surface2 border-t border-border rounded-t-[28px] shadow-2xl transition-transform duration-300 
+                lg:translate-y-0 lg:static lg:w-[400px] xl:w-[420px] lg:flex-shrink-0 lg:h-full lg:rounded-[24px] lg:border lg:shadow-none lg:z-auto lg:max-h-full relative">
             
         <!-- Drag handle (mobile only) -->
         <div class="flex lg:hidden justify-center pt-3 pb-1 shrink-0">
             <div class="w-10 h-1 rounded-full bg-white/10"></div>
         </div>
             
-            <div class="px-6 pb-3 flex justify-between items-center shrink-0">
+            <div class="px-5 pb-3 flex justify-between items-center shrink-0">
                 <div class="flex items-center gap-3">
-                    <h3 class="font-display font-extrabold text-xl text-text-primary uppercase tracking-tight">Cart</h3>
+                    <h3 class="font-display font-extrabold text-lg text-text-primary uppercase tracking-tight">Cart</h3>
                     <span class="px-2 py-0.5 bg-brand-green/10 border border-brand-green/20 rounded-lg text-[10px] font-extrabold text-brand-green" x-text="itemCount + ' items'"></span>
                 </div>
                 <div class="flex items-center gap-2">
@@ -122,10 +120,10 @@
             </div>
 
             <!-- Cart Items -->
-            <div class="flex-grow overflow-y-auto px-6 py-2">
+            <div class="flex-grow overflow-y-auto px-5 py-2">
                 <template x-for="item in cart.items" :key="item.id">
-                    <div class="flex items-center gap-3 py-3.5 border-b border-border last:border-b-0 animate-fade-in">
-                        <div class="w-11 h-11 bg-surface3 rounded-xl flex items-center justify-center text-xl shrink-0 border border-border" x-text="item.image"></div>
+                    <div class="flex items-center gap-3 py-3 border-b border-border last:border-b-0 animate-fade-in">
+                        <div class="w-10 h-10 bg-surface3 rounded-xl flex items-center justify-center text-lg shrink-0 border border-border" x-text="item.image"></div>
                         <div class="flex-grow min-w-0">
                             <h4 class="font-bold text-sm text-text-primary truncate mb-0.5" x-text="item.name"></h4>
                             <div class="flex items-center gap-2">
@@ -134,15 +132,15 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button @click="updateQty(item.id, -1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-surface3 border border-border text-text-muted hover:text-text-primary active:scale-90 transition-all">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+                            <button @click="updateQty(item.id, -1)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-surface3 border border-border text-text-muted hover:text-text-primary active:scale-90 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
                             </button>
-                            <span class="w-8 text-center font-bold text-sm text-text-primary" x-text="item.qty"></span>
-                            <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-brand-green/10 border border-brand-green/20 text-brand-green active:scale-90 transition-all">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                            <span class="w-7 text-center font-bold text-sm text-text-primary" x-text="item.qty"></span>
+                            <button @click="updateQty(item.id, 1)" class="w-7 h-7 flex items-center justify-center rounded-lg bg-brand-green/10 border border-brand-green/20 text-brand-green active:scale-90 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                             </button>
-                            <button @click="removeItem(item.id)" class="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted hover:text-brand-red hover:bg-brand-red/10 transition-all ml-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            <button @click="removeItem(item.id)" class="w-7 h-7 flex items-center justify-center rounded-lg text-text-muted hover:text-brand-red hover:bg-brand-red/10 transition-all ml-0.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                             </button>
                         </div>
                     </div>
@@ -150,7 +148,7 @@
             </div>
 
             <!-- Checkout Footer -->
-            <div class="p-6 bg-surface border-t border-border safe-bottom shrink-0 space-y-4">
+            <div class="px-5 py-4 bg-surface border-t border-border shrink-0 space-y-3">
                 
                 <!-- Coupon Input -->
                 <div class="flex gap-2">
@@ -159,7 +157,7 @@
                                x-model="couponCode" 
                                placeholder="Coupon code" 
                                :disabled="couponApplied"
-                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-xs text-text-primary placeholder:text-text-muted/50 focus:border-brand-green/40 focus:ring-0 uppercase font-bold tracking-wider transition-all disabled:opacity-50">
+                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-2.5 text-xs text-text-primary placeholder:text-text-muted/50 focus:border-brand-green/40 focus:ring-0 uppercase font-bold tracking-wider transition-all disabled:opacity-50">
                         <template x-if="couponApplied">
                             <button @click="removeCoupon()" class="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-brand-red transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -168,7 +166,7 @@
                     </div>
                     <button @click="applyCoupon()" 
                             :disabled="!couponCode || couponApplied"
-                            class="px-5 py-3 bg-brand-green/10 border border-brand-green/20 text-brand-green rounded-xl text-xs font-extrabold uppercase tracking-wider hover:bg-brand-green/15 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="px-4 py-2.5 bg-brand-green/10 border border-brand-green/20 text-brand-green rounded-xl text-xs font-extrabold uppercase tracking-wider hover:bg-brand-green/15 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
                         Apply
                     </button>
                 </div>
@@ -184,22 +182,22 @@
                 
                 <!-- Payment Method Selector -->
                 <div class="grid grid-cols-3 gap-2">
-                    <button @click="payment = 'cash'" :class="payment === 'cash' ? 'bg-[#7c6af7] text-white border-[#7c6af7] shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+                    <button @click="payment = 'cash'" :class="payment === 'cash' ? 'bg-[#7c6af7] text-white border-[#7c6af7] shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-2.5 rounded-2xl border transition-all active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-0.5"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">Cash</span>
                     </button>
-                    <button @click="payment = 'mpesa'" :class="payment === 'mpesa' ? 'bg-[#7c6af7] text-white border-[#7c6af7] shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    <button @click="payment = 'mpesa'" :class="payment === 'mpesa' ? 'bg-[#7c6af7] text-white border-[#7c6af7] shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-2.5 rounded-2xl border transition-all active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-0.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">M-Pesa</span>
                     </button>
-                    <button @click="payment = 'card'" :class="payment === 'card' ? 'bg-[#7c6af7] text-white border-[#7c6af7]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-3 rounded-2xl border transition-all active:scale-95">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-1"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                    <button @click="payment = 'card'" :class="payment === 'card' ? 'bg-[#7c6af7] text-white border-[#7c6af7] shadow-[0_0_15px_rgba(124,106,247,0.4)]' : 'bg-surface3 text-text-muted border-border'" class="flex flex-col items-center justify-center py-2.5 rounded-2xl border transition-all active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mb-0.5"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                         <span class="text-[10px] font-extrabold uppercase">Card</span>
                     </button>
                 </div>
 
                 <!-- Totals -->
-                <div class="space-y-2">
+                <div class="space-y-1.5">
                     <div class="flex justify-between items-center">
                         <span class="text-text-muted text-xs font-bold">Subtotal</span>
                         <span class="text-text-primary text-sm font-bold">KES <span x-text="cartSubtotal.toLocaleString()"></span></span>
@@ -212,7 +210,7 @@
                     </template>
                     <div class="flex justify-between items-end pt-2 border-t border-border">
                         <span class="text-text-muted font-bold uppercase tracking-[0.2em] text-[10px]">Total</span>
-                        <span class="font-display font-extrabold text-3xl text-brand-green leading-none">KES <span x-text="cartTotal.toLocaleString()"></span></span>
+                        <span class="font-display font-extrabold text-2xl text-brand-green leading-none">KES <span x-text="cartTotal.toLocaleString()"></span></span>
                     </div>
                 </div>
 
@@ -237,7 +235,7 @@
                                 })
                                 .catch(err => { checkoutLoading = false; });"
                         :disabled="checkoutLoading || itemCount === 0"
-                        class="w-full py-5 rounded-2xl text-surface font-display font-extrabold text-lg uppercase tracking-tight shadow-glow-green active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 btn-shimmer bg-brand-green">
+                        class="w-full py-4 rounded-2xl text-surface font-display font-extrabold text-base uppercase tracking-tight shadow-glow-green active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 btn-shimmer bg-brand-green">
                     <template x-if="checkoutLoading">
                         <svg class="animate-spin h-5 w-5 text-surface" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </template>
