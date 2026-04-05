@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}Vendor Network{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 max-w-7xl mx-auto space-y-10 animate-fade-in" x-data="{ 
+    supplierModal: false, 
+    isEdit: false,
+    form: { id: '', name: '', phone: '', email: '', address: '' },
+    openCreate() {
+        this.isEdit = false;
+        this.form = { id: '', name: '', phone: '', email: '', address: '' };
+        this.supplierModal = true;
+    },
+    openEdit(s) {
+        this.isEdit = true;
+        this.form = { ...s };
+        this.supplierModal = true;
+    }
+}">
+
+    <!-- Header & Action -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <h1 class="font-display font-800 text-5xl text-white tracking-tight leading-none">Nexus Vendors</h1>
+            <p class="text-text-muted mt-3 font-medium text-lg uppercase tracking-widest text-[10px]">Supply Chain Origin Tracking</p>
+        </div>
+        
+        <div class="flex gap-4">
+            <a href="{% url 'procurement:po_list' %}" class="h-16 px-8 bg-surface2 border border-white/[0.04] text-text-muted rounded-3xl font-display font-800 text-[12px] uppercase tracking-widest flex items-center gap-3 transition-all hover:text-white active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                Purchase Orders
+            </a>
+            <button @click="openCreate()"
+                    class="h-16 px-10 bg-brand-whatsapp text-white rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest flex items-center gap-3 transition-all active:scale-95 shadow-[0_12px_45px_rgba(37,211,102,0.4)] hover:brightness-110">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Vendor Stream
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-surface2 border border-white/[0.04] p-8 rounded-[40px] shadow-card relative overflow-hidden group">
+            <div class="absolute inset-0 bg-brand-whatsapp/[0.02] pointer-events-none"></div>
+            <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-4">Total Origins</p>
+            <div class="flex items-end gap-3">
+                <span class="font-display font-800 text-5xl text-white tracking-tighter">{{ suppliers|length }}</span>
+                <span class="text-brand-whatsapp text-[12px] font-bold mb-2 uppercase tracking-widest">Active Vendors</span>
+            </div>
+        </div>
+        <div class="bg-surface2 border border-white/[0.04] p-8 rounded-[40px] shadow-card">
+            <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-4">Geographic Spread</p>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-brand-amber/10 flex items-center justify-center text-brand-amber border border-brand-amber/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <span class="font-display font-800 text-3xl text-white">Domestic</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="bg-surface2 border border-white/[0.04] rounded-[52px] overflow-hidden shadow-card">
+        <div class="overflow-x-auto no-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-white/[0.04] bg-white/[0.01]">
+                        <th class="px-10 py-7 text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Origin Name</th>
+                        <th class="px-10 py-7 text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Connection Info</th>
+                        <th class="px-10 py-7 text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Cycle History</th>
+                        <th class="px-10 py-7 text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] text-right">Operations</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/[0.04]">
+                    {% for s in suppliers %}
+                    <tr class="hover:bg-white/[0.01] transition-all group">
+                        <td class="px-10 py-8">
+                            <div class="flex items-center gap-5">
+                                <div class="w-14 h-14 rounded-2xl bg-surface3 border border-white/[0.04] flex items-center justify-center text-2xl font-display font-800 shadow-inner group-hover:scale-110 group-hover:bg-brand-whatsapp/10 group-hover:text-brand-whatsapp transition-all">
+                                    {{ s.name|slice:":1" }}
+                                </div>
+                                <div>
+                                    <div class="font-display font-800 text-xl text-white tracking-tight">{{ s.name }}</div>
+                                    <div class="text-[10px] text-text-muted font-bold uppercase tracking-[0.2em] mt-1 opacity-50">{{ s.id|stringformat:".8s" }}...</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-10 py-8">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2 text-[13px] font-bold text-white">
+                                    <svg class="text-brand-whatsapp opacity-60" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                    {{ s.phone|default:"---" }}
+                                </div>
+                                <div class="flex items-center gap-2 text-[12px] font-medium text-text-muted">
+                                    <svg class="opacity-40" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                    {{ s.email|default:"---" }}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-10 py-8">
+                            <span class="inline-flex px-3 py-1.5 rounded-xl bg-white/5 border border-white/5 text-[10px] font-bold text-text-muted uppercase tracking-widest">
+                                {{ s.purchase_orders.count }} Cycles
+                            </span>
+                        </td>
+                        <td class="px-10 py-8 text-right">
+                            <button @click="openEdit({ id:'{{ s.id }}', name:'{{ s.name|escapejs }}', phone:'{{ s.phone|escapejs }}', email:'{{ s.email|escapejs }}', address:'{{ s.address|escapejs }}' })"
+                                    class="w-12 h-12 rounded-2xl bg-white/[0.04] text-text-muted hover:bg-brand-whatsapp hover:text-white transition-all inline-flex items-center justify-center active:scale-90 border border-white/[0.04] shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-10 py-32 text-center text-text-muted opacity-20">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-6"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <p class="font-display font-800 uppercase tracking-[0.4em] text-lg">Empty Origin Network</p>
+                                <p class="text-sm font-medium mt-2">Initialize your first vendor to start the procurement cycle</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div x-show="supplierModal" x-cloak class="fixed inset-0 z-[600] flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-3xl" @click="supplierModal = false" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"></div>
+        
+        <div class="relative w-full max-w-xl bg-surface2 border border-white/[0.06] p-10 rounded-[52px] shadow-2xl overflow-hidden group"
+             x-show="supplierModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-8 opacity-0 scale-95" x-transition:enter-end="translate-y-0 opacity-100 scale-100">
+            <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none"></div>
+            
+            <h2 class="font-display font-800 text-4xl text-white tracking-tight mb-8" x-text="isEdit ? 'Update Origin' : 'New Vendor Stream'"></h2>
+
+            <form :action="isEdit ? '{% url 'procurement:supplier_edit' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', form.id) : '{% url 'procurement:supplier_create' %}'" 
+                  method="POST" class="space-y-6 relative z-10">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3 ml-1">Vendor Signature (Name)</label>
+                    <input type="text" name="name" x-model="form.name" required 
+                           class="w-full h-16 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-6 text-white font-bold placeholder:text-text-muted/20 focus:border-brand-whatsapp/40 focus:ring-4 focus:ring-brand-whatsapp/5 outline-none transition-all">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3 ml-1">Phone Link</label>
+                        <input type="text" name="phone" x-model="form.phone"
+                               class="w-full h-16 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-6 text-white font-bold focus:border-brand-whatsapp/40 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3 ml-1">Email Node</label>
+                        <input type="email" name="email" x-model="form.email"
+                               class="w-full h-16 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-6 text-white font-bold focus:border-brand-whatsapp/40 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3 ml-1">Geographic Origin (Address)</label>
+                    <textarea name="address" x-model="form.address" rows="3"
+                              class="w-full bg-surface3 border-2 border-white/[0.04] rounded-3xl p-6 text-white font-bold focus:border-brand-whatsapp/40 outline-none transition-all"></textarea>
+                </div>
+
+                <div class="pt-6 flex gap-4">
+                    <button type="button" @click="supplierModal = false"
+                            class="flex-1 h-18 bg-white/[0.04] text-text-muted rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest transition-all active:scale-95">
+                        Abort
+                    </button>
+                    <button type="submit"
+                            class="flex-[2] h-18 bg-brand-whatsapp text-white rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest transition-all active:scale-95 shadow-glow-green-sm hover:brightness-110"
+                            x-text="isEdit ? 'Sync Origin' : 'Initialize Vendor'"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

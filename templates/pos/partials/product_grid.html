@@ -63,32 +63,35 @@
     </div>
 
     <!-- Stock pill — pinned to bottom of card -->
-    <div class="absolute bottom-2 left-2 right-2 flex items-center gap-1 px-2 py-1 rounded-[8px] text-[9px] fd font-800 uppercase tracking-[.14em]"
-        {% if product.total_stock <=product.reorder_level %}
-        style="background:rgba(255,186,8,.08);color:var(--amber);border:1px solid rgba(255,186,8,.18)" {% else %}
-        style="background:var(--bg-hi);color:var(--tx-low);border:1px solid var(--bdr)" {% endif %}>
-        {% if product.total_stock <= product.reorder_level %} <span
-            style="width:5px;height:5px;border-radius:50%;background:var(--amber);display:inline-block;animation:pulse 1.5s infinite;flex-shrink:0">
-            </span>
-            Low · {{ product.total_stock }}
-            {% else %}
+    {% with reorder=product.reorder_level|default:0 %}
+    {% if product.total_stock <= reorder %} <div
+        class="absolute bottom-2 left-2 right-2 flex items-center gap-1 px-2 py-1 rounded-[8px] text-[9px] fd font-800 uppercase tracking-[.14em]"
+        style="background:rgba(255,186,8,.08);color:var(--amber);border:1px solid rgba(255,186,8,.18)">
+        <span
+            style="width:5px;height:5px;border-radius:50%;background:var(--amber);display:inline-block;flex-shrink:0"></span>
+        Low &middot; {{ product.total_stock }}
+        </div>
+        {% else %}
+        <div class="absolute bottom-2 left-2 right-2 flex items-center gap-1 px-2 py-1 rounded-[8px] text-[9px] fd font-800 uppercase tracking-[.14em]"
+            style="background:var(--bg-hi);color:var(--tx-low);border:1px solid var(--bdr)">
             <span
                 style="width:5px;height:5px;border-radius:50%;background:var(--mint);display:inline-block;opacity:.5;flex-shrink:0"></span>
             {{ product.total_stock }} left
-            {% endif %}
-    </div>
+        </div>
+        {% endif %}
+        {% endwith %}
 
-    <!-- Quick-add (+) button — appears on hover, no modal needed if no variants -->
-    {% if not product.has_variants and product.total_stock > 0 %}
-    <button class="qadd" @click.stop="
+        <!-- Quick-add (+) button — appears on hover, no modal needed if no variants -->
+        {% if not product.has_variants and product.total_stock > 0 %}
+        <button class="qadd" @click.stop="
             let p={id:'{{ product.id }}',name:'{{ product.name|escapejs }}',price:{{ product.price }},stock_qty:{{ product.total_stock }},image:'{{ product.image }}'};
             addToCart(p,1)" title="Quick add">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-    </button>
-    {% endif %}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+        </button>
+        {% endif %}
 
 </button>
 {% empty %}

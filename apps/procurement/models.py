@@ -39,6 +39,10 @@ class PurchaseOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def total_cost(self):
+        return sum(item.get('total_cost', 0) for item in self.items)
+
     def save(self, *args, **kwargs):
         if not self.lpo_number:
             last_po = PurchaseOrder.objects.all().order_by('created_at').last()
