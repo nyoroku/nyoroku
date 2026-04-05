@@ -5,8 +5,9 @@ from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
 from pos.models import Transaction
+from pos.models import Transaction
 from expenses.models import Expense
-from catalogue.models import Product
+from catalogue.models import Product, ProductVariant
 
 @login_required
 def dashboard(request):
@@ -96,6 +97,11 @@ def dashboard(request):
             product_totals[pid]['revenue'] += rev
             
     top_products = sorted(product_totals.values(), key=lambda x: x['revenue'], reverse=True)[:5]
+    
+    # Low Stock Alerts
+    from django.db.models import F
+    low_stock_products = Product.objects.filter(approved=True, has_variants=False, stock_qty__lte=F('reorder_level'), stock_qty__gt=0)
+    low_stock_variants = ProductVariant.objects.filter(stock_qty__lte=F('reorder_level'), stock_qty__gt=0).select_related('parent')
 
     context = {
         'period': period,
@@ -112,6 +118,8 @@ def dashboard(request):
         'payment_stats': payment_stats,
         'chart_days': chart_days,
         'top_products': top_products,
+        'low_stock_products': low_stock_products,
+        'low_stock_variants': low_stock_variants,
     }
     
     if request.headers.get('HX-Request'):

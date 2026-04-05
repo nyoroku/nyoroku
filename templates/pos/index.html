@@ -195,9 +195,27 @@
                         <span class="text-brand-green text-sm font-bold">- KES <span x-text="discountAmount.toLocaleString()"></span></span>
                     </div>
                 </template>
-                <div class="flex justify-between items-end pt-2 border-t border-border">
+                <div class="flex justify-between items-end pt-2 border-t border-border mb-3">
                     <span class="text-text-muted font-bold uppercase tracking-[0.2em] text-[10px]">Total</span>
                     <span class="font-display font-extrabold text-2xl text-brand-green leading-none">KES <span x-text="cartTotal.toLocaleString()"></span></span>
+                </div>
+
+                <!-- Cash Tendered -->
+                <div x-show="payment === 'cash'" x-collapse class="space-y-2 pb-2">
+                    <div class="relative">
+                        <label class="absolute -top-2 left-3 bg-surface px-1 text-[9px] font-extrabold text-brand-green uppercase tracking-wider">Tendered</label>
+                        <input type="number" 
+                               x-model.number="amountTendered" 
+                               placeholder="Amount given by customer" 
+                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted/50 focus:border-brand-green/40 focus:ring-0 font-bold transition-all">
+                    </div>
+                    <div x-show="amountTendered !== null && amountTendered >= cartTotal" class="flex justify-between items-center px-4 py-2 bg-brand-green/10 border border-brand-green/20 rounded-xl">
+                        <span class="text-brand-green text-xs font-bold">Change</span>
+                        <span class="text-brand-green text-lg font-extrabold">KES <span x-text="(amountTendered - cartTotal).toLocaleString()"></span></span>
+                    </div>
+                    <div x-show="amountTendered !== null && amountTendered > 0 && amountTendered < cartTotal" class="text-brand-red text-xs font-bold text-center">
+                        Insufficient amount!
+                    </div>
                 </div>
             </div>
 
@@ -219,9 +237,10 @@
                                 document.getElementById('modal-container').innerHTML = html;
                                 checkoutLoading = false;
                                 clearCart();
+                                amountTendered = null;
                             })
                             .catch(err => { checkoutLoading = false; });"
-                    :disabled="checkoutLoading || itemCount === 0"
+                    :disabled="checkoutLoading || itemCount === 0 || (payment === 'cash' && amountTendered !== null && amountTendered < cartTotal)"
                     class="w-full py-4 rounded-2xl text-surface font-display font-extrabold text-base uppercase tracking-tight shadow-glow-green active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 btn-shimmer bg-brand-green">
                 <template x-if="checkoutLoading">
                     <svg class="animate-spin h-5 w-5 text-surface" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>

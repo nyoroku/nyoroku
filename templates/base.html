@@ -139,6 +139,7 @@
         couponType: '',
         couponApplied: false,
         couponError: '',
+        amountTendered: null,
 
         get itemCount() { return this.cart.items.reduce((s, i) => s + i.qty, 0); },
         get cartSubtotal() { return this.cart.items.reduce((s, i) => s + (i.price * i.qty), 0); },

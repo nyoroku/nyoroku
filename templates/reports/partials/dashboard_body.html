@@ -137,7 +137,38 @@
             {% endfor %}
         </div>
     </div>
-
+    
+    <!-- Low Stock Alerts -->
+    {% if low_stock_products or low_stock_variants %}
+    <div class="bg-surface2 border border-brand-amber/30 rounded-3xl p-6 mb-24 relative overflow-hidden">
+        <div class="absolute inset-0 bg-brand-amber/5"></div>
+        <h4 class="relative text-sm font-display font-extrabold text-brand-amber uppercase tracking-tight mb-6 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Low Stock Alerts
+        </h4>
+        <div class="relative space-y-4">
+            {% for p in low_stock_products %}
+            <div class="flex justify-between items-center text-sm">
+                <span class="font-bold text-text-primary truncate pr-4">{{ p.name }}</span>
+                <span class="font-black text-brand-amber text-xs whitespace-nowrap">{{ p.stock_qty }} left</span>
+            </div>
+            {% endfor %}
+            {% for v in low_stock_variants %}
+            <div class="flex justify-between items-center text-sm">
+                <span class="font-bold text-text-primary truncate pr-4">{{ v.parent.name }} - <span class="text-text-muted">{{ v.name }}</span></span>
+                <span class="font-black text-brand-amber text-xs whitespace-nowrap">{{ v.stock_qty }} left</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-surface2 border border-border rounded-3xl p-6 mb-24">
+        <h4 class="text-sm font-display font-extrabold text-brand-green uppercase tracking-tight flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+            Stock Levels Healthy
+        </h4>
+    </div>
+    {% endif %}
 </div>
 <style>
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
