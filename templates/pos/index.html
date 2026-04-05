@@ -4,239 +4,204 @@
 {% block screen_title %}Checkout{% endblock %}
 
 {% block content %}
-<div class="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#0a0a0f] relative" x-data="{ checkoutLoading: false, editingQty: null, addModalOpen: false, addModalProduct: null, selectedVariant: null, addQty: 1, scanOpen: false, manualBarcode: '' }">
+<div class="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#0a0a0f]" 
+     x-data="{ checkoutLoading: false, editingQty: null, addModalOpen: false, addModalProduct: null, selectedVariant: null, addQty: 1, scanOpen: false, manualBarcode: '' }">
     
-    <!-- Search & Cart Row -->
-    <div class="px-[14px] py-[12px] flex items-center gap-[10px] border-b border-white/5 shrink-0 bg-[#0a0a0f]">
-        <div class="flex-1 relative">
-            <span class="absolute left-[12px] top-1/2 -translate-y-1/2 text-text-muted flex">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <!-- Top Action Bar (Search & Cart) -->
+    <div class="px-3.5 py-3 flex items-center gap-2.5 bg-[#111118] border-b border-white/[0.07] shrink-0">
+        <div class="flex-1 relative group">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted/60 transition-colors group-focus-within:text-[#00e676]">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </span>
-            <input type="text" name="q" hx-get="{% url 'pos:index' %}" hx-trigger="input changed delay:200ms" hx-target="#product-grid" hx-include="[name='category']" placeholder="Search..."
-                class="w-full bg-[#15151c] border border-white/5 rounded-[16px] py-[12px] pr-[12px] pl-[40px] text-text-primary text-[14px] focus:ring-0 focus:border-brand-whatsapp/50 transition-all placeholder:text-text-muted/50">
+            <input type="text" name="q" hx-get="{% url 'pos:index' %}" hx-trigger="input changed delay:200ms" hx-target="#product-grid" hx-include="[name='category']" placeholder="Search for items..."
+                class="w-full bg-[#1a1a24] border border-white/[0.07] rounded-xl py-3 pr-3 pl-10 text-[14px] text-white focus:ring-1 focus:ring-[#00e676]/30 focus:border-[#00e676]/60 transition-all placeholder:text-muted/40">
         </div>
         
-        <button @click="scanOpen = true" class="bg-[#15151c] border border-white/5 rounded-[16px] w-[46px] h-[46px] flex items-center justify-center cursor-pointer text-text-muted hover:text-white transition-colors">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V6a2 2 0 0 1 2-2h2"/><path d="M21 9V6a2 2 0 0 0-2-2h-2"/><path d="M3 15v3a2 2 0 0 0 2 2h2"/><path d="M21 15v3a2 2 0 0 0-2 2h-2"/><line x1="7" y1="12" x2="7" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12"/></svg>
+        <button @click="scanOpen = true" class="bg-[#1a1a24] border border-white/[0.07] rounded-xl w-[48px] h-[48px] flex items-center justify-center cursor-pointer text-muted hover:text-[#00e676] transition-colors active:scale-95">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V6a2 2 0 0 1 2-2h2"/><path d="M21 9V6a2 2 0 0 0-2-2h-2"/><path d="M3 15v3a2 2 0 0 0 2 2h2"/><path d="M21 15v3a2 2 0 0 0-2 2h-2"/><line x1="7" y1="12" x2="7" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="12" x2="17" y2="12"/></svg>
         </button>
 
-        <!-- Cart Pill Button (Visible when items > 0) -->
+        <!-- Cart Trigger Pill (Premium High-Contrast) -->
         <button x-show="itemCount > 0" x-transition.scale.origin.right x-cloak @click="cart.open = true" 
-            class="bg-brand-whatsapp border-none rounded-[16px] h-[46px] px-[16px] cursor-pointer text-[#0a0a0f] flex items-center justify-center gap-[6px] font-display font-bold text-[14px] shadow-[0_4px_16px_rgba(37,211,102,0.2)] active:scale-95 transition-all outline-none min-w-fit">
-            <span>🛒</span>
-            <span x-text="itemCount"></span>
+            class="bg-[#00e676] border-none rounded-2xl h-[48px] px-4 cursor-pointer text-[#0a0a0f] flex items-center justify-center gap-2 font-display font-extrabold text-[15px] shadow-[0_4px_20px_rgba(37,211,102,0.4)] active:scale-95 transition-all outline-none">
+            <span class="text-lg">🛒</span>
+            <span x-text="itemCount" class="bg-black/10 px-1.5 py-0.5 rounded-lg"></span>
         </button>
     </div>
 
-    <!-- Category chips -->
-    <div class="flex gap-[8px] px-[14px] py-[12px] overflow-x-auto shrink-0 no-scrollbar whitespace-nowrap bg-[#0a0a0f] border-b border-white/5" x-data="{ activeCat: '{{ active_category|default:'all' }}' }">
+    <!-- Category Tabs (Restored Solid Green) -->
+    <div class="flex gap-2 px-3.5 py-3 overflow-x-auto shrink-0 no-scrollbar whitespace-nowrap bg-[#0a0a0f] border-b border-white/[0.07]" x-data="{ activeCat: '{{ active_category|default:'all' }}' }">
         <input type="hidden" name="category" :value="activeCat">
         <button hx-get="{% url 'pos:index' %}?category=all" hx-target="#product-grid" @click="activeCat = 'all'; $el.closest('div').querySelector('[name=category]').value = 'all'"
-            class="rounded-[14px] px-[18px] py-[8px] text-[13px] font-semibold transition-all cursor-pointer backdrop-blur-sm"
-            :class="activeCat === 'all' ? 'bg-brand-whatsapp/15 text-brand-whatsapp border border-brand-whatsapp/30 shadow-[0_0_15px_rgba(37,211,102,0.05)]' : 'bg-[#15151c] text-text-muted border border-white/5 hover:text-white'">
-            All
+            class="rounded-xl px-5 py-2.5 text-[13px] font-extrabold transition-all cursor-pointer border"
+            :class="activeCat === 'all' ? 'bg-[#00e676] border-[#00e676] text-[#0a0a0f] shadow-[0_4px_15px_rgba(37,211,102,0.3)]' : 'bg-[#1a1a24] border-white/[0.07] text-muted hover:text-white'">
+            All Items
         </button>
         {% for cat in categories %}
         <button hx-get="{% url 'pos:index' %}?category={{ cat.id }}" hx-target="#product-grid" @click="activeCat = '{{ cat.id }}'; $el.closest('div').querySelector('[name=category]').value = '{{ cat.id }}'"
-            class="rounded-[14px] px-[18px] py-[8px] text-[13px] font-semibold transition-all cursor-pointer backdrop-blur-sm"
-            :class="activeCat === '{{ cat.id }}' ? 'bg-brand-whatsapp/15 text-brand-whatsapp border border-brand-whatsapp/30 shadow-[0_0_15px_rgba(37,211,102,0.05)]' : 'bg-[#15151c] text-text-muted border border-white/5 hover:text-white'">
+            class="rounded-xl px-5 py-2.5 text-[13px] font-extrabold transition-all cursor-pointer border"
+            :class="activeCat === '{{ cat.id }}' ? 'bg-[#00e676] border-[#00e676] text-[#0a0a0f] shadow-[0_4px_15px_rgba(37,211,102,0.3)]' : 'bg-[#1a1a24] border-white/[0.07] text-muted hover:text-white'">
             {{ cat.name }}
         </button>
         {% endfor %}
     </div>
 
-    <!-- Product grid block -->
-    <div id="product-grid" class="flex-1 overflow-auto px-[14px] py-[14px] pb-[100px] grid grid-cols-2 lg:grid-cols-4 gap-[12px] content-start bg-[#0a0a0f]">
+    <!-- Main Grid -->
+    <div id="product-grid" class="flex-1 overflow-auto px-3.5 py-4 pb-24 grid grid-cols-2 lg:grid-cols-4 gap-3 content-start bg-[#0a0a0f]">
         {% include 'pos/partials/product_grid.html' %}
     </div>
 
-    <!-- Universal Add/Quantity Modal -->
-    <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[110] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" @click="addModalOpen = false" x-transition.opacity></div>
+    <!-- Universal Add Sheet (Premium Bottom-Sheet) -->
+    <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[120] flex flex-col justify-end">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="addModalOpen = false" x-transition.opacity></div>
         
-        <div class="relative bg-[#111118]/95 backdrop-blur-2xl border border-white/10 rounded-[32px] w-full max-w-[360px] shadow-[0_20px_60px_rgba(0,0,0,0.6)] flex flex-col max-h-[85vh] overflow-hidden" 
-             x-show="addModalOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="scale-95 translate-y-4 opacity-0" x-transition:enter-end="scale-100 translate-y-0 opacity-100">
+        <div class="relative bg-[#111118] border-t border-white/[0.07] rounded-t-[32px] w-full max-w-lg mx-auto shadow-[0_-15px_40px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden max-h-[90vh]" 
+             x-show="addModalOpen" 
+             x-transition:enter="transition transform duration-400 cubic-bezier(0.2, 0.8, 0.2, 1)" 
+             x-transition:enter-start="translate-y-full" 
+             x-transition:enter-end="translate-y-0">
             
-            <div class="p-[24px] pb-[16px] flex items-start gap-4">
-                <div class="w-[64px] h-[64px] shrink-0 bg-[#1a1a24] rounded-[20px] flex items-center justify-center text-[34px] border border-white/5">
-                    <span x-text="addModalProduct?.image"></span>
+            <div class="p-6 flex flex-col items-center shrink-0">
+                <div class="w-12 h-1.5 bg-white/10 rounded-full mb-6"></div>
+                
+                <div class="w-full flex items-start gap-5">
+                    <div class="w-20 h-20 shrink-0 bg-[#1a1a24] rounded-2xl flex items-center justify-center text-5xl border border-white/[0.05]">
+                        <span x-text="addModalProduct?.image"></span>
+                    </div>
+                    <div class="flex-1 pt-1">
+                        <h3 class="font-display font-extrabold text-2xl text-white tracking-tight mb-1" x-text="addModalProduct?.name"></h3>
+                        <p class="text-lg font-extrabold text-[#00e676]" x-text="'KES ' + (selectedVariant ? selectedVariant.price : addModalProduct?.price).toLocaleString()"></p>
+                    </div>
                 </div>
-                <div class="flex-1 min-w-0 pt-1">
-                    <h3 class="font-display font-extrabold text-[18px] text-white leading-tight mb-1 truncate" x-text="addModalProduct?.name"></h3>
-                    <p class="text-[13px] font-bold text-brand-whatsapp" x-text="'KES ' + (selectedVariant ? selectedVariant.price : addModalProduct?.price)"></p>
-                </div>
-                <button @click="addModalOpen = false" class="text-text-muted hover:text-white w-8 h-8 flex items-center justify-center rounded-full bg-white/5 cursor-pointer transition-colors">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
             </div>
-            
-            <!-- Variants Selection (if strictly has multiple variants) -->
+
+            <!-- Variants Area -->
             <template x-if="addModalProduct?.variants && addModalProduct.variants.length > 0">
-                <div class="px-[24px] pb-[12px]">
-                    <p class="text-[11px] font-bold text-text-muted uppercase tracking-[0.05em] mb-[10px]">Select Variant</p>
-                    <div class="space-y-[8px] overflow-y-auto max-h-[30vh] no-scrollbar pr-1">
+                <div class="px-6 pb-4">
+                    <h4 class="text-[11px] font-extrabold text-muted uppercase tracking-widest mb-3">Choose Variant</h4>
+                    <div class="flex flex-wrap gap-2">
                         <template x-for="v in addModalProduct?.variants" :key="v.id">
                             <button @click="selectedVariant = v; addQty = 1;"
-                                    class="w-full px-[16px] py-[12px] rounded-[16px] flex items-center justify-between transition-all cursor-pointer box-border border"
-                                    :class="selectedVariant?.id === v.id ? 'bg-brand-whatsapp/15 border-brand-whatsapp/40 text-brand-whatsapp' : 'bg-[#1a1a24] border-transparent hover:border-white/10 text-white'">
-                                <span class="font-semibold text-[13px]" x-text="v.options.join(' / ') || 'Default'"></span>
-                                <div class="text-right flex flex-col items-end">
-                                   <span class="block text-[12px] font-extrabold" x-text="'KES ' + v.price"></span>
-                                   <span class="block text-[9px] px-[4px] py-[1px] rounded bg-white/5 mt-1" :class="v.stock_qty <= v.reorder_level ? 'text-brand-amber' : 'text-text-muted'" x-text="v.stock_qty + ' in stock'"></span>
-                                </div>
+                                    class="px-4 py-3 rounded-2xl border-2 transition-all cursor-pointer min-w-[80px]"
+                                    :class="selectedVariant?.id === v.id ? 'bg-[#00e676]/10 border-[#00e676] text-[#00e676]' : 'bg-[#1a1a24] border-transparent text-white/70 hover:border-white/10'">
+                                <div class="font-extrabold text-sm" x-text="v.options.join(' / ')"></div>
+                                <div class="text-[10px] font-bold opacity-60 mt-0.5" x-text="'KES ' + v.price.toLocaleString()"></div>
                             </button>
                         </template>
                     </div>
                 </div>
             </template>
-            
-            <!-- Stepper block -->
-            <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
-                <div class="px-[24px] py-[20px] bg-gradient-to-t from-black/20 to-transparent">
-                    <p class="text-[11px] font-bold text-text-muted uppercase tracking-[0.05em] mb-[12px] text-center">Quantity</p>
-                    <div class="flex items-center justify-between bg-[#1a1a24] rounded-[24px] p-2 border border-white/5 shadow-inner mb-6">
-                         <button @click="if(addQty > 1) addQty--" class="w-[52px] h-[52px] rounded-[20px] bg-[#22222d] border border-white/5 flex items-center justify-center text-text-muted hover:text-white active:scale-[0.92] transition-transform cursor-pointer shadow-sm"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
-                         <div class="w-16 text-center font-display font-extrabold text-[32px] text-white tabular-nums drop-shadow-md" x-text="addQty"></div>
+
+            <!-- Quantity & Actions -->
+            <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" x-transition.opacity>
+                <div class="p-6 pt-2 bg-[#1a1a24]/30">
+                    <div class="flex items-center justify-between bg-black/40 rounded-3xl p-2 border border-white/[0.05] mb-8">
+                         <button @click="if(addQty > 1) addQty--" class="w-16 h-16 rounded-2xl bg-[#1a1a24] border border-white/[0.05] flex items-center justify-center text-white/50 active:scale-95 transition-all cursor-pointer">
+                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                         </button>
+                         <div class="flex flex-col items-center">
+                             <span class="text-4xl font-extrabold text-white tabular-nums" x-text="addQty"></span>
+                             <span class="text-[10px] font-bold text-muted uppercase tracking-wider mt-1">Quantity</span>
+                         </div>
                          <button @click="
                              let maxStock = selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty;
                              let currentId = selectedVariant ? selectedVariant.id : addModalProduct?.id;
                              let inCart = cart.items.find(i => i.id === currentId)?.qty || 0;
-                             if(addQty < (maxStock - inCart)) { addQty++; } else { alert('Maximum available stock reached!'); }
-                         " class="w-[52px] h-[52px] rounded-[20px] bg-[#22222d] border border-white/5 flex items-center justify-center text-text-muted hover:text-white active:scale-[0.92] transition-transform cursor-pointer shadow-sm"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
-                     </div>
+                             if(addQty < (maxStock - inCart)) { addQty++; } else { alert('Max available stock reached'); }
+                         " class="w-16 h-16 rounded-2xl bg-[#1a1a24] border border-white/[0.05] flex items-center justify-center text-white/50 active:scale-95 transition-all cursor-pointer">
+                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                         </button>
+                    </div>
 
-                     <!-- Add Button -->
-                     <button @click="
-                             let targetItem = selectedVariant ? {
-                                 id: selectedVariant.id,
-                                 parent_id: addModalProduct.id,
-                                 name: selectedVariant.name,
-                                 price: selectedVariant.price,
-                                 stock_qty: selectedVariant.stock_qty,
-                                 image: addModalProduct.image
-                             } : {
-                                 id: addModalProduct.id,
-                                 name: addModalProduct.name,
-                                 price: addModalProduct.price,
-                                 stock_qty: addModalProduct.stock_qty,
-                                 image: addModalProduct.image
-                             };
-
-                             if(addToCart(targetItem, addQty)) {
-                                 addModalOpen = false;
-                             }
-                         " 
-                         class="relative w-full h-[60px] bg-brand-whatsapp text-[#0a0a0f] font-extrabold text-[16px] rounded-[22px] active:scale-[0.98] transition-transform shadow-[0_8px_24px_rgba(37,211,102,0.25)] flex items-center justify-center gap-[8px] cursor-pointer border-none overflow-hidden group">
-                         <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                         <span>Add to Cart</span>
-                         <span class="w-[4px] h-[4px] rounded-full bg-[#0a0a0f]/40"></span>
-                         <span x-text="'KES ' + parseFloat((selectedVariant ? selectedVariant.price : addModalProduct?.price) * addQty).toLocaleString()"></span>
-                     </button>
+                    <button @click="
+                            let p = selectedVariant ? {
+                                id: selectedVariant.id,
+                                parent_id: addModalProduct.id,
+                                name: selectedVariant.name,
+                                price: selectedVariant.price,
+                                stock_qty: selectedVariant.stock_qty,
+                                image: addModalProduct.image
+                            } : {
+                                id: addModalProduct.id,
+                                name: addModalProduct.name,
+                                price: addModalProduct.price,
+                                stock_qty: addModalProduct.stock_qty,
+                                image: addModalProduct.image
+                            };
+                            if(addToCart(p, addQty)) { addModalOpen = false; }
+                        " 
+                        class="w-full py-5 bg-[#00e676] text-[#0a0a0f] font-extrabold text-lg rounded-2xl shadow-[0_10px_30px_rgba(37,211,102,0.3)] active:scale-[0.98] transition-all border-none cursor-pointer flex items-center justify-center gap-3">
+                        <span>Add to Sale</span>
+                        <span class="w-1 h-1 rounded-full bg-black/20"></span>
+                        <span x-text="'KES ' + ((selectedVariant ? selectedVariant.price : addModalProduct?.price) * addQty).toLocaleString()"></span>
+                    </button>
+                    <div class="h-6"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Cart drawer -->
-    <div x-show="cart.open" x-cloak class="fixed inset-0 z-[100] flex flex-col justify-end">
-        <div class="flex-1 bg-[#0a0a0f]/80 backdrop-blur-md" @click="cart.open = false" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"></div>
+    <!-- Cart Bottom Sheet -->
+    <div x-show="cart.open" x-cloak class="fixed inset-0 z-[150] flex flex-col justify-end">
+        <div class="absolute inset-0 bg-black/85 backdrop-blur-md" @click="cart.open = false" x-transition.opacity></div>
         
-        <div class="bg-[#111118]/95 backdrop-blur-2xl rounded-t-[32px] border-t border-x border-white/5 max-h-[88vh] flex flex-col w-full max-w-md mx-auto shadow-[0_-20px_60px_rgba(0,0,0,0.5)]" 
-             x-transition:enter="transition transform duration-400 cubic-bezier(0.2,0.8,0.2,1)" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
+        <div class="relative bg-[#111118] border-t border-white/[0.07] rounded-t-[32px] w-full max-w-lg mx-auto shadow-[0_-20px_50px_rgba(0,0,0,0.6)] flex flex-col max-h-[92vh]" 
+             x-transition:enter="transition transform duration-400 ease-out" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
             
-            <!-- Drawer Handle & Header -->
-            <div class="p-[16px_24px] flex flex-col items-center border-b border-white/5 shrink-0 relative">
-                <div class="w-[40px] h-[4px] bg-white/10 rounded-full mb-[16px]"></div>
+            <div class="p-6 flex flex-col items-center shrink-0 border-b border-white/[0.05]">
+                <div class="w-12 h-1.5 bg-white/10 rounded-full mb-6"></div>
                 <div class="w-full flex items-center justify-between">
-                    <div class="flex items-baseline gap-2">
-                        <span class="font-display font-extrabold text-[22px] text-white">Cart</span>
-                        <span class="text-text-muted text-[13px] font-bold bg-white/5 px-2 py-0.5 rounded-md" x-text="itemCount + ' items'"></span>
-                    </div>
-                    <button @click="clearCart()" class="text-[12px] font-bold text-brand-red uppercase px-3 py-2 rounded-xl bg-brand-red/10 cursor-pointer active:scale-95 transition-transform border-none outline-none">Clear</button>
+                    <h2 class="font-display font-extrabold text-2xl text-white">Your Cart</h2>
+                    <button @click="clearCart()" class="px-4 py-2 bg-brand-red/10 text-brand-red text-xs font-bold uppercase rounded-lg border-none cursor-pointer active:scale-95 transition-all">Clear All</button>
                 </div>
             </div>
 
-            <!-- Premium Segmented Payment Method -->
-            <div class="px-[24px] py-[16px] shrink-0 border-b border-white/5 bg-gradient-to-b from-[#15151c]/50 to-transparent">
-                <div class="bg-black/30 backdrop-blur-md p-[4px] rounded-[16px] flex gap-[4px] border border-white/5">
-                    <button @click="payment = 'cash'" class="flex-1 rounded-[12px] py-[10px] text-[12px] font-bold font-display uppercase tracking-wider transition-all duration-200 cursor-pointer border-none" 
-                            :class="payment === 'cash' ? 'bg-[#1e1e28] shadow-[0_4px_10px_rgba(0,0,0,0.3)] text-white' : 'bg-transparent text-text-muted hover:text-white/80'">Cash</button>
-                    <button @click="payment = 'mpesa'" class="flex-1 rounded-[12px] py-[10px] text-[12px] font-bold font-display uppercase tracking-wider transition-all duration-200 cursor-pointer border-none" 
-                            :class="payment === 'mpesa' ? 'bg-brand-amber/15 shadow-[0_4px_10px_rgba(0,0,0,0.3)] text-brand-amber border border-brand-amber/20' : 'bg-transparent text-text-muted hover:text-white/80'">M-Pesa</button>
-                    <button @click="payment = 'card'" class="flex-1 rounded-[12px] py-[10px] text-[12px] font-bold font-display uppercase tracking-wider transition-all duration-200 cursor-pointer border-none" 
-                            :class="payment === 'card' ? 'bg-[#1e1e28] shadow-[0_4px_10px_rgba(0,0,0,0.3)] text-white' : 'bg-transparent text-text-muted hover:text-white/80'">Card</button>
-                    <button @click="payment = 'split'" class="flex-1 rounded-[12px] py-[10px] text-[12px] font-bold font-display uppercase tracking-wider transition-all duration-200 cursor-pointer border-none" 
-                            :class="payment === 'split' ? 'bg-[#1e1e28] shadow-[0_4px_10px_rgba(0,0,0,0.3)] text-white' : 'bg-transparent text-text-muted hover:text-white/80'">Split</button>
+            <!-- Payment Toggle -->
+            <div class="px-6 py-4 shrink-0 bg-[#0a0a0f]/50">
+                <div class="bg-black/30 p-1 rounded-2xl flex gap-1 border border-white/[0.05]">
+                    <template x-for="mode in ['cash','mpesa','card','split']" :key="mode">
+                        <button @click="payment = mode" 
+                                class="flex-1 py-3 text-[11px] font-extrabold uppercase tracking-widest rounded-xl transition-all border-none cursor-pointer"
+                                :class="payment === mode ? 'bg-[#00e676] text-[#0a0a0f] shadow-lg scale-105' : 'bg-transparent text-white/40 hover:text-white/70'">
+                            <span x-text="mode"></span>
+                        </button>
+                    </template>
                 </div>
             </div>
 
-            <!-- Items List -->
-            <div class="flex-1 overflow-auto px-[24px] pb-4 custom-scrollbar bg-black/10">
+            <!-- Items -->
+            <div class="flex-1 overflow-auto px-6 py-2 custom-scrollbar">
                 <template x-for="item in cart.items" :key="item.id">
-                    <div class="flex items-center gap-[14px] py-[16px] border-b border-white/5 relative group">
-                        <div class="w-[48px] h-[48px] shrink-0 bg-[#1a1a24] rounded-[16px] border border-white/5 flex items-center justify-center text-[24px]">
-                            <span x-text="item.image"></span>
-                        </div>
+                    <div class="flex items-center gap-4 py-4 border-b border-white/[0.03]">
+                        <div class="w-14 h-14 shrink-0 bg-[#1a1a24] rounded-xl flex items-center justify-center text-3xl border border-white/[0.03]" x-text="item.image"></div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-white font-semibold text-[14px] overflow-hidden text-ellipsis whitespace-nowrap mb-[2px]" x-text="item.name"></div>
-                            <div class="text-brand-whatsapp text-[13px] font-bold cursor-pointer inline-flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity" title="Click to edit discount"
-                                 @click="let d = prompt('Enter discount per unit for ' + item.name + ':', item.discount || 0); if(d !== null) setLineDiscount(item.id, d)">
+                            <div class="text-white font-bold text-sm truncate mb-1" x-text="item.name"></div>
+                            <div class="text-[#00e676] text-xs font-extrabold flex items-center gap-2 cursor-pointer" @click="let d = prompt('Item Discount?', item.discount || 0); if(d!==null) setLineDiscount(item.id, d)">
                                 KES <span x-text="(item.price - (item.discount || 0)).toLocaleString()"></span>
                                 <template x-if="item.discount > 0">
-                                    <span class="line-through text-text-muted text-[10px] ml-1 bg-white/5 px-1 rounded" x-text="'KES ' + item.price"></span>
+                                    <span class="line-through text-white/20 text-[10px]" x-text="'KES ' + item.price"></span>
                                 </template>
                             </div>
                         </div>
-                        <div class="flex items-center bg-[#15151c] rounded-[10px] border border-white/5 p-[2px]">
-                            <button @click="updateQty(item.id, -1)" class="w-[28px] h-[28px] rounded-[8px] flex items-center justify-center text-text-muted hover:bg-white/5 hover:text-white transition-colors cursor-pointer border-none bg-transparent">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            </button>
-                            <span class="text-white font-bold w-[24px] text-center text-[13px] tabular-nums" x-text="item.qty"></span>
-                            <button @click="updateQty(item.id, 1)" class="w-[28px] h-[28px] rounded-[8px] flex items-center justify-center text-text-muted hover:bg-white/5 hover:text-white transition-colors cursor-pointer border-none bg-transparent">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            </button>
-                        </div>
-                        <div class="text-white font-extrabold text-[15px] min-w-[70px] text-right">
-                            KES <span x-text="parseFloat((item.price - (item.discount || 0)) * item.qty).toLocaleString()"></span>
-                        </div>
-                    </div>
-                </template>
-                
-                <!-- Split Payment UX -->
-                <template x-if="payment === 'split'">
-                    <div class="mt-[16px] p-[16px] bg-[#1a1a24] border border-white/10 rounded-[24px] shadow-lg">
-                        <p class="font-display font-bold text-[13px] mb-[12px] text-white">Split Breakdown</p>
-                        <template x-for="(sp, idx) in splitPayments" :key="idx">
-                            <div class="flex gap-[8px] mb-[10px] items-center">
-                                <select x-model="sp.method" class="w-[110px] p-[10px] bg-[#111118] border border-white/5 rounded-[12px] text-[13px] text-white font-medium focus:ring-1 focus:ring-brand-whatsapp/50 outline-none">
-                                    <option value="cash">Cash</option>
-                                    <option value="mpesa">M-Pesa</option>
-                                    <option value="card">Card</option>
-                                </select>
-                                <div class="flex-1 relative">
-                                    <span class="absolute left-[12px] top-1/2 -translate-y-1/2 text-text-muted text-[11px] font-bold">KES</span>
-                                    <input type="number" x-model.number="sp.amount" class="w-full py-[10px] pr-[10px] pl-[40px] bg-[#111118] text-brand-whatsapp font-bold font-display border border-white/5 rounded-[12px] text-[14px] text-right focus:ring-1 focus:ring-brand-whatsapp/50 outline-none">
-                                </div>
-                                <button @click="splitPayments.splice(idx, 1)" class="w-[32px] h-[32px] rounded-full bg-brand-red/10 text-brand-red flex items-center justify-center cursor-pointer border-none hover:bg-brand-red/20 transition-colors shrink-0">✕</button>
-                            </div>
-                        </template>
-                        <button @click="splitPayments.push({method:'cash', amount:0})" class="w-full mt-[4px] py-[12px] text-[11px] font-bold text-center border-2 border-dashed border-white/10 rounded-[14px] text-text-muted uppercase tracking-[0.1em] hover:border-brand-whatsapp/30 hover:text-white transition-colors cursor-pointer bg-transparent">+ Add Payment Row</button>
-                        <div class="flex justify-between items-center mt-[16px] pt-[12px] border-t border-white/5 font-bold text-[14px]">
-                            <span class="text-text-muted">Total Paid</span>
-                            <span :class="totalPaid >= cartTotal ? 'text-brand-whatsapp drop-shadow-[0_0_10px_rgba(37,211,102,0.4)]' : 'text-brand-red'" class="font-display text-[16px]">
-                                KES <span x-text="totalPaid.toLocaleString()"></span>
-                            </span>
+                        <div class="flex items-center bg-[#1a1a24] rounded-xl p-1 gap-1">
+                            <button @click="updateQty(item.id, -1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#22222d] text-white/50 border-none cursor-pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                            <span class="w-6 text-center text-sm font-extrabold text-white" x-text="item.qty"></span>
+                            <button @click="updateQty(item.id, 1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-[#22222d] text-white/50 border-none cursor-pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
                         </div>
                     </div>
                 </template>
             </div>
 
-            <!-- Checkout button area -->
-            <div class="p-[20px_24px_32px] shrink-0 border-t border-white/5 bg-[#111118]">
-                <div class="flex justify-between mb-[16px] font-display items-end">
-                    <span class="text-text-muted text-[15px] font-bold">Total Due</span>
-                    <span class="text-brand-whatsapp font-extrabold text-[32px] leading-none tracking-tight">KES <span x-text="cartTotal.toLocaleString()"></span></span>
+            <!-- Total & Checkout -->
+            <div class="p-6 bg-[#0a0a0f] border-t border-white/[0.05] shrink-0">
+                <div class="flex justify-between items-end mb-6">
+                    <span class="text-white/40 font-bold mb-1">Total Pay</span>
+                    <div class="text-right">
+                        <div class="text-[10px] font-extrabold text-muted uppercase tracking-widest mb-1">Including Tax</div>
+                        <div class="text-3xl font-display font-extrabold text-[#00e676] leading-none">KES <span x-text="cartTotal.toLocaleString()"></span></div>
+                    </div>
                 </div>
+                
                 <button @click="checkoutLoading = true; 
                           fetch('{% url 'pos:checkout' %}', {
                               method: 'POST',
@@ -248,48 +213,31 @@
                               document.getElementById('modal-container').innerHTML = html;
                               checkoutLoading = false;
                               clearCart();
-                              amountTendered = null;
                           }).catch(err => { checkoutLoading = false; });"
-                  :disabled="checkoutLoading || itemCount === 0 || (payment === 'split' && totalPaid < cartTotal)"
-                  class="w-full h-[64px] bg-brand-whatsapp border-none rounded-[20px] px-[20px] text-[#0a0a0f] font-extrabold text-[18px] cursor-pointer font-display disabled:opacity-50 disabled:grayscale active:scale-[0.98] transition-all shadow-[0_8px_32px_rgba(37,211,102,0.2)] flex items-center justify-center relative overflow-hidden group">
+                  :disabled="checkoutLoading || itemCount === 0"
+                  class="w-full py-5 bg-[#00e676] text-[#0a0a0f] font-extrabold text-xl rounded-2xl shadow-[0_10px_25px_rgba(37,211,102,0.3)] border-none cursor-pointer active:scale-[0.98] relative overflow-hidden group">
                     <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <span x-show="!checkoutLoading">Charge · <span x-text="payment === 'mpesa' ? 'M-Pesa' : (payment === 'card' ? 'Card' : (payment === 'split' ? 'Split Payment' : 'Cash'))"></span></span>
-                    <span x-show="checkoutLoading" class="flex gap-2 items-center">
-                        <svg class="animate-spin h-5 w-5 text-[#0a0a0f]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        Processing...
-                    </span>
+                    <span x-show="!checkoutLoading">Process Payment</span>
+                    <span x-show="checkoutLoading">Processing...</span>
                 </button>
+                <div class="h-4"></div>
             </div>
         </div>
     </div>
 
     <!-- Scan overlay -->
-    <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-6" x-transition.opacity>
-        <div class="relative w-full max-w-xs aspect-square border border-brand-whatsapp/20 rounded-[32px] overflow-hidden shadow-[0_0_80px_rgba(37,211,102,0.15)] bg-black">
+    <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[200] bg-black Backdrop-blur-md flex flex-col items-center justify-center p-6" x-transition.opacity>
+        <div class="relative w-full max-w-xs aspect-square border-2 border-[#00e676]/30 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(37,211,102,0.1)]">
             <video id="video" class="w-full h-full object-cover"></video>
             <div class="absolute inset-0 border-[40px] border-black/40"></div>
-            <!-- Crosshairs -->
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="w-3/4 h-[2px] bg-brand-whatsapp/50 shadow-[0_0_10px_rgba(37,211,102,1)] rounded-full animate-pulse"></div>
-            </div>
-            <!-- Corners -->
-            <div class="absolute top-8 left-8 w-8 h-8 border-t-[3px] border-l-[3px] border-brand-whatsapp rounded-tl-xl drop-shadow-[0_0_8px_rgba(37,211,102,0.8)]"></div>
-            <div class="absolute top-8 right-8 w-8 h-8 border-t-[3px] border-r-[3px] border-brand-whatsapp rounded-tr-xl drop-shadow-[0_0_8px_rgba(37,211,102,0.8)]"></div>
-            <div class="absolute bottom-8 left-8 w-8 h-8 border-b-[3px] border-l-[3px] border-brand-whatsapp rounded-bl-xl drop-shadow-[0_0_8px_rgba(37,211,102,0.8)]"></div>
-            <div class="absolute bottom-8 right-8 w-8 h-8 border-b-[3px] border-r-[3px] border-brand-whatsapp rounded-br-xl drop-shadow-[0_0_8px_rgba(37,211,102,0.8)]"></div>
+            <div class="absolute top-8 left-8 w-8 h-8 border-t-4 border-l-4 border-[#00e676] rounded-tl-xl drop-shadow-glow"></div>
+            <div class="absolute top-8 right-8 w-8 h-8 border-t-4 border-r-4 border-[#00e676] rounded-tr-xl drop-shadow-glow"></div>
+            <div class="absolute bottom-8 left-8 w-8 h-8 border-b-4 border-l-4 border-[#00e676] rounded-bl-xl drop-shadow-glow"></div>
+            <div class="absolute bottom-8 right-8 w-8 h-8 border-b-4 border-r-4 border-[#00e676] rounded-br-xl drop-shadow-glow"></div>
         </div>
-        
-        <p class="text-white/80 font-display font-bold mt-8 text-center text-[15px]">Position barcode within frame</p>
-        
-        <div class="mt-8 w-full max-w-xs space-y-4">
-            <input type="text" x-model="manualBarcode" @keyup.enter="handleBarcode(manualBarcode); scanOpen = false; manualBarcode = ''"
-                   placeholder="Or type barcode..." 
-                   class="w-full bg-white/5 border border-white/10 rounded-[16px] px-[20px] py-[16px] text-white text-center font-mono focus:border-brand-whatsapp/50 focus:bg-white/10 outline-none transition-all">
-            <button @click="scanOpen = false" class="w-full py-[16px] text-text-muted font-bold hover:text-white active:scale-95 transition-all bg-transparent border-none cursor-pointer">
-                Cancel Scan
-            </button>
-        </div>
+        <p class="text-white/80 font-bold mt-10 text-center tracking-wide">Align barcode to scan</p>
+        <button @click="scanOpen = false" class="mt-10 py-4 px-10 text-white/40 font-extrabold uppercase text-xs tracking-widest hover:text-white transition-all bg-transparent border-none cursor-pointer">Cancel</button>
     </div>
 
-</div> <!-- END POS -->
+</div>
 {% endblock %}
