@@ -116,6 +116,7 @@ class PendingAction(models.Model):
         ('purchase_order', 'Purchase Order'),
         ('grn', 'Goods Receiving Note'),
         ('stock_transfer', 'Stock Transfer'),
+        ('void_transaction', 'Void Transaction'),
     )
     STATUS_CHOICES = (
         ('pending', 'Pending Approval'),

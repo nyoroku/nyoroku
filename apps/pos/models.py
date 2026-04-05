@@ -96,6 +96,11 @@ class Transaction(models.Model):
     receipt_number = models.CharField(max_length=20, unique=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Voids / Refunds
+    void_reason = models.TextField(blank=True, null=True)
+    voided_at = models.DateTimeField(blank=True, null=True)
+    voided_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, blank=True, null=True, related_name='voided_transactions')
 
     def save(self, *args, **kwargs):
         if not self.receipt_number:

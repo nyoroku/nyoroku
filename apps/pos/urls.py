@@ -13,6 +13,8 @@ urlpatterns = [
     path('parked/list/', views.parked_sales_list, name='parked_sales_list'),
     path('resume/<uuid:pk>/', views.resume_sale, name='resume_sale'),
     path('parked/delete/<uuid:pk>/', views.delete_parked_sale, name='delete_parked_sale'),
+    
+    path('void/<uuid:pk>/', views.void_transaction, name='void_transaction'),
     # Coupon management
     path('coupons/', views.coupon_list, name='coupon_list'),
     path('coupons/add/', views.add_coupon, name='add_coupon'),

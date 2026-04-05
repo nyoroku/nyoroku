@@ -300,3 +300,60 @@ def delete_parked_sale(request, pk):
     sale = get_object_or_404(ParkedSale, pk=pk, cashier=request.user)
     sale.delete()
     return parked_sales_list(request)
+
+@login_required
+@require_http_methods(["POST"])
+def void_transaction(request, pk):
+    if request.user.role not in ['admin', 'manager']:
+        return HttpResponse('Unauthorized. Admin or Manager required to void.', status=403)
+        
+    transaction = get_object_or_404(Transaction, pk=pk)
+    
+    if transaction.status == 'voided':
+        return HttpResponse('Transaction already voided.', status=400)
+        
+    data = json.loads(request.body)
+    reason = data.get('reason', '')
+    if not reason:
+        return HttpResponse('Void requires a reason.', status=400)
+        
+    from datetime import timedelta
+    from catalogue.models import PendingAction
+    
+    time_since = timezone.now() - transaction.created_at
+    if time_since > timedelta(hours=24) and request.user.role != 'admin':
+        # Route to admin via pending action if it's over 24h and user is a manager
+        PendingAction.objects.create(
+            action_type='void_transaction',
+            submitted_by=request.user,
+            details={'transaction_id': str(transaction.id), 'reason': reason}
+        )
+        return JsonResponse({'status': 'pending_approval', 'message': 'Void requested successfully. Requires Admin approval.'})
+
+    # Direct Void
+    transaction.status = 'voided'
+    transaction.void_reason = reason
+    transaction.voided_at = timezone.now()
+    transaction.voided_by = request.user
+    transaction.save()
+    
+    # Reverse stock
+    for item in transaction.items:
+        qty = int(item.get('qty', 0))
+        if qty:
+            if item.get('is_variant'):
+                try:
+                    pv = ProductVariant.objects.get(id=item.get('id'))
+                    pv.stock_qty += qty
+                    pv.save()
+                except ProductVariant.DoesNotExist:
+                    pass
+            else:
+                try:
+                    p = Product.objects.get(id=item.get('id'))
+                    p.stock_qty += qty
+                    p.save()
+                except Product.DoesNotExist:
+                    pass
+                    
+    return JsonResponse({'status': 'success', 'message': 'Transaction voided.'})
