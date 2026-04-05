@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
-from .models import Product, Category
+from django.utils import timezone
+from .models import Product, Category, PendingAction, ProductVariant
 
 @login_required
 def inventory_list(request):
@@ -139,3 +140,51 @@ def delete_category(request, pk):
     category = get_object_or_404(Category, pk=pk)
     category.delete()
     return redirect('catalogue:category_list')
+
+@login_required
+def pending_actions(request):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+        
+    actions = PendingAction.objects.filter(status='pending').order_by('-submitted_at')
+    return render(request, 'catalogue/pending_actions.html', {'actions': actions})
+
+@login_required
+@require_http_methods(["POST"])
+def resolve_action(request, pk):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+        
+    action = get_object_or_404(PendingAction, pk=pk)
+    resolution = request.POST.get('resolution') # 'approve' or 'reject'
+    
+    if resolution == 'approve':
+        action.status = 'approved'
+        # Apply stock changes
+        product_id = action.details.get('product_id')
+        variant_id = action.details.get('variant_id')
+        qty_change = int(action.details.get('qty', 0))
+        
+        if variant_id:
+            try:
+                v = ProductVariant.objects.get(id=variant_id)
+                v.stock_qty += qty_change
+                v.save(update_fields=['stock_qty'])
+            except ProductVariant.DoesNotExist:
+                pass
+        elif product_id:
+            try:
+                p = Product.objects.get(id=product_id)
+                p.stock_qty += qty_change
+                p.save(update_fields=['stock_qty'])
+            except Product.DoesNotExist:
+                pass
+    else:
+        action.status = 'rejected'
+        action.rejection_reason = request.POST.get('reason', '')
+        
+    action.approved_by = request.user
+    action.approved_at = timezone.now()
+    action.save()
+    
+    return redirect('catalogue:pending_actions')

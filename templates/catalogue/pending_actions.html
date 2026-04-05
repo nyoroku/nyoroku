@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}Pending Actions{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6">
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="font-display font-extrabold text-2xl text-text-primary">Approvals Queue</h2>
+            <p class="text-text-muted text-sm mt-1">Review and approve stock adjustments & POs.</p>
+        </div>
+        <a href="{% url 'catalogue:inventory' %}" class="bg-surface2 border border-border px-4 py-2 rounded-xl text-sm font-bold text-text-muted hover:text-white transition-colors">
+            Back to Inventory
+        </a>
+    </div>
+
+    <div class="space-y-3 stagger">
+        {% for action in actions %}
+        <div class="bg-surface2 border border-border rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-white/10 hover:shadow-card">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider bg-brand-amber/10 text-brand-amber">
+                        {{ action.get_action_type_display }}
+                    </span>
+                    <span class="text-xs text-text-muted">by <strong class="text-text-primary">{{ action.submitted_by.name }}</strong></span>
+                </div>
+                <!-- Logic to display details concisely -->
+                <p class="text-sm font-bold text-text-primary">
+                    {% if action.details.product_name %}
+                        {{ action.details.product_name }}
+                    {% else %}
+                        Item ID: {{ action.details.product_id }}
+                    {% endif %}
+                    <span class="text-text-muted font-normal ml-2">Qty adjustment: <strong class="text-white">{{ action.details.qty }}</strong></span>
+                </p>
+                <p class="text-xs text-text-muted mt-1 italic w-full line-clamp-1 break-all">
+                    "{{ action.details.notes|default:'No notes provided.' }}"
+                </p>
+            </div>
+
+            <div class="flex gap-2 shrink-0">
+                <form action="{% url 'catalogue:resolve_action' action.id %}" method="POST" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="resolution" value="reject">
+                    <button type="submit" class="w-10 h-10 rounded-xl bg-brand-red/10 text-brand-red flex items-center justify-center hover:bg-brand-red hover:text-white transition-colors active:scale-95" title="Reject">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </form>
+                <form action="{% url 'catalogue:resolve_action' action.id %}" method="POST" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="resolution" value="approve">
+                    <button type="submit" class="w-10 h-10 rounded-xl bg-brand-green border border-brand-green/20 text-black flex items-center justify-center hover:shadow-glow-green-sm transition-all active:scale-95" title="Approve">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full py-20 text-center text-text-muted bg-surface2 rounded-3xl border border-border">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 opacity-20"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <p class="font-bold text-text-primary">No pending actions</p>
+            <p class="text-sm mt-1">Queue is clear.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

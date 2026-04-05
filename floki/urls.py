@@ -9,5 +9,6 @@ urlpatterns = [
     path('pos/', include('pos.urls')),
     path('expenses/', include('expenses.urls')),
     path('reports/', include('reports.urls')),
+    path('procurement/', include('procurement.urls')),
     path('', lambda r: redirect('accounts:login')), # Default entry point
 ]
