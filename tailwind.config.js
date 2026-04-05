@@ -15,7 +15,7 @@ module.exports = {
           greenGlow: 'rgba(0,200,83,0.15)',
           amber:     '#FFB300',
           red:       '#FF1744',
-          purple:    '#7C4DFF',
+          whatsapp:  '#25D366', // Replaces purple for tabs
           dark:      '#050505',
         },
         surface:  '#080808',
