@@ -1,510 +1,978 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block screen_title %}Checkout{% endblock %}
+{% block screen_title %}POS{% endblock %}
 
 {% block content %}
-
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
-  :root {
-    --mint:       #6EE7B7;
-    --mint-dim:   #3DD68C;
-    --mint-glow:  rgba(110, 231, 183, 0.18);
-    --mint-soft:  rgba(110, 231, 183, 0.08);
-    --bg-void:    #080810;
-    --bg-base:    #0d0d18;
-    --bg-card:    #111120;
-    --bg-lift:    #181828;
-    --bg-hi:      #1e1e30;
-    --border-sub: rgba(255,255,255,0.05);
-    --border-act: rgba(110, 231, 183, 0.35);
-    --text-hi:    #ffffff;
-    --text-mid:   rgba(255,255,255,0.45);
-    --text-low:   rgba(255,255,255,0.15);
-    --red:        #FF4D6A;
-    --amber:      #FFBA08;
-    --radius-xl:  52px;
-    --radius-lg:  36px;
-    --radius-md:  24px;
-    --radius-sm:  16px;
-  }
+    :root {
+        --mint: #6EE7B7;
+        --mint-glow: rgba(110, 231, 183, 0.22);
+        --mint-soft: rgba(110, 231, 183, 0.08);
+        --mint-press: rgba(110, 231, 183, 0.15);
+        --bg-void: #07070f;
+        --bg-base: #0b0b18;
+        --bg-card: #0f0f1e;
+        --bg-lift: #151528;
+        --bg-hi: #1a1a2e;
+        --bdr: rgba(255, 255, 255, 0.06);
+        --bdr-act: rgba(110, 231, 183, 0.38);
+        --tx: #ffffff;
+        --tx-mid: rgba(255, 255, 255, 0.40);
+        --tx-low: rgba(255, 255, 255, 0.15);
+        --red: #FF4D6A;
+        --amber: #FFBA08;
+        /* nav height – matches your base.html bottom nav, adjust if needed */
+        --nav-h: 60px;
+    }
 
-  * { font-family: 'DM Sans', sans-serif; box-sizing: border-box; }
-  .font-display { font-family: 'Syne', sans-serif; }
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  [x-cloak] { display: none !important; }
+    *,
+    *::before,
+    *::after {
+        box-sizing: border-box
+    }
 
-  /* Thin custom scrollbar */
-  .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-act); border-radius: 999px; }
+    body {
+        font-family: 'DM Sans', sans-serif
+    }
 
-  /* Glow tab animation */
-  @keyframes glow-pulse { 0%,100% { box-shadow: 0 0 24px var(--mint-glow); } 50% { box-shadow: 0 0 42px rgba(110,231,183,0.32); } }
-  .tab-active { animation: glow-pulse 2.5s ease-in-out infinite; }
+    .fd {
+        font-family: 'Syne', sans-serif
+    }
 
-  /* Shimmer on card hover */
-  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-  .card-shimmer::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(105deg, transparent 40%, rgba(110,231,183,0.06) 50%, transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .card-shimmer:hover::after { opacity: 1; animation: shimmer 0.7s ease; }
+    [x-cloak] {
+        display: none !important
+    }
 
-  /* Scan line */
-  @keyframes scanline { 0%,100% { top: 20%; opacity: 1; } 50% { top: 80%; opacity: 0.6; } }
-  .scan-line { position: absolute; left: 8%; right: 8%; height: 3px; background: var(--mint); border-radius: 99px;
-    box-shadow: 0 0 20px 4px var(--mint-glow); animation: scanline 1.8s ease-in-out infinite; }
+    .ns::-webkit-scrollbar {
+        display: none
+    }
 
-  /* Fade in list items */
-  @keyframes fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  .animate-fade-up { animation: fade-up 0.3s ease both; }
+    .ns {
+        -ms-overflow-style: none;
+        scrollbar-width: none
+    }
 
-  /* Scale in badge */
-  @keyframes scale-in { from { transform: scale(0.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-  .animate-scale-in { animation: scale-in 0.25s cubic-bezier(0.34,1.56,0.64,1) both; }
+    .ts::-webkit-scrollbar {
+        width: 2px
+    }
 
-  /* Drawer noise texture */
-  .noise::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    border-radius: inherit;
-    z-index: 0;
-  }
+    .ts::-webkit-scrollbar-thumb {
+        background: var(--bdr-act);
+        border-radius: 99px
+    }
+
+    /* glow tab */
+    @keyframes gt {
+
+        0%,
+        100% {
+            box-shadow: 0 0 18px var(--mint-glow)
+        }
+
+        60% {
+            box-shadow: 0 0 32px rgba(110, 231, 183, .32)
+        }
+    }
+
+    .tglow {
+        animation: gt 2.8s ease-in-out infinite
+    }
+
+    /* shimmer */
+    @keyframes sh {
+        from {
+            left: -110%
+        }
+
+        to {
+            left: 120%
+        }
+    }
+
+    .csh {
+        position: relative;
+        overflow: hidden
+    }
+
+    .csh::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        width: 55%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(110, 231, 183, .06), transparent);
+        opacity: 0;
+        transition: opacity .2s
+    }
+
+    .csh:hover::after {
+        opacity: 1;
+        animation: sh .6s ease
+    }
+
+    /* scan line */
+    @keyframes sl {
+
+        0%,
+        100% {
+            top: 16%
+        }
+
+        50% {
+            top: 76%
+        }
+    }
+
+    .sline {
+        position: absolute;
+        left: 8%;
+        right: 8%;
+        height: 2px;
+        border-radius: 99px;
+        background: var(--mint);
+        box-shadow: 0 0 16px 4px var(--mint-glow);
+        animation: sl 2s ease-in-out infinite
+    }
+
+    /* list anim */
+    @keyframes fu {
+        from {
+            opacity: 0;
+            transform: translateY(6px)
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0)
+        }
+    }
+
+    .au {
+        animation: fu .25s ease both
+    }
+
+    /* badge pop */
+    @keyframes bp {
+        0% {
+            transform: scale(.3);
+            opacity: 0
+        }
+
+        70% {
+            transform: scale(1.2)
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1
+        }
+    }
+
+    .bpop {
+        animation: bp .28s cubic-bezier(.34, 1.56, .64, 1) both
+    }
+
+    /* pay card */
+    .pc {
+        transition: all .2s cubic-bezier(.34, 1.2, .64, 1)
+    }
+
+    .pc:active {
+        transform: scale(.95)
+    }
+
+    /* noise */
+    .nz::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        z-index: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E")
+    }
+
+    .nz>* {
+        position: relative;
+        z-index: 1
+    }
+
+    /* CRITICAL: always clear the bottom nav */
+    .above-nav {
+        padding-bottom: calc(var(--nav-h) + 12px) !important
+    }
+
+    /* For modals/drawers that are fixed: push CTA above nav */
+    .cta-dock {
+        position: sticky;
+        bottom: 0;
+        padding: 12px 20px calc(var(--nav-h) + 12px);
+        background: var(--bg-card);
+        border-top: 1px solid var(--bdr);
+        z-index: 10;
+    }
+
+    /* receipt modal must sit above everything */
+    #modal-container {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none
+    }
+
+    #modal-container:not(:empty) {
+        pointer-events: all
+    }
+
+    /* pagination */
+    .pg-btn {
+        min-width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 12px;
+        border: none;
+        cursor: pointer;
+        transition: all .18s
+    }
+
+    /* search bar focus ring */
+    .srch:focus {
+        border-color: var(--bdr-act) !important;
+        box-shadow: 0 0 0 3px var(--mint-soft) !important;
+        outline: none
+    }
+
+    .srch::placeholder {
+        color: var(--tx-low)
+    }
+
+    /* card quick-add (+) button */
+    .qadd {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        width: 28px;
+        height: 28px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--mint);
+        border: none;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity .18s, transform .18s;
+        transform: scale(.85)
+    }
+
+    .csh:hover .qadd {
+        opacity: 1;
+        transform: scale(1)
+    }
 </style>
 
-<div class="flex flex-col h-[calc(100vh-64px)] overflow-hidden relative"
-     style="background: var(--bg-void);"
-     x-init="window.allProducts = [
-        {% for p in products %}
-        {
-            id: '{{ p.id }}',
-            name: '{{ p.name|escapejs }}',
-            price: {{ p.price }},
-            image: '{{ p.image }}',
-            barcode: '{{ p.barcode }}',
-            stock_qty: {{ p.total_stock }},
-            has_variants: {{ p.has_variants|yesno:'true,false' }},
-            variants: {% if p.has_variants %}{{ p.variants_json|safe }}{% else %}[]{% endif %}
-        },
+<!-- ═══════════════════════════════════════
+     RECEIPT MODAL CONTAINER — z-index 9999, always on top
+════════════════════════════════════════ -->
+<div id="modal-container"></div>
+
+<div class="flex flex-col overflow-hidden" style="height:calc(100vh - 64px);background:var(--bg-void)" x-init="window.allProducts=[
+       {% for p in products %}
+       {id:'{{ p.id }}',name:'{{ p.name|escapejs }}',price:{{ p.price }},image:'{{ p.image }}',barcode:'{{ p.barcode }}',stock_qty:{{ p.total_stock }},has_variants:{{ p.has_variants|yesno:'true,false' }},variants:{% if p.has_variants %}{{ p.variants_json|safe }}{% else %}[]{% endif %}},
+       {% endfor %}
+     ]" x-data="{
+       checkoutLoading:false,
+       addModalOpen:false, addModalProduct:null, selectedVariant:null, addQty:1,
+       scanOpen:false, manualBarcode:'',
+       page:1, perPage:20,
+       get pagedProducts(){
+         let all=Array.from(document.querySelectorAll('#all-products-source .prod-item'));
+         return all;
+       }
+     }">
+
+
+    <!-- ══════════ HEADER ══════════ -->
+    <header class="shrink-0 flex items-center gap-2 px-4 py-2.5"
+        style="background:var(--bg-base);border-bottom:1px solid var(--bdr)">
+
+        <div class="fd text-white font-800 text-[16px] tracking-tight select-none shrink-0">
+            <span style="color:var(--mint)">▸</span> Floki
+        </div>
+
+        <!-- Search — wider, with clear button and category chip -->
+        <div class="flex-1 relative flex items-center"
+            style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:14px;overflow:hidden"
+            id="search-wrap"
+            onfocuswithin="this.style.borderColor='var(--bdr-act)';this.style.boxShadow='0 0 0 3px var(--mint-soft)'"
+            onblurwithin="this.style.borderColor='var(--bdr)';this.style.boxShadow='none'">
+            <span class="pl-3 shrink-0" style="color:var(--tx-low)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+            </span>
+            <input id="search-input" type="text" name="q" hx-get="{% url 'pos:index' %}"
+                hx-trigger="input changed delay:200ms, search" hx-target="#product-grid-inner"
+                hx-include="[name='category']" placeholder="Search name, barcode, category…"
+                class="srch flex-1 px-2.5 py-2.5 text-[13px] font-medium bg-transparent border-none"
+                style="color:var(--tx);min-width:0" autocomplete="off" autocorrect="off" spellcheck="false">
+            <!-- Clear -->
+            <button
+                onclick="let i=document.getElementById('search-input');i.value='';i.dispatchEvent(new Event('input'));i.focus()"
+                class="shrink-0 mr-2 w-5 h-5 flex items-center justify-center rounded-full opacity-0 transition-opacity"
+                id="search-clear" style="background:var(--bg-hi);color:var(--tx-mid)" title="Clear">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Scan -->
+        <button @click="scanOpen=true;$nextTick(()=>startScanner())"
+            class="shrink-0 w-9 h-9 flex items-center justify-center transition-all active:scale-90"
+            style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:12px;color:var(--mint)">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round">
+                <path d="M3 9V6a2 2 0 0 1 2-2h2" />
+                <path d="M21 9V6a2 2 0 0 0-2-2h-2" />
+                <path d="M3 15v3a2 2 0 0 0 2 2h2" />
+                <path d="M21 15v3a2 2 0 0 0-2 2h-2" />
+                <line x1="7" y1="12" x2="17" y2="12" />
+            </svg>
+        </button>
+
+        <!-- Cart -->
+        <button x-show="itemCount>0" x-cloak @click="cart.open=true"
+            class="shrink-0 h-9 px-4 flex items-center gap-1.5 fd font-800 text-[12px] text-black transition-all active:scale-95"
+            style="background:var(--mint);border-radius:12px;border:none;box-shadow:0 4px 20px var(--mint-glow)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+            </svg>
+            <span x-text="itemCount"></span>
+        </button>
+    </header>
+
+    <!-- ══════════ CATEGORY TABS ══════════ -->
+    <div class="shrink-0 flex items-center gap-2 px-4 py-2 overflow-x-auto ns"
+        style="background:var(--bg-base);border-bottom:1px solid var(--bdr)"
+        x-data="{activeCat:'{{ active_category|default:'all' }}'}">
+        <input type="hidden" name="category" :value="activeCat">
+
+        <button hx-get="{% url 'pos:index' %}?category=all" hx-target="#product-grid-inner" @click="activeCat='all'"
+            class="shrink-0 fd font-800 text-[10px] uppercase tracking-[0.14em] px-4 py-1.5 border-none cursor-pointer transition-all"
+            :class="activeCat==='all'?'tglow':''"
+            :style="activeCat==='all'
+              ? 'background:var(--mint);color:#000;border-radius:9px'
+              : 'background:var(--bg-card);color:var(--tx-mid);border-radius:9px;border:1.5px solid var(--bdr)'">All</button>
+        {% for cat in categories %}
+        <button hx-get="{% url 'pos:index' %}?category={{ cat.id }}" hx-target="#product-grid-inner"
+            @click="activeCat='{{ cat.id }}'"
+            class="shrink-0 fd font-800 text-[10px] uppercase tracking-[0.14em] px-4 py-1.5 border-none cursor-pointer transition-all"
+            :class="activeCat==='{{ cat.id }}'?'tglow':''" :style="activeCat==='{{ cat.id }}'
+              ? 'background:var(--mint);color:#000;border-radius:9px'
+              : 'background:var(--bg-card);color:var(--tx-mid);border-radius:9px;border:1.5px solid var(--bdr)'">{{
+            cat.name }}</button>
         {% endfor %}
-     ]"
-     x-data="{ checkoutLoading: false, editingQty: null, addModalOpen: false, addModalProduct: null, selectedVariant: null, addQty: 1, scanOpen: false, manualBarcode: '' }">
-
-  <!-- ══════════════════════════════ HEADER ══════════════════════════════ -->
-  <header style="background: var(--bg-base); border-bottom: 1px solid var(--border-sub);"
-          class="px-6 py-4 flex items-center gap-4 shrink-0">
-
-    <!-- Logo mark -->
-    <div class="shrink-0 font-display text-white text-xl font-800 tracking-tighter mr-2 select-none">
-      <span style="color: var(--mint)">●</span> POS
     </div>
 
-    <!-- Search -->
-    <div class="flex-1 relative">
-      <span class="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors"
-            style="color: var(--text-low);">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </span>
-      <input type="text" name="q"
-             hx-get="{% url 'pos:index' %}" hx-trigger="input changed delay:200ms"
-             hx-target="#product-grid" hx-include="[name='category']"
-             placeholder="Search by name or scan barcode…"
-             style="background: var(--bg-card); border: 1.5px solid var(--border-sub); border-radius: var(--radius-lg); color: var(--text-hi);"
-             class="w-full py-3.5 pl-12 pr-5 text-[15px] font-medium placeholder-[var(--text-low)] focus:outline-none transition-all"
-             onfocus="this.style.borderColor='var(--border-act)'; this.style.boxShadow='0 0 0 4px var(--mint-soft)'"
-             onblur="this.style.borderColor='var(--border-sub)'; this.style.boxShadow='none'">
-    </div>
 
-    <!-- Scan button -->
-    <button @click="scanOpen = true; $nextTick(() => startScanner())"
-            style="background: var(--bg-card); border: 1.5px solid var(--border-sub); border-radius: var(--radius-md); color: var(--mint);"
-            class="w-12 h-12 flex items-center justify-center shrink-0 transition-all hover:border-[var(--border-act)] hover:shadow-[0_0_20px_var(--mint-glow)] active:scale-95">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9V6a2 2 0 0 1 2-2h2"/><path d="M21 9V6a2 2 0 0 0-2-2h-2"/><path d="M3 15v3a2 2 0 0 0 2 2h2"/><path d="M21 15v3a2 2 0 0 0-2 2h-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
-    </button>
+    <!-- ══════════ PRODUCT GRID + PAGINATION ══════════ -->
+    <div class="flex-1 flex flex-col overflow-hidden" style="background:var(--bg-void)">
 
-    <!-- Cart button -->
-    <button x-show="itemCount > 0" x-cloak
-            @click="cart.open = true"
-            style="background: var(--mint); border-radius: var(--radius-md); box-shadow: 0 8px 32px var(--mint-glow);"
-            class="h-12 px-6 flex items-center gap-3 font-display font-800 text-[15px] text-black shrink-0 transition-all active:scale-95 hover:brightness-110">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-      <span x-text="itemCount" class="font-display text-[15px]"></span>
-      <span class="text-black/40 text-[13px] font-medium">items</span>
-    </button>
-  </header>
-
-  <!-- ══════════════════════════════ CATEGORY TABS ══════════════════════════════ -->
-  <div class="flex gap-3 px-6 py-4 overflow-x-auto shrink-0 no-scrollbar" style="background: var(--bg-base);"
-       x-data="{ activeCat: '{{ active_category|default:'all' }}' }">
-    <input type="hidden" name="category" :value="activeCat">
-
-    <!-- All Items tab -->
-    <button hx-get="{% url 'pos:index' %}?category=all" hx-target="#product-grid"
-            @click="activeCat = 'all'"
-            class="shrink-0 font-display font-800 text-[13px] uppercase tracking-[0.12em] px-6 py-2.5 transition-all duration-300 cursor-pointer relative overflow-hidden"
-            :class="activeCat === 'all'
-              ? 'tab-active'
-              : ''"
-            :style="activeCat === 'all'
-              ? 'background: var(--mint); color: #000; border-radius: var(--radius-sm); border: none;'
-              : 'background: var(--bg-card); color: var(--text-mid); border-radius: var(--radius-sm); border: 1.5px solid var(--border-sub);'">
-      All Items
-    </button>
-
-    {% for cat in categories %}
-    <button hx-get="{% url 'pos:index' %}?category={{ cat.id }}" hx-target="#product-grid"
-            @click="activeCat = '{{ cat.id }}'"
-            class="shrink-0 font-display font-800 text-[13px] uppercase tracking-[0.12em] px-6 py-2.5 transition-all duration-300 cursor-pointer"
-            :class="activeCat === '{{ cat.id }}'
-              ? 'tab-active'
-              : ''"
-            :style="activeCat === '{{ cat.id }}'
-              ? 'background: var(--mint); color: #000; border-radius: var(--radius-sm); border: none;'
-              : 'background: var(--bg-card); color: var(--text-mid); border-radius: var(--radius-sm); border: 1.5px solid var(--border-sub);'">
-      {{ cat.name }}
-    </button>
-    {% endfor %}
-  </div>
-
-  <!-- ══════════════════════════════ PRODUCT GRID ══════════════════════════════ -->
-  <div id="product-grid"
-       class="flex-1 overflow-auto px-6 py-6 pb-32 grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 content-start no-scrollbar"
-       style="background: var(--bg-void);"
-       @keydown.window="if($event.key === 'Enter') { handleBarcode(manualBarcode); manualBarcode = ''; } else if($event.target.tagName !== 'INPUT') { manualBarcode += $event.key; }">
-    {% include 'pos/partials/product_grid.html' %}
-  </div>
-
-
-  <!-- ══════════════════════════════ ADD MODAL ══════════════════════════════ -->
-  <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-8">
-    <div class="absolute inset-0 backdrop-blur-2xl" style="background: rgba(8,8,16,0.92);"
-         @click="addModalOpen = false" x-transition:enter="transition duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"></div>
-
-    <div class="relative w-full max-w-md flex flex-col overflow-hidden noise"
-         style="background: var(--bg-card); border: 1.5px solid var(--border-sub); border-radius: var(--radius-xl); box-shadow: 0 60px 120px rgba(0,0,0,0.9), 0 0 60px var(--mint-soft);"
-         x-show="addModalOpen"
-         x-transition:enter="transition transform duration-500 cubic-bezier(0.34,1.56,0.64,1)"
-         x-transition:enter-start="scale-90 opacity-0 translate-y-8"
-         x-transition:enter-end="scale-100 opacity-100 translate-y-0">
-
-      <!-- Close -->
-      <button @click="addModalOpen = false"
-              class="absolute top-6 right-6 z-10 w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-90"
-              style="background: var(--bg-hi); color: var(--text-mid);">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-
-      <!-- Product hero -->
-      <div class="pt-12 pb-8 px-10 flex flex-col items-center text-center">
-        <div class="w-28 h-28 flex items-center justify-center text-7xl mb-6 rounded-[40px] transition-transform duration-500 hover:scale-110"
-             style="background: var(--bg-lift); border: 1.5px solid var(--border-sub);">
-          <span x-text="addModalProduct?.image"></span>
-        </div>
-        <h3 class="font-display font-800 text-2xl text-white tracking-tight leading-snug mb-2" x-text="addModalProduct?.name"></h3>
-        <div class="font-display font-800 text-3xl" style="color: var(--mint);"
-             x-text="'KES ' + (selectedVariant ? selectedVariant.price : addModalProduct?.price)?.toLocaleString()"></div>
-      </div>
-
-      <!-- Variants -->
-      <template x-if="addModalProduct?.variants && addModalProduct.variants.length > 0">
-        <div class="px-10 pb-6">
-          <p class="text-[11px] font-display font-800 uppercase tracking-[0.35em] mb-4" style="color: var(--text-low);">Choose Variant</p>
-          <div class="flex flex-wrap gap-3">
-            <template x-for="v in addModalProduct?.variants" :key="v.id">
-              <button @click="selectedVariant = v; addQty = 1;"
-                      class="px-5 py-3 rounded-2xl text-[13px] font-display font-800 transition-all active:scale-95 cursor-pointer"
-                      :style="selectedVariant?.id === v.id
-                        ? 'background: var(--mint); color: #000; border: none; box-shadow: 0 4px 20px var(--mint-glow);'
-                        : 'background: var(--bg-hi); color: var(--text-mid); border: 1.5px solid var(--border-sub);'"
-                      x-text="v.options.join(' / ')"></button>
-            </template>
-          </div>
-        </div>
-      </template>
-
-      <!-- Qty + CTA -->
-      <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-           class="px-10 pb-10">
-        <!-- Qty stepper -->
-        <div class="flex items-center justify-between gap-4 p-3 rounded-[28px] mb-6"
-             style="background: var(--bg-void); border: 1.5px solid var(--border-sub);">
-          <button @click="if(addQty > 1) addQty--"
-                  class="w-14 h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-90 cursor-pointer"
-                  style="background: var(--bg-hi); color: var(--text-mid); border: none;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <div class="text-center">
-            <div class="font-display font-800 text-5xl text-white tabular-nums" x-text="addQty"></div>
-            <div class="text-[10px] font-display font-800 uppercase tracking-[0.4em] mt-1" style="color: var(--text-low);">qty</div>
-          </div>
-          <button @click="
-                    let maxStock = selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty;
-                    let currentId = selectedVariant ? selectedVariant.id : addModalProduct?.id;
-                    let inCart = cart.items.find(i => i.id === currentId)?.qty || 0;
-                    if(addQty < (maxStock - inCart)) { addQty++; } else { alert('No more stock available'); }"
-                  class="w-14 h-14 flex items-center justify-center rounded-[20px] transition-all active:scale-90 cursor-pointer"
-                  style="background: var(--bg-hi); border: none;"
-                  :style="'color: var(--mint);'">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
+        <!-- Scrollable grid area -->
+        <div id="product-grid" class="flex-1 overflow-auto ns px-3 pt-3"
+            @keydown.window="if($event.key==='Enter'){handleBarcode(manualBarcode);manualBarcode='';}else if($event.target.tagName!=='INPUT'){manualBarcode+=$event.key;}">
+            <div id="product-grid-inner" class="grid gap-2.5 pb-2"
+                style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+                {% include 'pos/partials/product_grid.html' %}
+            </div>
         </div>
 
-        <!-- Add CTA -->
-        <button @click="
-                  let p = selectedVariant ? {
-                    id: selectedVariant.id,
-                    parent_id: addModalProduct.id,
-                    name: selectedVariant.name,
-                    price: selectedVariant.price,
-                    stock_qty: selectedVariant.stock_qty,
-                    image: addModalProduct.image
-                  } : {
-                    id: addModalProduct.id,
-                    name: addModalProduct.name,
-                    price: addModalProduct.price,
-                    stock_qty: addModalProduct.stock_qty,
-                    image: addModalProduct.image
-                  };
-                  if(addToCart(p, addQty)) { addModalOpen = false; }"
-                class="w-full h-14 font-display font-800 text-[15px] uppercase tracking-[0.1em] rounded-[20px] transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-4 border-none"
-                style="background: var(--mint); color: #000; box-shadow: 0 12px 40px var(--mint-glow);">
-          <span>Add to Basket</span>
-          <span style="color: rgba(0,0,0,0.3)">·</span>
-          <span x-text="'KES ' + ((selectedVariant ? selectedVariant.price : addModalProduct?.price) * addQty).toLocaleString()"></span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ══════════════════════════════ CART DRAWER ══════════════════════════════ -->
-  <div x-show="cart.open" x-cloak class="fixed inset-0 z-[150] flex flex-col justify-end">
-    <div class="absolute inset-0 backdrop-blur-xl" style="background: rgba(8,8,16,0.88);"
-         @click="cart.open = false"
-         x-transition:enter="transition duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"></div>
-
-    <div class="relative w-full max-w-2xl mx-auto flex flex-col overflow-hidden noise"
-         style="background: var(--bg-card); border-top: 1.5px solid var(--border-sub); border-radius: var(--radius-xl) var(--radius-xl) 0 0; max-height: 94vh; box-shadow: 0 -40px 100px rgba(0,0,0,0.8);"
-         x-transition:enter="transition transform duration-500 cubic-bezier(0.16,1,0.3,1)"
-         x-transition:enter-start="translate-y-full"
-         x-transition:enter-end="translate-y-0">
-
-      <!-- Handle -->
-      <div class="flex justify-center pt-4 pb-0 shrink-0">
-        <div class="w-10 h-1 rounded-full" style="background: var(--border-sub);"></div>
-      </div>
-
-      <!-- Cart Header -->
-      <div class="px-8 pt-6 pb-5 flex items-center justify-between shrink-0"
-           style="border-bottom: 1px solid var(--border-sub);">
-        <div>
-          <h2 class="font-display font-800 text-3xl text-white tracking-tight">Basket</h2>
-          <div class="text-[12px] font-display font-800 uppercase tracking-[0.25em] mt-1" style="color: var(--text-low);"
-               x-text="itemCount + ' items · KES ' + cartTotal.toLocaleString()"></div>
-        </div>
-        <div class="flex items-center gap-3">
-          <button @click="clearCart()"
-                  class="px-5 py-2.5 text-[12px] font-display font-800 uppercase tracking-[0.15em] rounded-[14px] transition-all active:scale-95 cursor-pointer border-none"
-                  style="background: rgba(255,77,106,0.1); color: var(--red);">
-            Clear All
-          </button>
-          <button @click="cart.open = false"
-                  class="w-9 h-9 flex items-center justify-center rounded-full transition-all cursor-pointer border-none"
-                  style="background: var(--bg-hi); color: var(--text-mid);">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Payment Method Tabs -->
-      <div class="px-8 py-4 shrink-0" style="border-bottom: 1px solid var(--border-sub);">
-        <div class="flex gap-2 p-1.5 rounded-[20px]" style="background: var(--bg-void);">
-          <template x-for="mode in ['cash','mpesa','card','split']" :key="mode">
-            <button @click="payment = mode"
-                    class="flex-1 py-2.5 rounded-[14px] text-[12px] font-display font-800 uppercase tracking-[0.15em] transition-all duration-300 border-none cursor-pointer"
-                    :style="payment === mode
-                      ? 'background: var(--mint); color: #000; box-shadow: 0 4px 16px var(--mint-glow);'
-                      : 'background: transparent; color: var(--text-low);'"
-                    x-text="mode"></button>
-          </template>
-        </div>
-      </div>
-
-      <!-- Cart Items -->
-      <div class="flex-1 overflow-auto px-8 py-4 custom-scrollbar">
-        <template x-for="(item, idx) in cart.items" :key="item.id">
-          <div class="flex items-center gap-5 py-4 animate-fade-up"
-               style="border-bottom: 1px solid var(--border-sub);"
-               :style="`animation-delay: ${idx * 40}ms`">
-            <!-- Emoji -->
-            <div class="w-14 h-14 shrink-0 flex items-center justify-center text-3xl rounded-[18px]"
-                 style="background: var(--bg-lift); border: 1.5px solid var(--border-sub);"
-                 x-text="item.image"></div>
+        <!-- ── PAGINATION ── -->
+        <div id="pagination-bar" class="shrink-0 flex items-center justify-between px-4 py-2.5"
+            style="background:var(--bg-base);border-top:1px solid var(--bdr)">
             <!-- Info -->
-            <div class="flex-1 min-w-0">
-              <div class="text-white font-medium text-[14px] truncate" x-text="item.name"></div>
-              <div class="font-display font-800 text-[13px] mt-0.5 cursor-pointer transition-colors hover:opacity-80"
-                   style="color: var(--mint);"
-                   @click="let d = prompt('Discount per unit:', item.discount || 0); if(d!==null) setLineDiscount(item.id, d)">
-                KES <span x-text="(item.price - (item.discount || 0)).toLocaleString()"></span>
-                <template x-if="item.discount > 0">
-                  <span class="line-through text-[11px] ml-1" style="color: var(--text-low);" x-text="item.price"></span>
-                </template>
-              </div>
+            <div class="fd font-800 text-[11px]" style="color:var(--tx-low)">
+                Page <span id="pg-current">{{ page|default:1 }}</span> of <span id="pg-total">{{ total_pages|default:1
+                    }}</span>
+                <span class="ml-2" style="color:var(--tx-low);opacity:.5">· {{ products|length }} shown</span>
             </div>
-            <!-- Qty stepper mini -->
-            <div class="flex items-center gap-2 px-2 py-1.5 rounded-[16px]"
-                 style="background: var(--bg-void); border: 1.5px solid var(--border-sub);">
-              <button @click="updateQty(item.id, -1)"
-                      class="w-8 h-8 flex items-center justify-center rounded-[10px] border-none cursor-pointer transition-all active:scale-90"
-                      style="background: var(--bg-hi); color: var(--text-mid);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
-              <span class="w-8 text-center font-display font-800 text-[15px] text-white tabular-nums" x-text="item.qty"></span>
-              <button @click="updateQty(item.id, 1)"
-                      class="w-8 h-8 flex items-center justify-center rounded-[10px] border-none cursor-pointer transition-all active:scale-90"
-                      style="background: var(--bg-hi);" :style="'color: var(--mint);'">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
-            </div>
-            <!-- Line total -->
-            <div class="shrink-0 text-right">
-              <div class="font-display font-800 text-[13px] text-white" x-text="'KES ' + ((item.price - (item.discount || 0)) * item.qty).toLocaleString()"></div>
-            </div>
-          </div>
-        </template>
+            <!-- Buttons -->
+            <div class="flex items-center gap-1.5">
+                {% if page > 1 %}
+                <a hx-get="{% url 'pos:index' %}?page={{ page|add:'-1' }}" hx-target="#product-grid-inner"
+                    hx-push-url="true" class="pg-btn"
+                    style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </a>
+                {% else %}
+                <span class="pg-btn"
+                    style="background:var(--bg-card);color:var(--tx-low);opacity:.35;cursor:not-allowed;border:1.5px solid var(--bdr)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </span>
+                {% endif %}
 
-        <!-- Split Payment Section -->
-        <div x-show="payment === 'split'" x-transition.opacity class="mt-6 mb-4">
-          <div class="p-6 rounded-[28px]" style="background: var(--bg-lift); border: 1.5px solid var(--border-sub);">
-            <div class="flex items-center justify-between mb-5">
-              <span class="font-display font-800 text-[13px] uppercase tracking-[0.2em]" style="color: var(--text-mid);">Split Logic</span>
-              <button @click="splitPayments.push({method:'cash', amount:0})"
-                      class="px-4 py-2 text-[12px] font-display font-800 uppercase tracking-[0.15em] rounded-[12px] border-none cursor-pointer transition-all active:scale-95"
-                      style="background: var(--mint); color: #000;">+ Add</button>
+                <!-- Page numbers (up to 5 visible) -->
+                {% for i in page_range %}
+                {% if i == page %}
+                <span class="pg-btn" style="background:var(--mint);color:#000">{{ i }}</span>
+                {% elif i == '...' %}
+                <span class="pg-btn" style="background:transparent;color:var(--tx-low);cursor:default">…</span>
+                {% else %}
+                <a hx-get="{% url 'pos:index' %}?page={{ i }}" hx-target="#product-grid-inner" hx-push-url="true"
+                    class="pg-btn"
+                    style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr)">{{ i }}</a>
+                {% endif %}
+                {% endfor %}
+
+                {% if page < total_pages %} <a hx-get="{% url 'pos:index' %}?page={{ page|add:'1' }}"
+                    hx-target="#product-grid-inner" hx-push-url="true" class="pg-btn"
+                    style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                    </a>
+                    {% else %}
+                    <span class="pg-btn"
+                        style="background:var(--bg-card);color:var(--tx-low);opacity:.35;cursor:not-allowed;border:1.5px solid var(--bdr)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </span>
+                    {% endif %}
             </div>
-            <div class="space-y-3 max-h-52 overflow-y-auto no-scrollbar">
-              <template x-for="(sp, idx) in splitPayments" :key="idx">
-                <div class="flex gap-3 items-center">
-                  <select x-model="sp.method"
-                          class="flex-1 py-3 px-4 rounded-[14px] text-[13px] font-display font-800 uppercase appearance-none focus:outline-none cursor-pointer"
-                          style="background: var(--bg-card); border: 1.5px solid var(--border-sub); color: var(--text-hi);">
-                    <option value="cash">Cash</option>
-                    <option value="mpesa">M-Pesa</option>
-                    <option value="card">Card</option>
-                  </select>
-                  <input type="number" x-model.number="sp.amount" placeholder="0"
-                         class="flex-1 py-3 px-4 rounded-[14px] text-right text-[15px] font-display font-800 focus:outline-none"
-                         style="background: var(--bg-card); border: 1.5px solid var(--border-sub); color: var(--mint);">
-                  <button @click="splitPayments.splice(idx, 1)"
-                          class="w-9 h-9 flex items-center justify-center rounded-[12px] border-none cursor-pointer transition-all active:scale-90"
-                          style="background: rgba(255,77,106,0.1); color: var(--red);">✕</button>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+       ADD-TO-CART MODAL
+       • Back button top-left
+       • Sticky CTA pinned above nav height
+  ══════════════════════════════════════════ -->
+    <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[300] flex items-end sm:items-center justify-center">
+        <!-- backdrop -->
+        <div class="absolute inset-0 backdrop-blur-2xl cursor-pointer" style="background:rgba(7,7,15,.95)"
+            @click="addModalOpen=false" x-transition:enter="transition duration-200"
+            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"></div>
+
+        <!-- sheet -->
+        <div class="relative w-full sm:max-w-sm flex flex-col nz" style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:38px 38px 0 0;
+                max-height:88vh;box-shadow:0 -24px 80px rgba(0,0,0,.9),0 0 48px var(--mint-soft)" x-show="addModalOpen"
+            x-transition:enter="transition transform duration-380 cubic-bezier(.34,1.46,.64,1)"
+            x-transition:enter-start="translate-y-full opacity-0" x-transition:enter-end="translate-y-0 opacity-100">
+
+            <!-- top bar -->
+            <div class="flex items-center justify-between px-5 pt-4 pb-2 shrink-0">
+                <button @click="addModalOpen=false"
+                    class="flex items-center gap-1.5 fd font-800 text-[10px] uppercase tracking-[.18em] border-none cursor-pointer transition-all active:scale-90 px-3 py-2"
+                    style="background:var(--bg-hi);color:var(--tx-mid);border-radius:9px">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round">
+                        <path d="M19 12H5" />
+                        <path d="m12 5-7 7 7 7" />
+                    </svg>
+                    Back
+                </button>
+                <div class="w-8 h-1 rounded-full" style="background:var(--bdr)"></div>
+                <div style="width:64px"></div>
+            </div>
+
+            <!-- scrollable content -->
+            <div class="overflow-auto ts flex-1 px-6 pb-3">
+                <!-- hero -->
+                <div class="pt-2 pb-5 flex flex-col items-center text-center">
+                    <div class="w-20 h-20 flex items-center justify-center text-5xl mb-4 transition-transform duration-400 hover:scale-110"
+                        style="background:var(--bg-lift);border:1.5px solid var(--bdr);border-radius:28px">
+                        <span x-text="addModalProduct?.image"></span>
+                    </div>
+                    <h3 class="fd font-800 text-[19px] text-white tracking-tight mb-1.5 leading-snug"
+                        x-text="addModalProduct?.name"></h3>
+                    <div class="fd font-800 text-[22px]" style="color:var(--mint)"
+                        x-text="'KES '+(selectedVariant?selectedVariant.price:addModalProduct?.price)?.toLocaleString()">
+                    </div>
+                    <div class="mt-1.5 text-[11px]" style="color:var(--tx-low)"
+                        x-text="(selectedVariant?selectedVariant.stock_qty:addModalProduct?.stock_qty)+' in stock'">
+                    </div>
                 </div>
-              </template>
-            </div>
-            <div class="flex justify-between items-center mt-5 pt-4" style="border-top: 1px solid var(--border-sub);">
-              <span class="text-[11px] font-display font-800 uppercase tracking-[0.3em]" style="color: var(--text-low);">Collected</span>
-              <div class="font-display font-800 text-[18px] transition-colors"
-                   :style="totalPaid >= cartTotal ? 'color: var(--mint)' : 'color: var(--red)'"
-                   x-text="'KES ' + totalPaid.toLocaleString()"></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- ── FOOTER ── -->
-      <div class="px-8 pt-5 pb-8 shrink-0" style="border-top: 1px solid var(--border-sub); background: var(--bg-base);">
-        <div class="flex items-end justify-between mb-5">
-          <div>
-            <div class="text-[11px] font-display font-800 uppercase tracking-[0.3em] mb-1" style="color: var(--text-low);">Total</div>
-            <div class="font-display font-800 text-4xl text-white">KES <span x-text="cartTotal.toLocaleString()"></span></div>
-          </div>
-          <div class="flex items-center gap-2 px-4 py-2 rounded-[14px]"
-               style="background: var(--mint-soft); border: 1.5px solid var(--border-act);">
-            <div class="w-2 h-2 rounded-full animate-pulse" style="background: var(--mint);"></div>
-            <span class="font-display font-800 text-[12px] uppercase tracking-[0.2em]" style="color: var(--mint);"
-                  x-text="payment"></span>
-          </div>
-        </div>
+                <!-- variants -->
+                <template x-if="addModalProduct?.variants && addModalProduct.variants.length>0">
+                    <div class="mb-5">
+                        <p class="text-[10px] fd font-800 uppercase tracking-[.32em] mb-2.5"
+                            style="color:var(--tx-low)">Choose type</p>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="v in addModalProduct?.variants" :key="v.id">
+                                <button @click="selectedVariant=v;addQty=1"
+                                    class="px-4 py-2.5 text-[12px] fd font-800 transition-all active:scale-95 cursor-pointer"
+                                    :style="selectedVariant?.id===v.id
+                          ? 'background:var(--mint);color:#000;border:none;border-radius:10px;box-shadow:0 4px 14px var(--mint-glow)'
+                          : 'background:var(--bg-hi);color:var(--tx-mid);border:1.5px solid var(--bdr);border-radius:10px'"
+                                    x-text="v.options.join(' / ')"></button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
 
-        <button @click="checkoutLoading = true;
-                  fetch('{% url 'pos:checkout' %}', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                    body: JSON.stringify({ items: cart.items, payment_method: payment, split_payments: payment === 'split' ? splitPayments : [], coupon_code: couponApplied ? couponCode : '' })
+                <!-- qty stepper -->
+                <div x-show="(!addModalProduct?.variants?.length)||selectedVariant"
+                    x-transition:enter="transition duration-180" x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100">
+                    <div class="flex items-center justify-between gap-3 p-2.5"
+                        style="background:var(--bg-void);border:1.5px solid var(--bdr);border-radius:22px">
+                        <button @click="if(addQty>1)addQty--"
+                            class="w-11 h-11 flex items-center justify-center transition-all active:scale-90 cursor-pointer border-none"
+                            style="background:var(--bg-hi);border-radius:14px;color:var(--tx-mid)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3">
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
+                        <div class="text-center flex-1">
+                            <div class="fd font-800 text-[38px] text-white tabular-nums leading-none" x-text="addQty">
+                            </div>
+                            <div class="text-[9px] fd font-800 uppercase tracking-[.4em] mt-1"
+                                style="color:var(--tx-low)">qty</div>
+                        </div>
+                        <button @click="
+                      let mx=selectedVariant?selectedVariant.stock_qty:addModalProduct?.stock_qty;
+                      let cid=selectedVariant?selectedVariant.id:addModalProduct?.id;
+                      let inCart=cart.items.find(i=>i.id===cid)?.qty||0;
+                      if(addQty<(mx-inCart)){addQty++}else{alert('No more stock')}"
+                            class="w-11 h-11 flex items-center justify-center transition-all active:scale-90 cursor-pointer border-none"
+                            style="background:var(--bg-hi);border-radius:14px;color:var(--mint)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ★ STICKY CTA — padded above bottom nav ★ -->
+            <div x-show="(!addModalProduct?.variants?.length)||selectedVariant" class="shrink-0 cta-dock">
+                <button @click="
+                  let p=selectedVariant?{id:selectedVariant.id,parent_id:addModalProduct.id,name:selectedVariant.name,price:selectedVariant.price,stock_qty:selectedVariant.stock_qty,image:addModalProduct.image}
+                    :{id:addModalProduct.id,name:addModalProduct.name,price:addModalProduct.price,stock_qty:addModalProduct.stock_qty,image:addModalProduct.image};
+                  if(addToCart(p,addQty)){addModalOpen=false}"
+                    class="w-full h-[50px] fd font-800 text-[13px] uppercase tracking-[.1em] flex items-center justify-center gap-3 cursor-pointer transition-all active:scale-[.98] border-none"
+                    style="background:var(--mint);color:#000;border-radius:14px;box-shadow:0 8px 28px var(--mint-glow)">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"
+                        stroke-linecap="round">
+                        <circle cx="9" cy="21" r="1" />
+                        <circle cx="20" cy="21" r="1" />
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                    </svg>
+                    Add to Basket
+                    <span style="color:rgba(0,0,0,.25)">·</span>
+                    <span
+                        x-text="'KES '+((selectedVariant?selectedVariant.price:addModalProduct?.price)*addQty).toLocaleString()"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════
+       CART DRAWER
+       • Back to products top-left
+       • Items tab | Payment tab
+       • CTA footer padded above bottom nav
+  ══════════════════════════════════════════ -->
+    <div x-show="cart.open" x-cloak class="fixed inset-0 z-[200] flex flex-col justify-end">
+        <div class="absolute inset-0 backdrop-blur-xl cursor-pointer" style="background:rgba(7,7,15,.88)"
+            @click="cart.open=false" x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"></div>
+
+        <div class="relative w-full max-w-2xl mx-auto flex flex-col nz" style="background:var(--bg-card);border-radius:38px 38px 0 0;max-height:92vh;
+                border-top:1.5px solid var(--bdr);border-left:1.5px solid var(--bdr);border-right:1.5px solid var(--bdr);
+                box-shadow:0 -28px 90px rgba(0,0,0,.9)" x-data="{cartView:'items'}"
+            x-transition:enter="transition transform duration-440 cubic-bezier(.16,1,.3,1)"
+            x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
+
+            <!-- handle -->
+            <div class="flex justify-center pt-3 shrink-0">
+                <div class="w-9 h-1 rounded-full" style="background:var(--bdr)"></div>
+            </div>
+
+            <!-- top bar -->
+            <div class="flex items-center justify-between px-5 pt-3 pb-3.5 shrink-0"
+                style="border-bottom:1px solid var(--bdr)">
+                <button @click="cart.open=false"
+                    class="flex items-center gap-1.5 fd font-800 text-[10px] uppercase tracking-[.18em] border-none cursor-pointer transition-all active:scale-90 px-3 py-2"
+                    style="background:var(--bg-hi);color:var(--tx-mid);border-radius:9px">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round">
+                        <path d="M19 12H5" />
+                        <path d="m12 5-7 7 7 7" />
+                    </svg>
+                    Products
+                </button>
+                <div class="text-center">
+                    <div class="fd font-800 text-[16px] text-white tracking-tight">Basket</div>
+                    <div class="text-[10px] fd font-800 uppercase tracking-[.18em] mt-0.5" style="color:var(--tx-low)"
+                        x-text="itemCount+' items'"></div>
+                </div>
+                <button @click="clearCart()"
+                    class="fd font-800 text-[10px] uppercase tracking-[.12em] px-3 py-2 border-none cursor-pointer transition-all active:scale-90"
+                    style="background:rgba(255,77,106,.1);color:var(--red);border-radius:9px">Clear</button>
+            </div>
+
+            <!-- tab nav -->
+            <div class="flex gap-1 mx-5 mt-3 p-1 shrink-0" style="background:var(--bg-void);border-radius:12px">
+                <button @click="cartView='items'"
+                    class="flex-1 py-2 fd font-800 text-[11px] uppercase tracking-[.14em] transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
+                    :style="cartView==='items'?'background:var(--bg-hi);color:var(--tx);border-radius:9px':'background:transparent;color:var(--tx-low)'">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round">
+                        <line x1="8" y1="6" x2="21" y2="6" />
+                        <line x1="8" y1="12" x2="21" y2="12" />
+                        <line x1="8" y1="18" x2="21" y2="18" />
+                        <line x1="3" y1="6" x2="3.01" y2="6" />
+                        <line x1="3" y1="12" x2="3.01" y2="12" />
+                        <line x1="3" y1="18" x2="3.01" y2="18" />
+                    </svg>
+                    Items
+                    <span x-show="itemCount>0" x-text="itemCount"
+                        class="fd font-800 text-[9px] px-1.5 py-0.5 rounded-full tabular-nums bpop"
+                        style="background:var(--mint);color:#000"></span>
+                </button>
+                <button @click="cartView='payment'"
+                    class="flex-1 py-2 fd font-800 text-[11px] uppercase tracking-[.14em] transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
+                    :style="cartView==='payment'?'background:var(--bg-hi);color:var(--tx);border-radius:9px':'background:transparent;color:var(--tx-low)'">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" />
+                        <line x1="1" y1="10" x2="23" y2="10" />
+                    </svg>
+                    Payment
+                </button>
+            </div>
+
+            <!-- ─── ITEMS PANEL ─── -->
+            <div x-show="cartView==='items'" x-transition:enter="transition duration-180"
+                x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0"
+                class="flex-1 overflow-auto ts px-5 pt-3 pb-2 mt-2">
+
+                <template x-for="(item,idx) in cart.items" :key="item.id">
+                    <div class="flex items-center gap-3 py-3 au" style="border-bottom:1px solid var(--bdr)"
+                        :style="`animation-delay:${idx*30}ms`">
+                        <!-- emoji -->
+                        <div class="w-10 h-10 shrink-0 flex items-center justify-center text-xl"
+                            style="background:var(--bg-lift);border:1.5px solid var(--bdr);border-radius:12px"
+                            x-text="item.image"></div>
+                        <!-- info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="text-white font-medium text-[13px] truncate" x-text="item.name"></div>
+                            <button
+                                class="flex items-center gap-1 mt-0.5 border-none bg-transparent p-0 cursor-pointer hover:opacity-70 transition-opacity"
+                                @click="let d=prompt('Discount/unit (KES):',item.discount||0);if(d!==null)setLineDiscount(item.id,d)">
+                                <span class="fd font-800 text-[12px]" style="color:var(--mint)"
+                                    x-text="'KES '+(item.price-(item.discount||0)).toLocaleString()"></span>
+                                <template x-if="item.discount>0">
+                                    <span class="text-[10px] line-through ml-1" style="color:var(--tx-low)"
+                                        x-text="item.price"></span>
+                                </template>
+                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" class="ml-0.5" style="color:var(--tx-low)">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- stepper -->
+                        <div class="flex items-center gap-1 px-1.5 py-1.5 shrink-0"
+                            style="background:var(--bg-void);border:1.5px solid var(--bdr);border-radius:12px">
+                            <button @click="updateQty(item.id,-1)"
+                                class="w-6 h-6 flex items-center justify-center border-none cursor-pointer transition-all active:scale-90"
+                                style="background:var(--bg-hi);color:var(--tx-mid);border-radius:7px">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="3">
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                            </button>
+                            <span class="w-6 text-center fd font-800 text-[13px] text-white tabular-nums"
+                                x-text="item.qty"></span>
+                            <button @click="updateQty(item.id,1)"
+                                class="w-6 h-6 flex items-center justify-center border-none cursor-pointer transition-all active:scale-90"
+                                style="background:var(--bg-hi);color:var(--mint);border-radius:7px">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="3">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- line total -->
+                        <div class="shrink-0 min-w-[60px] text-right">
+                            <div class="fd font-800 text-[12px] text-white"
+                                x-text="'KES '+((item.price-(item.discount||0))*item.qty).toLocaleString()"></div>
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="cart.items.length===0">
+                    <div class="flex flex-col items-center justify-center py-16" style="color:var(--tx-low)">
+                        <div class="text-4xl mb-3 opacity-40">🛒</div>
+                        <p class="fd font-800 text-[11px] uppercase tracking-[.22em]" style="opacity:.3">Basket is empty
+                        </p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- ─── PAYMENT PANEL ─── -->
+            <div x-show="cartView==='payment'" x-transition:enter="transition duration-180"
+                x-transition:enter-start="opacity-0 -translate-x-2" x-transition:enter-end="opacity-100 translate-x-0"
+                class="flex-1 overflow-auto ts px-5 pt-3 pb-2 mt-2">
+
+                <p class="text-[10px] fd font-800 uppercase tracking-[.28em] mb-2.5" style="color:var(--tx-low)">Payment
+                    method</p>
+
+                <!-- 2×2 method grid -->
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <template x-for="m in [
+              {key:'cash', icon:'💵', label:'Cash',   sub:'Physical notes'},
+              {key:'mpesa',icon:'📱', label:'M-Pesa', sub:'Safaricom STK'},
+              {key:'card', icon:'💳', label:'Card',   sub:'Visa / Mastercard'},
+              {key:'split',icon:'✂️', label:'Split',  sub:'Multiple methods'}
+            ]" :key="m.key">
+                        <button
+                            @click="payment=m.key;if(m.key==='split'&&splitPayments.length===0)splitPayments.push({method:'cash',amount:0})"
+                            class="pc flex items-center gap-3 px-3.5 py-3.5 text-left cursor-pointer border-none"
+                            :style="payment===m.key
+                      ? 'background:var(--mint-press);border:1.5px solid var(--bdr-act);border-radius:14px'
+                      : 'background:var(--bg-lift);border:1.5px solid var(--bdr);border-radius:14px'">
+                            <span class="text-xl shrink-0" x-text="m.icon"></span>
+                            <div class="min-w-0">
+                                <div class="fd font-800 text-[13px] truncate"
+                                    :style="payment===m.key?'color:var(--mint)':'color:var(--tx)'" x-text="m.label">
+                                </div>
+                                <div class="text-[10px] truncate" style="color:var(--tx-low)" x-text="m.sub"></div>
+                            </div>
+                            <div x-show="payment===m.key"
+                                class="ml-auto w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+                                style="background:var(--mint)">
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#000"
+                                    stroke-width="4">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </div>
+                        </button>
+                    </template>
+                </div>
+
+                <!-- split entries -->
+                <div x-show="payment==='split'" x-transition:enter="transition duration-180"
+                    x-transition:enter-start="opacity-0 translate-y-2"
+                    x-transition:enter-end="opacity-100 translate-y-0">
+
+                    <div class="flex items-center justify-between mb-2.5">
+                        <p class="text-[10px] fd font-800 uppercase tracking-[.26em]" style="color:var(--tx-low)">
+                            Entries</p>
+                        <button @click="splitPayments.push({method:'cash',amount:0})"
+                            class="flex items-center gap-1 px-3 py-1.5 fd font-800 text-[10px] uppercase tracking-[.12em] border-none cursor-pointer transition-all active:scale-95"
+                            style="background:var(--mint);color:#000;border-radius:8px">
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="3">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                            Add entry
+                        </button>
+                    </div>
+
+                    <div class="space-y-1.5 mb-3">
+                        <template x-for="(sp,idx) in splitPayments" :key="idx">
+                            <div class="flex items-center gap-2 p-2"
+                                style="background:var(--bg-void);border:1.5px solid var(--bdr);border-radius:12px">
+                                <!-- method toggles -->
+                                <div class="flex gap-1 shrink-0">
+                                    <template x-for="mm in ['cash','mpesa','card']" :key="mm">
+                                        <button @click="sp.method=mm"
+                                            class="fd font-800 text-[9px] uppercase px-2 py-1.5 border-none cursor-pointer transition-all"
+                                            :style="sp.method===mm
+                              ? 'background:var(--mint);color:#000;border-radius:6px'
+                              : 'background:var(--bg-hi);color:var(--tx-mid);border-radius:6px'"
+                                            x-text="mm==='mpesa'?'M-P':mm"></button>
+                                    </template>
+                                </div>
+                                <!-- amount -->
+                                <input type="number" x-model.number="sp.amount" placeholder="0"
+                                    class="flex-1 min-w-0 text-right fd font-800 text-[14px] py-0.5 px-2 focus:outline-none bg-transparent border-none"
+                                    style="color:var(--mint)">
+                                <!-- remove -->
+                                <button @click="splitPayments.splice(idx,1)"
+                                    class="w-6 h-6 flex items-center justify-center border-none cursor-pointer active:scale-90 shrink-0"
+                                    style="background:rgba(255,77,106,.12);color:var(--red);border-radius:7px">
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2.5">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- progress -->
+                    <div class="p-3.5 rounded-[12px]" style="background:var(--bg-lift);border:1.5px solid var(--bdr)">
+                        <div class="flex justify-between text-[11px] fd font-800 uppercase tracking-[.16em] mb-2">
+                            <span style="color:var(--tx-low)">Collected</span>
+                            <span :style="totalPaid>=cartTotal?'color:var(--mint)':'color:var(--red)'"
+                                x-text="'KES '+totalPaid.toLocaleString()"></span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full overflow-hidden" style="background:var(--bg-void)">
+                            <div class="h-full rounded-full transition-all duration-400"
+                                :style="`width:${Math.min(100,cartTotal>0?(totalPaid/cartTotal)*100:0)}%;background:${totalPaid>=cartTotal?'var(--mint)':'var(--amber)'}`">
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-[10px] mt-1.5" style="color:var(--tx-low)">
+                            <span>KES 0</span>
+                            <span x-text="'KES '+cartTotal.toLocaleString()"></span>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- end payment panel -->
+
+            <!-- ★ CART FOOTER — total + CTA — padded above bottom nav ★ -->
+            <div class="shrink-0 cta-dock">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <div class="text-[10px] fd font-800 uppercase tracking-[.24em] mb-0.5"
+                            style="color:var(--tx-low)">Total</div>
+                        <div class="fd font-800 text-[28px] text-white leading-none">KES <span
+                                x-text="cartTotal.toLocaleString()"></span></div>
+                    </div>
+                    <!-- Quick-switch to payment tab from items -->
+                    <button x-show="cartView==='items'" @click="cartView='payment'"
+                        class="flex items-center gap-2 fd font-800 text-[11px] uppercase tracking-[.12em] px-4 py-2.5 border-none cursor-pointer transition-all active:scale-95"
+                        style="background:var(--mint-soft);border:1.5px solid var(--bdr-act);border-radius:10px;color:var(--mint)">
+                        Pay
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                    </button>
+                    <!-- Method badge when on payment tab -->
+                    <div x-show="cartView==='payment'" class="flex items-center gap-1.5 px-3 py-2 rounded-[9px]"
+                        style="background:var(--mint-soft);border:1.5px solid var(--bdr-act)">
+                        <div class="w-1.5 h-1.5 rounded-full animate-pulse" style="background:var(--mint)"></div>
+                        <span class="fd font-800 text-[11px] uppercase tracking-[.18em]" style="color:var(--mint)"
+                            x-text="payment"></span>
+                    </div>
+                </div>
+
+                <button @click="checkoutLoading=true;
+                  fetch('{% url 'pos:checkout' %}',{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+                    body:JSON.stringify({items:cart.items,payment_method:payment,split_payments:payment==='split'?splitPayments:[],coupon_code:couponApplied?couponCode:''})
                   })
-                  .then(res => res.text())
-                  .then(html => {
-                    document.getElementById('modal-container').innerHTML = html;
-                    checkoutLoading = false;
-                    clearCart();
-                  }).catch(() => { checkoutLoading = false; });"
-                :disabled="checkoutLoading || itemCount === 0 || (payment === 'split' && totalPaid < cartTotal)"
-                class="w-full h-14 font-display font-800 text-[16px] uppercase tracking-[0.12em] rounded-[20px] flex items-center justify-center gap-4 border-none cursor-pointer transition-all active:scale-[0.98] disabled:opacity-30 disabled:grayscale relative overflow-hidden"
-                style="background: var(--mint); color: #000; box-shadow: 0 16px 48px var(--mint-glow);">
-          <span x-show="!checkoutLoading" class="flex items-center gap-3">
-            Complete Transaction
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </span>
-          <span x-show="checkoutLoading" class="animate-pulse" style="color: rgba(0,0,0,0.5)">Authorizing…</span>
+                  .then(r=>r.text())
+                  .then(html=>{
+                    document.getElementById('modal-container').innerHTML=html;
+                    checkoutLoading=false;clearCart();
+                  }).catch(()=>{checkoutLoading=false})"
+                    :disabled="checkoutLoading||itemCount===0||(payment==='split'&&totalPaid<cartTotal)"
+                    class="w-full h-[50px] fd font-800 text-[13px] uppercase tracking-[.12em] flex items-center justify-center gap-3 border-none cursor-pointer transition-all active:scale-[.98] disabled:opacity-25 disabled:grayscale"
+                    style="background:var(--mint);color:#000;border-radius:14px;box-shadow:0 10px 30px var(--mint-glow)">
+                    <span x-show="!checkoutLoading" class="flex items-center gap-2.5">
+                        Complete Transaction
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3" stroke-linecap="round">
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                        </svg>
+                    </span>
+                    <span x-show="checkoutLoading" class="animate-pulse"
+                        style="color:rgba(0,0,0,.4)">Authorizing…</span>
+                </button>
+            </div>
+
+        </div>
+    </div><!-- end cart drawer -->
+
+
+    <!-- ══════════ SCAN OVERLAY ══════════ -->
+    <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[400] flex flex-col items-center justify-center px-10 py-12"
+        style="background:rgba(7,7,15,.97)" x-transition.opacity>
+        <p class="fd font-800 text-[10px] uppercase tracking-[.4em] mb-7" style="color:var(--tx-low)">Scan barcode</p>
+        <div class="w-full max-w-[260px] relative">
+            <div id="reader" class="aspect-square overflow-hidden"
+                style="border-radius:32px;border:1.5px solid var(--bdr);box-shadow:0 0 56px var(--mint-glow)"></div>
+            <div class="sline"></div>
+            <div class="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 rounded-tl-[8px]"
+                style="border-color:var(--mint)"></div>
+            <div class="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 rounded-tr-[8px]"
+                style="border-color:var(--mint)"></div>
+            <div class="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 rounded-bl-[8px]"
+                style="border-color:var(--mint)"></div>
+            <div class="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 rounded-br-[8px]"
+                style="border-color:var(--mint)"></div>
+        </div>
+        <button @click="scanOpen=false;if(window.html5QrCode)window.html5QrCode.stop().catch(()=>{})"
+            class="mt-8 px-7 py-2.5 fd font-800 text-[10px] uppercase tracking-[.28em] border-none cursor-pointer transition-all active:scale-95"
+            style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr);border-radius:12px">
+            Cancel
         </button>
-      </div>
     </div>
-  </div>
 
-
-  <!-- ══════════════════════════════ SCAN OVERLAY ══════════════════════════════ -->
-  <div x-show="scanOpen" x-cloak class="fixed inset-0 z-[250] flex flex-col items-center justify-center p-10"
-       style="background: rgba(8,8,16,0.97);" x-transition.opacity>
-    <div class="w-full max-w-xs relative">
-      <div id="reader" class="overflow-hidden aspect-square"
-           style="border-radius: var(--radius-xl); border: 2px solid var(--border-sub); box-shadow: 0 0 80px var(--mint-glow);"></div>
-      <div class="scan-line"></div>
-      <!-- Corner marks -->
-      <div class="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 rounded-tl-[12px]" style="border-color: var(--mint);"></div>
-      <div class="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 rounded-tr-[12px]" style="border-color: var(--mint);"></div>
-      <div class="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 rounded-bl-[12px]" style="border-color: var(--mint);"></div>
-      <div class="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 rounded-tr-[12px]" style="border-color: var(--mint);"></div>
-    </div>
-    <p class="mt-8 font-display font-800 text-[12px] uppercase tracking-[0.4em]" style="color: var(--text-low);">Point camera at barcode</p>
-    <button @click="scanOpen = false; if(window.html5QrCode) window.html5QrCode.stop().catch(e => console.log(e));"
-            class="mt-8 px-10 py-3.5 font-display font-800 text-[12px] uppercase tracking-[0.3em] rounded-[16px] border-none cursor-pointer transition-all active:scale-95"
-            style="background: var(--bg-card); color: var(--text-mid); border: 1.5px solid var(--border-sub);">
-      Cancel
-    </button>
-  </div>
-
-</div>
+</div><!-- end root -->
 
 <script>
-  let html5QrCode;
-  function startScanner() {
-    if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-    window.html5QrCode = html5QrCode;
-    html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 20, qrbox: { width: 260, height: 260 } },
-      (decodedText) => {
-        const app = document.querySelector('[x-data]').__x.$data;
-        if (app.handleBarcode(decodedText)) {
-          app.scanOpen = false;
-          html5QrCode.stop();
-        }
-      },
-      () => {}
-    ).catch(err => console.error("Scanner failed", err));
-  }
-</script>
+    // Show/hide search clear button
+    document.getElementById('search-input').addEventListener('input', function () {
+        document.getElementById('search-clear').style.opacity = this.value ? '1' : '0';
+    });
 
+    // Search wrap focus-within via JS (Safari compat)
+    const sw = document.getElementById('search-wrap');
+    document.getElementById('search-input').addEventListener('focus', () => {
+        sw.style.borderColor = 'var(--bdr-act)'; sw.style.boxShadow = '0 0 0 3px var(--mint-soft)';
+    });
+    document.getElementById('search-input').addEventListener('blur', () => {
+        sw.style.borderColor = 'var(--bdr)'; sw.style.boxShadow = 'none';
+    });
+
+    // Barcode scanner
+    let html5QrCode;
+    function startScanner() {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        window.html5QrCode = html5QrCode;
+        html5QrCode.start(
+            { facingMode: "environment" },
+            { fps: 20, qrbox: { width: 220, height: 220 } },
+            (text) => {
+                const app = document.querySelector('[x-data]').__x.$data;
+                if (app.handleBarcode(text)) { app.scanOpen = false; html5QrCode.stop(); }
+            },
+            () => { }
+        ).catch(e => console.error("Scanner:", e));
+    }
+</script>
 {% endblock %}
