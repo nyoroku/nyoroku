@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.po_list, name='po_list'),
     path('<uuid:pk>/', views.po_detail, name='po_detail'),
     path('create/', views.po_create, name='po_create'),
+    path('quick-add/', views.quick_stock_add, name='quick_add_stock'),
     
     # Suppliers
     path('suppliers/', views.supplier_list, name='supplier_list'),

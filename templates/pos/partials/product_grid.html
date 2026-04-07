@@ -1,114 +1,176 @@
-{% for product in products %}
-<button @click="
-    addModalProduct={
-      id:'{{ product.id }}',
-      name:'{{ product.name|escapejs }}',
-      price:{{ product.price }},
-      image:'{{ product.image }}',
-      stock_qty:{{ product.total_stock }},
-      variants:{% if product.has_variants %}{{ product.variants_json|safe }}{% else %}[]{% endif %},
-      barcode:'{{ product.barcode }}'
-    };
-    selectedVariant=null;
-    addQty=1;
-    addModalOpen=true" class="csh relative flex flex-col cursor-pointer text-left transition-all active:scale-[.95] w-full group
-         {% if product.total_stock == 0 %}opacity-30 pointer-events-none grayscale{% endif %}" style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:18px;
-         padding:10px 10px 34px;
-         box-shadow:0 4px 16px rgba(0,0,0,.35);
-         transition:border-color .2s,box-shadow .2s,transform .15s"
+{# ═══════════════════════════════════════════════════════
+   pos/partials/product_grid.html
+   Returned for both full-page render (via {% include %}) and
+   HTMX partial swaps (hx-target="#product-grid").
+   Contains: scrollable card grid  +  pagination bar.
+════════════════════════════════════════════════════════ #}
+
+{# ── CARD GRID ── #}
+<div class="grid gap-2.5 pb-2 px-3 pt-3"
+     style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+
+  {% for product in products %}
+  <button
+    @click="
+      addModalProduct={
+        id:'{{ product.id }}',
+        name:'{{ product.name|escapejs }}',
+        price:{{ product.price }},
+        image:'{{ product.image }}',
+        stock_qty:{{ product.total_stock }},
+        variants:{% if product.has_variants %}{{ product.variants_json|safe }}{% else %}[]{% endif %},
+        barcode:'{{ product.barcode }}'
+      };
+      selectedVariant=null;
+      addQty=1;
+      addModalOpen=true"
+    class="csh relative flex flex-col cursor-pointer text-left transition-all active:scale-[.95] w-full group
+           {% if product.total_stock == 0 %}opacity-30 pointer-events-none grayscale{% endif %}"
+    style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:18px;
+           padding:10px 10px 34px;
+           box-shadow:0 4px 16px rgba(0,0,0,.35);
+           transition:border-color .2s,box-shadow .2s,transform .15s"
     onmouseenter="this.style.borderColor='var(--bdr-act)';this.style.boxShadow='0 8px 28px rgba(0,0,0,.5),0 0 20px var(--mint-soft)'"
     onmouseleave="this.style.borderColor='var(--bdr)';this.style.boxShadow='0 4px 16px rgba(0,0,0,.35)'">
 
     {% if product.total_stock == 0 %}
     <div class="absolute inset-0 z-20 flex items-center justify-center"
-        style="background:rgba(7,7,15,.55);border-radius:18px;backdrop-filter:blur(2px)">
-        <span class="fd font-800 text-[9px] uppercase tracking-[.28em] px-3 py-1 rounded-full"
+         style="background:rgba(7,7,15,.55);border-radius:18px;backdrop-filter:blur(2px)">
+      <span class="fd font-800 text-[9px] uppercase tracking-[.28em] px-3 py-1 rounded-full"
             style="background:rgba(255,77,106,.15);color:var(--red);border:1px solid rgba(255,77,106,.25)">
-            Sold Out
-        </span>
+        Sold Out
+      </span>
     </div>
     {% endif %}
 
-    <!-- Cart count badge -->
+    {# Cart count badge #}
     <template x-if="cart.items.find(i=>i.id==='{{ product.id }}'||i.parent_id==='{{ product.id }}')">
-        <span
-            class="absolute top-2 left-2 z-10 bpop fd font-800 text-[9px] min-w-[20px] h-[20px] px-1 flex items-center justify-center rounded-full tabular-nums"
+      <span class="absolute top-2 left-2 z-10 bpop fd font-800 text-[9px] min-w-[20px] h-[20px] px-1 flex items-center justify-center rounded-full tabular-nums"
             style="background:var(--mint);color:#000;box-shadow:0 2px 10px var(--mint-glow)"
             x-text="cart.items.filter(i=>i.id==='{{ product.id }}'||i.parent_id==='{{ product.id }}').reduce((s,i)=>s+i.qty,0)">
-        </span>
+      </span>
     </template>
 
-    <!-- Emoji image -->
+    {# Emoji #}
     <div class="w-full flex items-center justify-center py-3 mb-2 rounded-[13px] transition-transform duration-400 group-hover:scale-105"
-        style="background:rgba(0,0,0,.28);border:1px solid var(--bdr)">
-        <span class="text-4xl leading-none select-none">{{ product.image }}</span>
+         style="background:rgba(0,0,0,.28);border:1px solid var(--bdr)">
+      <span class="text-4xl leading-none select-none">{{ product.image }}</span>
     </div>
 
-    <!-- Name -->
+    {# Name #}
     <div class="fd font-800 text-[11px] uppercase tracking-[.06em] text-white truncate leading-tight mb-1 px-0.5">
-        {{ product.name }}
+      {{ product.name }}
     </div>
 
-    <!-- Price -->
+    {# Price #}
     <div class="flex items-center gap-1.5 flex-wrap px-0.5">
-        <span class="fd font-800 text-[13px]" style="color:var(--mint)">
-            KES {{ product.price|floatformat:0 }}
-        </span>
-        {% if product.has_variants %}
-        <span class="text-[8px] fd font-800 uppercase tracking-[.18em] px-1.5 py-0.5 rounded-full"
+      <span class="fd font-800 text-[13px]" style="color:var(--mint)">
+        KES {{ product.price|floatformat:0 }}
+      </span>
+      {% if product.has_variants %}
+      <span class="text-[8px] fd font-800 uppercase tracking-[.18em] px-1.5 py-0.5 rounded-full"
             style="background:var(--mint-soft);color:var(--mint);border:1px solid var(--bdr-act)">
-            +opts
-        </span>
-        {% endif %}
+        +opts
+      </span>
+      {% endif %}
     </div>
 
-    <!-- Stock pill — pinned to bottom of card -->
+    {# Stock pill — absolute so it doesn't affect card height #}
     {% with reorder=product.reorder_level|default:0 %}
-    {% if product.total_stock <= reorder %} <div
-        class="absolute bottom-2 left-2 right-2 flex items-center gap-1 px-2 py-1 rounded-[8px] text-[9px] fd font-800 uppercase tracking-[.14em]"
-        style="background:rgba(255,186,8,.08);color:var(--amber);border:1px solid rgba(255,186,8,.18)">
-        <span
-            style="width:5px;height:5px;border-radius:50%;background:var(--amber);display:inline-block;flex-shrink:0"></span>
-        Low &middot; {{ product.total_stock }}
-        </div>
-        {% else %}
-        <div class="absolute bottom-2 left-2 right-2 flex items-center gap-1 px-2 py-1 rounded-[8px] text-[9px] fd font-800 uppercase tracking-[.14em]"
-            style="background:var(--bg-hi);color:var(--tx-low);border:1px solid var(--bdr)">
-            <span
-                style="width:5px;height:5px;border-radius:50%;background:var(--mint);display:inline-block;opacity:.5;flex-shrink:0"></span>
-            {{ product.total_stock }} left
-        </div>
-        {% endif %}
-        {% endwith %}
+    {% if product.total_stock <= reorder %}
+    <div class="absolute bottom-2 left-2 right-2 flex items-center gap-1 px-2 py-1 rounded-[8px] text-[9px] fd font-800 uppercase tracking-[.14em]"
+         style="background:rgba(255,186,8,.08);color:var(--amber);border:1px solid rgba(255,186,8,.18)">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--amber);display:inline-block;flex-shrink:0"></span>
+      Low &middot; {{ product.total_stock }}
+    </div>
+    {% else %}
+    <div class="absolute bottom-2 left-2 right-2 flex items-center gap-1 px-2 py-1 rounded-[8px] text-[9px] fd font-800 uppercase tracking-[.14em]"
+         style="background:var(--bg-hi);color:var(--tx-low);border:1px solid var(--bdr)">
+      <span style="width:5px;height:5px;border-radius:50%;background:var(--mint);display:inline-block;opacity:.5;flex-shrink:0"></span>
+      {{ product.total_stock }} left
+    </div>
+    {% endif %}
+    {% endwith %}
 
-        <!-- Quick-add (+) button — appears on hover, no modal needed if no variants -->
-        {% if not product.has_variants and product.total_stock > 0 %}
-        <button class="qadd" @click.stop="
-            let p={id:'{{ product.id }}',name:'{{ product.name|escapejs }}',price:{{ product.price }},stock_qty:{{ product.total_stock }},image:'{{ product.image }}'};
-            addToCart(p,1)" title="Quick add">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-        </button>
-        {% endif %}
+    {# Quick-add button (no-variant products only) #}
+    {% if not product.has_variants and product.total_stock > 0 %}
+    <button class="qadd"
+            @click.stop="
+              let p={id:'{{ product.id }}',name:'{{ product.name|escapejs }}',price:{{ product.price }},stock_qty:{{ product.total_stock }},image:'{{ product.image }}'};
+              addToCart(p,1)"
+            title="Quick add">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    {% endif %}
 
-</button>
-{% empty %}
-<div class="col-span-full flex flex-col items-center justify-center py-32" style="color:var(--tx-low)">
+  </button>
+  {% empty %}
+  <div class="col-span-full flex flex-col items-center justify-center py-32" style="color:var(--tx-low)">
     <div class="w-20 h-20 flex items-center justify-center rounded-full mb-5"
-        style="background:var(--bg-card);border:1.5px solid var(--bdr)">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.9"
-            stroke-linecap="round" style="opacity:.25">
-            <path d="m2 2 20 20" />
-            <path d="M7.5 4.27 9 5.15" />
-            <path
-                d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-            <path d="m3.3 7 8.7 5 8.7-5" />
-            <path d="M12 22V12" />
-        </svg>
+         style="background:var(--bg-card);border:1.5px solid var(--bdr)">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.9" stroke-linecap="round" style="opacity:.25">
+        <path d="m2 2 20 20"/><path d="M7.5 4.27 9 5.15"/>
+        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+        <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+      </svg>
     </div>
     <p class="fd font-800 text-[13px] uppercase tracking-[.22em]" style="opacity:.22">Nothing found</p>
     <p class="text-[11px] mt-1.5" style="opacity:.15">Try a different search or category</p>
+  </div>
+  {% endfor %}
+
+</div>{# end grid #}
+
+
+{# ── PAGINATION BAR — travels with the partial so it survives every HTMX swap ── #}
+{% if products.paginator.num_pages > 1 %}
+<div class="flex items-center justify-between px-4 py-2.5 shrink-0"
+     style="background:var(--bg-base);border-top:1px solid var(--bdr)">
+
+  <div class="fd font-800 text-[11px]" style="color:var(--tx-low)">
+    Page {{ products.number }} of {{ products.paginator.num_pages }}
+    <span class="ml-2" style="opacity:.4">&middot; {{ products.paginator.count }} total</span>
+  </div>
+
+  <div class="flex items-center gap-1.5">
+
+    {# Prev #}
+    {% if products.has_previous %}
+    <a hx-get="{% url 'pos:index' %}?page={{ products.previous_page_number }}&category={{ active_category|default:'all' }}&q={{ query|default:'' }}"
+       hx-target="#product-grid" hx-swap="innerHTML"
+       class="pg-btn" style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr);cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    {% else %}
+    <span class="pg-btn" style="background:var(--bg-card);color:var(--tx-low);opacity:.3;border:1.5px solid var(--bdr)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+    </span>
+    {% endif %}
+
+    {# Page numbers — show current ±2 only #}
+    {% for i in products.paginator.page_range %}
+      {% if i == products.number %}
+      <span class="pg-btn" style="background:var(--mint);color:#000">{{ i }}</span>
+      {% elif i >= products.number|add:"-2" and i <= products.number|add:"2" %}
+      <a hx-get="{% url 'pos:index' %}?page={{ i }}&category={{ active_category|default:'all' }}&q={{ query|default:'' }}"
+         hx-target="#product-grid" hx-swap="innerHTML"
+         class="pg-btn" style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr);cursor:pointer">{{ i }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {# Next #}
+    {% if products.has_next %}
+    <a hx-get="{% url 'pos:index' %}?page={{ products.next_page_number }}&category={{ active_category|default:'all' }}&q={{ query|default:'' }}"
+       hx-target="#product-grid" hx-swap="innerHTML"
+       class="pg-btn" style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr);cursor:pointer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+    {% else %}
+    <span class="pg-btn" style="background:var(--bg-card);color:var(--tx-low);opacity:.3;border:1.5px solid var(--bdr)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </span>
+    {% endif %}
+
+  </div>
 </div>
-{% endfor %}
+{% endif %}

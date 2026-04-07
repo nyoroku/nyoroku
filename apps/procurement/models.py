@@ -56,8 +56,30 @@ class PurchaseOrder(models.Model):
                 self.lpo_number = "LPO-0001"
         super().save(*args, **kwargs)
 
+    def log_trail(self, user, action, notes=""):
+        PurchaseOrderTrail.objects.create(
+            po=self,
+            user=user,
+            action=action,
+            notes=notes
+        )
+
     def __str__(self):
         return self.lpo_number
+
+class PurchaseOrderTrail(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    po = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='trail')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    action = models.CharField(max_length=200) # e.g. "Submitted for approval", "Approved", "Received Stock"
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.po.lpo_number} - {self.action} by {self.user.name}"
 
 class GoodsReceivingNote(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

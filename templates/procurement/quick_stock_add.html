@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}Quick Stock Entry{% endblock %}
+
+{% block content %}
+<div class="px-6 py-12 max-w-4xl mx-auto animate-fade-in">
+    <!-- Header -->
+    <div class="flex items-center gap-6 mb-12">
+        <a href="{% url 'procurement:po_list' %}" class="w-14 h-14 rounded-2xl bg-white/[0.04] text-text-muted hover:bg-brand-whatsapp hover:text-white transition-all flex items-center justify-center border border-white/[0.04] shadow-md active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <h1 class="font-display font-800 text-5xl text-white tracking-tight leading-none mb-2">Omni-Entry</h1>
+            <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Direct Inventory Integration</p>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="bg-surface2 border border-white/[0.06] p-10 rounded-[52px] shadow-2xl relative overflow-hidden group">
+        <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none"></div>
+        
+        <form action="{% url 'procurement:quick_add_stock' %}" method="POST" class="space-y-10 relative z-10">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Product Selection -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] ml-1">Product Specification</label>
+                    <div class="relative">
+                        <select name="product_id" required
+                                class="w-full h-18 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-6 text-white font-bold focus:border-brand-whatsapp/40 outline-none transition-all appearance-none cursor-pointer">
+                            <option value="" disabled selected>Select from catalogue...</option>
+                            {% for p in products %}
+                            <option value="{{ p.id }}">{{ p.image }} {{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supplier Selection -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] ml-1">Source Supplier</label>
+                    <div class="relative">
+                        <select name="supplier_id" required
+                                class="w-full h-18 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-6 text-white font-bold focus:border-brand-whatsapp/40 outline-none transition-all appearance-none cursor-pointer">
+                            <option value="" disabled selected>Select supplier...</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantity -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] ml-1">Acquisition Qty</label>
+                    <input type="number" name="qty" required placeholder="0"
+                           class="w-full h-18 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-8 text-2xl text-white font-display font-800 focus:border-brand-whatsapp/40 outline-none transition-all placeholder:text-white/10">
+                </div>
+
+                <!-- Unit Cost -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] ml-1">Unit Cost (Flux)</label>
+                    <div class="relative">
+                        <input type="number" step="0.01" name="unit_cost" required placeholder="0.00"
+                               class="w-full h-18 bg-surface3 border-2 border-white/[0.04] rounded-3xl pl-16 pr-8 text-2xl text-white font-display font-800 focus:border-brand-whatsapp/40 outline-none transition-all placeholder:text-white/10">
+                        <span class="absolute left-8 top-1/2 -translate-y-1/2 font-display font-800 text-text-muted text-sm uppercase">KES</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-8 border-t border-white/[0.04]">
+                <button type="submit"
+                        class="w-full h-20 bg-brand-whatsapp text-white rounded-[28px] font-display font-800 text-[16px] uppercase tracking-[0.2em] flex items-center justify-center gap-4 transition-all active:scale-[0.98] shadow-[0_20px_60px_rgba(37,211,102,0.3)] hover:shadow-[0_25px_80px_rgba(37,211,102,0.4)] hover:brightness-110">
+                    {% if user.is_staff or user.role == 'admin' %}
+                        Commit Direct to Inventory
+                    {% else %}
+                        Submit for Admin Approval
+                    {% endif %}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
+                <p class="text-center text-[10px] font-bold text-text-muted uppercase tracking-widest mt-6 opacity-40">
+                    System Protocol v2.4 • Integrated Ledger Updating
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

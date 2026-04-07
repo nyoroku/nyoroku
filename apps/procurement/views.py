@@ -152,6 +152,7 @@ def po_submit(request, pk):
     if po.status == 'draft' and po.items:
         po.status = 'pending'
         po.save()
+        po.log_trail(request.user, "Submitted For Approval")
     return redirect('procurement:po_detail', pk=po.id)
 
 @login_required
@@ -165,6 +166,7 @@ def po_approve(request, pk):
         po.status = 'approved'
         po.approved_by = request.user
         po.save()
+        po.log_trail(request.user, "Order Approved")
     return redirect('procurement:po_detail', pk=po.id)
 
 @login_required
@@ -188,6 +190,9 @@ def po_receive(request, pk):
         po.status = 'received'
         po.save()
         
+        # Create Trail
+        po.log_trail(request.user, "Goods Received", f"Items added to inventory by {request.user.name}")
+
         # Create Audit GRN
         GoodsReceivingNote.objects.create(
             po=po,
@@ -196,3 +201,63 @@ def po_receive(request, pk):
         )
         
     return redirect('procurement:po_detail', pk=po.id)
+
+@login_required
+@transaction.atomic
+def quick_stock_add(request):
+    if request.method == 'POST':
+        product_id = request.POST.get('product_id')
+        supplier_id = request.POST.get('supplier_id')
+        qty = int(request.POST.get('qty', 0))
+        unit_cost = float(request.POST.get('unit_cost', 0))
+        
+        product = get_object_or_404(Product, id=product_id)
+        supplier = get_object_or_404(Supplier, id=supplier_id)
+        
+        is_admin = request.user.is_staff or getattr(request.user, 'role', '') == 'admin'
+        
+        # Create PO
+        po = PurchaseOrder.objects.create(
+            supplier=supplier,
+            submitted_by=request.user,
+            items=[{
+                'product_id': str(product.id),
+                'name': product.name,
+                'qty': qty,
+                'unit_cost': unit_cost,
+                'total_cost': round(qty * unit_cost, 2)
+            }]
+        )
+        
+        if is_admin:
+            po.status = 'received'
+            po.approved_by = request.user
+            po.save()
+            
+            # Update Stock
+            product.stock_qty += qty
+            product.cost_price = unit_cost
+            product.save()
+            
+            po.log_trail(request.user, "Quick Stock Add (Completed)", f"Added {qty} units of {product.name}. Inventory updated directly.")
+            
+            # Create GRN
+            GoodsReceivingNote.objects.create(
+                po=po,
+                received_items=po.items,
+                received_by=request.user
+            )
+            
+            return redirect('procurement:po_list')
+        else:
+            po.status = 'pending'
+            po.save()
+            po.log_trail(request.user, "Quick Stock Add (Submitted)", f"Added {qty} units of {product.name}. Pending admin approval.")
+            return redirect('procurement:po_list')
+
+    products = Product.objects.filter(approved=True).order_by('name')
+    suppliers = Supplier.objects.all().order_by('name')
+    return render(request, 'procurement/quick_stock_add.html', {
+        'products': products,
+        'suppliers': suppliers
+    })
