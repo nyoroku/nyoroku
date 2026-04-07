@@ -383,60 +383,61 @@
         </div>
     </div>
 
-    <!-- Variant Selection Modal (Contextual Bottom Sheet) -->
+    <!-- Variant Selection Drawer (Mint Green Mode) -->
     <template x-if="variantModal">
-        <div class="fixed inset-0 z-[100] flex flex-col justify-end p-0">
-            <!-- Contextual Gradient Overlay -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black via-black/95 to-transparent backdrop-blur-[10px]" @click="variantModal = false"></div>
+        <div class="fixed inset-0 z-[100] flex justify-end">
+            <!-- Light Contextual Overlay -->
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-md" @click="variantModal = false"></div>
             
-            <div class="relative w-full h-[85vh] md:max-w-xl md:mx-auto glass-strong border-t border-white/[0.08] rounded-t-[48px] shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+            <div class="relative w-full md:w-[480px] h-full bg-[#072415]/95 backdrop-blur-[40px] border-l border-brand-whatsapp/20 shadow-[-10px_0_60px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-slide-in-right">
                 
-                <!-- Bottom Sheet Handle/Indicator -->
-                <div class="w-full h-1.5 flex justify-center pt-4 shrink-0">
-                    <div class="w-12 h-1.5 bg-white/10 rounded-full"></div>
-                </div>
-
-                <!-- Simple Header -->
-                <div class="px-10 pt-8 pb-10 flex items-center justify-between shrink-0">
-                    <div class="flex items-center gap-6">
-                        <div class="w-16 h-16 rounded-[24px] bg-white/[0.05] flex items-center justify-center text-4xl" x-text="selectedProduct.image"></div>
+                <!-- Mint Rich Header -->
+                <div class="px-10 pt-16 pb-12 bg-brand-whatsapp/5 shrink-0">
+                    <div class="flex items-center justify-between mb-8">
+                        <p class="text-[9px] font-black text-brand-whatsapp uppercase tracking-[0.5em]">Procurement Mode</p>
+                        <button @click="variantModal = false" class="text-white/20 hover:text-white transition-colors">✕</button>
+                    </div>
+                    <div class="flex items-center gap-8">
+                        <div class="w-20 h-20 rounded-[32px] bg-brand-whatsapp/20 flex items-center justify-center text-5xl shadow-glow-green-xs" x-text="selectedProduct.image"></div>
                         <div>
-                            <h3 class="font-display font-800 text-3xl text-white tracking-tight leading-tight" x-text="selectedProduct.name"></h3>
-                            <p class="text-[9px] font-bold text-brand-whatsapp uppercase tracking-[0.4em] mt-1">Select Variations</p>
+                            <h3 class="font-display font-800 text-4xl text-white tracking-tight leading-tight" x-text="selectedProduct.name"></h3>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-brand-whatsapp"></span>
+                                <span class="text-[10px] font-bold text-white/40 uppercase tracking-widest">Select SKUs</span>
+                            </div>
                         </div>
                     </div>
-                    <button @click="variantModal = false" class="w-10 h-10 rounded-full bg-white/5 text-white/20 flex items-center justify-center hover:text-white transition-all text-sm">✕</button>
                 </div>
 
-                <!-- Soft-Card Variant List -->
-                <div class="flex-grow overflow-y-auto px-8 pb-10 no-scrollbar custom-scroll">
+                <!-- Mint List Items -->
+                <div class="flex-grow overflow-y-auto px-6 py-4 no-scrollbar custom-scroll">
                     <div class="space-y-4">
                         <template x-for="v in productVariants" :key="v.id">
-                            <div class="p-6 bg-white/[0.04] rounded-[32px] transition-all hover:bg-white/[0.08] flex items-center justify-between group shadow-lg">
-                                <div class="flex-1 min-w-0 pr-8">
-                                    <h4 class="font-bold text-white text-lg tracking-tight truncate mb-2" x-text="v.name"></h4>
-                                    <!-- Context-Aware Unit Cost Button -->
-                                    <button @click="numpadTarget = v; numpadMode = 'price'; showNumpad = true;" 
-                                            class="inline-flex items-center gap-3 px-4 py-2 bg-black/40 rounded-xl border border-white/[0.03] hover:border-brand-whatsapp/40 transition-all group/cost">
-                                        <span class="text-[9px] font-black text-white/30 uppercase tracking-widest group-hover/cost:text-brand-whatsapp transition-colors">Unit Cost</span>
-                                        <span class="text-[13px] font-display font-800 text-brand-whatsapp" x-text="'KES ' + v.edit_cost"></span>
-                                    </button>
+                            <div class="p-6 bg-white/[0.03] rounded-[32px] transition-all hover:bg-brand-whatsapp/10 border border-white/[0.02] hover:border-brand-whatsapp/20 flex items-center justify-between group shadow-lg">
+                                <div class="flex-1 min-w-0 pr-6">
+                                    <h4 class="font-bold text-white text-[16px] tracking-tight truncate mb-2" x-text="v.name"></h4>
+                                    <!-- Mint Cost Display -->
+                                    <div @click="numpadTarget = v; numpadMode = 'price'; showNumpad = true;" 
+                                         class="inline-flex items-center gap-2 group/cost cursor-pointer">
+                                        <span class="text-[9px] font-black text-white/30 uppercase tracking-widest group-hover/cost:text-brand-whatsapp transition-colors">Cost KES</span>
+                                        <span class="text-[15px] font-display font-800 text-brand-whatsapp" x-text="v.edit_cost"></span>
+                                    </div>
                                 </div>
 
-                                <div class="flex items-center gap-1 bg-black/40 p-1.5 rounded-2xl border border-white/[0.02]">
+                                <div class="flex items-center gap-1 bg-black/40 p-1 rounded-2xl border border-white/[0.03]">
                                     <button @click="if(v.qty > 0) v.qty--" 
-                                            class="w-10 h-10 rounded-xl flex items-center justify-center text-white/20 hover:text-white transition-all active:scale-75">
+                                            class="w-10 h-10 rounded-xl flex items-center justify-center text-white/20 hover:text-white transition-all">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12h14"/></svg>
                                     </button>
                                     
                                     <button @click="numpadTarget = v; numpadMode = 'qty'; showNumpad = true;"
-                                            class="min-w-[54px] h-10 px-2 flex items-center justify-center font-display font-800 text-[18px] tabular-nums transition-all"
+                                            class="min-w-[48px] h-10 px-2 flex items-center justify-center font-display font-800 text-[18px] tabular-nums transition-all"
                                             :class="v.qty > 0 ? 'text-brand-whatsapp' : 'text-white/10'"
                                             x-text="v.qty">
                                     </button>
 
                                     <button @click="v.qty++" 
-                                            class="w-10 h-10 rounded-xl flex items-center justify-center text-brand-whatsapp hover:brightness-125 transition-all active:scale-75">
+                                            class="w-10 h-10 rounded-xl flex items-center justify-center text-brand-whatsapp hover:brightness-125 transition-all">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M12 5v14M5 12h14"/></svg>
                                     </button>
                                 </div>
@@ -445,24 +446,19 @@
                     </div>
                 </div>
 
-                <!-- Floating Bottom Bar (Contextual Action) -->
-                <div class="px-8 pb-10 pt-4 shrink-0">
-                    <div class="p-8 glass-strong rounded-[40px] flex items-center justify-between border border-white/[0.05] shadow-2xl">
-                        <div>
-                            <span class="text-[9px] font-bold text-text-muted uppercase tracking-[0.4em]">Added Units</span>
-                            <div class="flex items-baseline gap-2">
-                                <span class="font-display font-800 text-4xl text-white tabular-nums transition-all" 
-                                      :class="modalTotalQty > 0 ? 'text-brand-whatsapp glow-green-sm' : ''" x-text="modalTotalQty"></span>
-                                <span class="text-white/30 text-[10px] font-bold uppercase tracking-widest">Selected</span>
-                            </div>
+                <!-- Sticky Mint Footer -->
+                <div class="p-10 bg-black/20 shrink-0">
+                    <button @click="addVariantsToCart()" 
+                            :disabled="modalTotalQty === 0"
+                            class="group w-full h-22 bg-brand-whatsapp text-white rounded-[32px] font-display font-800 text-[15px] uppercase tracking-[0.3em] shadow-glow-green-lg transition-all active:scale-[0.98] disabled:opacity-5 disabled:grayscale flex items-center justify-center gap-6">
+                        <div class="flex flex-col items-start leading-none gap-1">
+                            <span class="text-[9px] font-black opacity-60">Add Selection</span>
+                            <span class="text-xl" x-text="modalTotalQty + ' UNITS'"></span>
                         </div>
-                        <button @click="addVariantsToCart()" 
-                                :disabled="modalTotalQty === 0"
-                                class="h-16 px-12 bg-brand-whatsapp text-white rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest shadow-glow-green-sm transition-all active:scale-[0.95] disabled:opacity-5 flex items-center justify-center gap-4">
-                            Apply
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m9 18 6-6-6-6"/></svg>
-                        </button>
-                    </div>
+                        <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m9 18 6-6-6-6"/></svg>
+                        </div>
+                    </button>
                 </div>
             </div>
         </div>
