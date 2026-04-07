@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+import json
 from .models import PurchaseOrder, Supplier
 
 @login_required
@@ -261,3 +262,56 @@ def quick_stock_add(request):
         'products': products,
         'suppliers': suppliers
     })
+
+@login_required
+@transaction.atomic
+def buy_stock(request):
+    if request.method == 'POST':
+        supplier_id = request.POST.get('supplier_id')
+        items_json = request.POST.get('items_json')
+        
+        supplier = get_object_or_404(Supplier, id=supplier_id)
+        items = json.loads(items_json) if items_json else []
+        
+        po = PurchaseOrder.objects.create(
+            supplier=supplier,
+            submitted_by=request.user,
+            status='draft',
+            items=items
+        )
+        
+        is_admin = request.user.is_staff or getattr(request.user, 'role', '') == 'admin'
+        if is_admin:
+            # Immediate approval and receipt
+            po.status = 'approved'
+            po.approved_by = request.user
+            po.save()
+            po.log_trail(request.user, "Immediate Purchase Completed")
+            return po_receive(request, po.id)
+        else:
+            po.status = 'pending'
+            po.save()
+            po.log_trail(request.user, "Order Submitted for Approval")
+            return redirect('procurement:po_list')
+
+    suppliers = Supplier.objects.all().order_by('name')
+    products = Product.objects.filter(approved=True).order_by('name')
+    return render(request, 'procurement/buy_stock.html', {
+        'suppliers': suppliers,
+        'products': products
+    })
+
+@login_required
+@transaction.atomic
+def quick_approve(request, pk):
+    if not request.user.is_staff and getattr(request.user, 'role', '') != 'admin':
+        return redirect('procurement:po_list')
+        
+    po = get_object_or_404(PurchaseOrder, pk=pk)
+    if po.status == 'pending':
+        po.status = 'approved'
+        po.approved_by = request.user
+        po.save()
+        po.log_trail(request.user, "One-Tap Approval")
+        return po_receive(request, po.id)
+    return redirect('procurement:po_list')

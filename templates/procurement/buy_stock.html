@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block screen_title %}Buy Stock{% endblock %}
+
+{% block content %}
+<div class="px-6 py-8 max-w-7xl mx-auto animate-fade-in" x-data="{
+    supplierId: '',
+    items: [],
+    searchQuery: '',
+    showNewSupplier: false,
+    newSupplier: { name: '', phone: '' },
+    
+    addItem(p) {
+        let ex = this.items.find(i => i.product_id == p.id);
+        if (ex) {
+            ex.qty++;
+            ex.total_cost = (ex.qty * ex.unit_cost).toFixed(2);
+        } else {
+            this.items.push({
+                product_id: p.id,
+                name: p.name,
+                qty: 1,
+                unit_cost: parseFloat(p.cost_price || 0),
+                total_cost: parseFloat(p.cost_price || 0).toFixed(2)
+            });
+        }
+    },
+    removeItem(idx) {
+        this.items.splice(idx, 1);
+    },
+    get orderTotal() {
+        return this.items.reduce((s, i) => s + parseFloat(i.total_cost), 0).toFixed(2);
+    },
+    async submitOrder() {
+        if (!this.supplierId) {
+            alert('Please select a supplier first.');
+            return;
+        }
+        if (this.items.length === 0) {
+            alert('Please add at least one item.');
+            return;
+        }
+        
+        const fd = new FormData();
+        fd.append('supplier_id', this.supplierId);
+        fd.append('items_json', JSON.stringify(this.items));
+        
+        const resp = await fetch('{% url "procurement:buy_stock" %}', {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+        });
+        
+        if (resp.redirected) {
+            window.location.href = resp.url;
+        } else {
+            const data = await resp.json();
+            if (data.error) alert(data.error);
+        }
+    }
+}">
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        <!-- Left: Products & Supplier -->
+        <div class="lg:col-span-12">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                <div>
+                    <h1 class="font-display font-800 text-5xl text-white tracking-tight leading-none">Buy New Stock</h1>
+                    <p class="text-text-muted mt-3 font-medium text-lg">Add items to inventory in seconds</p>
+                </div>
+                <div class="flex gap-4">
+                    <a href="{% url 'procurement:po_list' %}" class="h-16 px-8 bg-surface2 border border-white/[0.04] text-text-muted rounded-3xl font-display font-800 text-[12px] uppercase tracking-widest flex items-center gap-3 transition-all hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                        Stock History
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-4 space-y-8">
+            <!-- Supplier Card -->
+            <div class="bg-surface2 border border-white/[0.04] p-8 rounded-[40px] shadow-card">
+                <div class="flex items-center justify-between mb-6">
+                    <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">1. Select Supplier</p>
+                    <button @click="showNewSupplier = !showNewSupplier" class="text-[10px] font-bold text-brand-whatsapp uppercase tracking-widest">
+                        <span x-text="showNewSupplier ? 'Cancel' : '+ New Supplier'"></span>
+                    </button>
+                </div>
+
+                <div x-show="!showNewSupplier">
+                    <select x-model="supplierId" class="w-full h-16 bg-surface3 border-2 border-white/[0.04] rounded-2xl px-6 text-white font-bold outline-none focus:border-brand-whatsapp/40 transition-all cursor-pointer">
+                        <option value="">-- Choose Supplier --</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div x-show="showNewSupplier" class="space-y-4">
+                     <input type="text" x-model="newSupplier.name" placeholder="Supplier Name" 
+                            class="w-full h-14 bg-surface3 border border-white/[0.04] rounded-xl px-6 text-white font-bold placeholder:opacity-20">
+                     <input type="text" x-model="newSupplier.phone" placeholder="Phone Number" 
+                            class="w-full h-14 bg-surface3 border border-white/[0.04] rounded-xl px-6 text-white font-bold placeholder:opacity-20">
+                     <button @click="async () => {
+                        const fd = new FormData();
+                        fd.append('name', newSupplier.name);
+                        fd.append('phone', newSupplier.phone);
+                        const resp = await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+                        window.location.reload();
+                     }" class="w-full h-14 bg-brand-whatsapp/10 text-brand-whatsapp rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-brand-whatsapp hover:text-white transition-all">
+                        Create & Select
+                     </button>
+                </div>
+            </div>
+
+            <!-- Product Search -->
+            <div class="bg-surface2 border border-white/[0.04] p-8 rounded-[40px] shadow-card">
+                <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mb-6">2. Choose Products</p>
+                <div class="relative mb-6">
+                    <input type="text" x-model="searchQuery" placeholder="Search product name..."
+                           class="w-full h-14 bg-surface3 border-2 border-white/[0.04] rounded-2xl px-12 text-sm text-white focus:border-brand-whatsapp/40 transition-all outline-none">
+                    <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </div>
+                </div>
+
+                <div class="space-y-2 max-h-[400px] overflow-y-auto pr-2 no-scrollbar">
+                    {% for p in products %}
+                    <div x-show="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase())"
+                         @click="addItem({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}' })"
+                         class="group flex items-center justify-between p-4 bg-white/[0.02] border border-white/[0.04] rounded-2xl hover:bg-brand-whatsapp/5 hover:border-brand-whatsapp/20 cursor-pointer transition-all active:scale-[0.98]">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">{{ p.image }}</span>
+                            <div>
+                                <div class="font-bold text-white text-sm">{{ p.name }}</div>
+                                <div class="text-[10px] text-text-muted font-bold uppercase tracking-widest">KES {{ p.cost_price|default:0 }}</div>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-text-muted group-hover:bg-brand-whatsapp group-hover:text-white transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Current Order -->
+        <div class="lg:col-span-8">
+            <div class="bg-surface2 border border-white/[0.04] rounded-[52px] overflow-hidden shadow-card flex flex-col h-full min-h-[600px]">
+                <div class="p-10 border-b border-white/[0.04] flex items-center justify-between bg-white/[0.01]">
+                    <h2 class="font-display font-800 text-3xl text-white tracking-tight leading-none">3. Current Order</h2>
+                    <span class="text-[11px] font-bold text-text-muted uppercase tracking-[.4em]" x-text="items.length + ' ITEMS'"></span>
+                </div>
+
+                <div class="flex-grow overflow-y-auto p-10 space-y-4 no-scrollbar">
+                    <template x-for="(item, index) in items" :key="index">
+                        <div class="flex items-center gap-6 p-6 bg-white/[0.02] border border-white/[0.04] rounded-[28px] animate-slide-up">
+                            <div class="flex-grow">
+                                <h4 class="font-bold text-white text-lg tracking-tight" x-text="item.name"></h4>
+                                <div class="flex items-center gap-6 mt-2">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest">Quantity</span>
+                                        <div class="flex items-center bg-surface3 rounded-xl border border-white/[0.04] p-1">
+                                            <button @click="if(item.qty > 1) { item.qty--; item.total_cost = (item.qty * item.unit_cost).toFixed(2); }" class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-white transition-all">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                            </button>
+                                            <input type="number" x-model="item.qty" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="w-12 bg-transparent text-center font-display font-800 text-white outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                                            <button @click="item.qty++; item.total_cost = (item.qty * item.unit_cost).toFixed(2);" class="w-8 h-8 flex items-center justify-center text-text-muted hover:text-white transition-all">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-[10px] font-bold text-text-muted uppercase tracking-widest">Unit Cost</span>
+                                        <input type="number" step="0.01" x-model="item.unit_cost" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)"
+                                               class="w-24 bg-surface3 border border-white/[0.04] rounded-xl px-3 py-2 text-white font-bold outline-none focus:border-brand-whatsapp/40 transition-all">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Total</div>
+                                <div class="font-display font-800 text-brand-whatsapp text-2xl tracking-tighter" x-text="'KES ' + item.total_cost"></div>
+                            </div>
+                            <button @click="removeItem(index)" class="w-12 h-12 flex items-center justify-center text-text-muted hover:text-brand-red transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </template>
+                    
+                    <template x-if="items.length === 0">
+                        <div class="flex flex-col items-center justify-center h-full opacity-20 py-20">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                            <p class="font-display font-800 uppercase tracking-widest text-lg">Empty Order</p>
+                            <p class="text-sm font-medium mt-2">Pick products from the left to begin</p>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="p-10 bg-white/[0.01] border-t border-white/[0.04]">
+                    <div class="flex items-center justify-between mb-8">
+                        <span class="text-[12px] font-display font-800 text-text-muted uppercase tracking-[.6em]">Grand Total Sum</span>
+                        <span class="font-display font-800 text-6xl text-brand-whatsapp tracking-tighter" x-text="'KES ' + orderTotal"></span>
+                    </div>
+                    <button @click="submitOrder()" 
+                            class="w-full h-22 bg-brand-whatsapp text-white rounded-[32px] font-display font-800 text-[18px] uppercase tracking-[.2em] flex items-center justify-center gap-6 transition-all active:scale-[0.98] shadow-[0_25px_80px_rgba(37,211,102,0.4)] hover:brightness-110">
+                        {% if user.role == 'admin' %}
+                            Finish & Add to Stock
+                        {% else %}
+                            Submit for Approval
+                        {% endif %}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m12 5 7 7-7 7"/><path d="M19 12H5"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

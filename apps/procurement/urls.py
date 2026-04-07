@@ -8,6 +8,8 @@ urlpatterns = [
     path('<uuid:pk>/', views.po_detail, name='po_detail'),
     path('create/', views.po_create, name='po_create'),
     path('quick-add/', views.quick_stock_add, name='quick_add_stock'),
+    path('buy-stock/', views.buy_stock, name='buy_stock'),
+    path('<uuid:pk>/quick-approve/', views.quick_approve, name='quick_approve'),
     
     # Suppliers
     path('suppliers/', views.supplier_list, name='supplier_list'),
