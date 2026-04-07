@@ -114,29 +114,8 @@
                     <input type="text" name="barcode" x-model="editForm.barcode" placeholder="Optional — auto-generated if blank" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm dm-mono text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
                 </div>
 
-                <!-- Variants UI -->
-                <div class="mt-4 pt-4 border-t border-border">
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] ml-1">Variants (Optional)</label>
-                        <button type="button" @click="editForm.variants.push({name: '', price: editForm.price, stock_qty: 0})" class="px-2 py-1 bg-brand-green/10 text-brand-green text-[10px] font-extrabold uppercase rounded-lg hover:bg-brand-green/20">+ Add Variant</button>
-                    </div>
-                    <div class="space-y-2">
-                        <template x-for="(v, index) in editForm.variants" :key="index">
-                            <div class="flex items-center gap-2 bg-surface3 p-2 rounded-xl border border-border">
-                                <input type="text" x-model="v.name" placeholder="Size / Color" class="w-1/3 bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:border-brand-green/40 focus:ring-0" required>
-                                <div class="flex items-center w-1/3 relative">
-                                    <span class="absolute left-2 text-[10px] text-text-muted">KES</span>
-                                    <input type="number" step="0.01" x-model="v.price" placeholder="Price" class="w-full bg-surface border border-border rounded-lg pl-8 pr-2 py-2 text-xs text-text-primary focus:border-brand-green/40 focus:ring-0" required>
-                                </div>
-                                <input type="number" x-model="v.stock_qty" placeholder="Qty" class="w-1/4 bg-surface border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:border-brand-green/40 focus:ring-0" required>
-                                <button type="button" @click="editForm.variants.splice(index, 1)" class="w-8 h-8 flex shrink-0 items-center justify-center text-brand-red bg-brand-red/10 rounded-lg hover:bg-brand-red hover:text-white transition-colors">✕</button>
-                            </div>
-                        </template>
-                        <div x-show="editForm.variants.length === 0" class="text-center py-3 text-xs text-text-muted border border-dashed border-border rounded-xl">
-                            No variants (standard product)
-                        </div>
-                    </div>
-                </div>
+                <!-- Modern Variant Manager -->
+                {% include 'catalogue/partials/manage_variants.html' %}
 
                 <div class="pt-3 flex gap-3">
                     <button type="button" @click="addModal = false" class="flex-1 px-4 py-4 bg-white/[0.04] border border-border text-text-primary rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
@@ -164,13 +143,21 @@
                 document.getElementById('emoji-input').value = '📦'; 
                 document.getElementById('emoji-display').innerText = '📦'; 
                 this.addModal = true; 
+                // Reset variant manager
+                this.$nextTick(() => {
+                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: [], variants: [] } }));
+                });
             },
-            openEdit(p, rawVariants=[]) { 
+            openEdit(p, rawVariants=[], options=[]) { 
                 this.isEdit = true; 
                 this.editForm = { ...p, variants: rawVariants }; 
                 document.getElementById('emoji-input').value = p.image || '📦'; 
                 document.getElementById('emoji-display').innerText = p.image || '📦'; 
                 this.addModal = true; 
+                // Populate variant manager
+                this.$nextTick(() => {
+                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: options, variants: rawVariants } }));
+                });
             }
         }
     }

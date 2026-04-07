@@ -62,7 +62,24 @@ def add_product(request):
         pending_by=request.user if not is_approved else None
     )
     
+    # Multi-option variants logic
+    options_json = request.POST.get('options_json')
     variants_json = request.POST.get('variants_json')
+
+    if options_json:
+        import json
+        try:
+            options_data = json.loads(options_json)
+            for opt in options_data:
+                from .models import ProductVariantOptionType
+                ProductVariantOptionType.objects.create(
+                    product=product,
+                    name=opt['name'],
+                    values=opt['values']
+                )
+        except (json.JSONDecodeError, KeyError):
+            pass
+
     if variants_json:
         import json
         try:
@@ -70,7 +87,7 @@ def add_product(request):
             for v in variants:
                 ProductVariant.objects.create(
                     product=product,
-                    options={"Variant": v.get('name', '')},
+                    options=v.get('options', {}),
                     price_override=v.get('price', price),
                     cost_price=v.get('cost_price') or None,
                     barcode=v.get('barcode', ''),
@@ -106,7 +123,26 @@ def edit_product(request):
         
     product.save()
 
+    # Handle Options and Variants in Edit
+    options_json = request.POST.get('options_json')
     variants_json = request.POST.get('variants_json')
+
+    if options_json:
+        import json
+        try:
+            options_data = json.loads(options_json)
+            # Replace existing option types
+            product.option_types.all().delete()
+            for opt in options_data:
+                from .models import ProductVariantOptionType
+                ProductVariantOptionType.objects.create(
+                    product=product,
+                    name=opt['name'],
+                    values=opt['values']
+                )
+        except (json.JSONDecodeError, KeyError):
+            pass
+
     if variants_json:
         import json
         try:
@@ -119,7 +155,7 @@ def edit_product(request):
                 if v.get('id'):
                     variant_obj = ProductVariant.objects.filter(id=v['id'], product=product).first()
                     if variant_obj:
-                        variant_obj.options = {"Variant": v.get('name', '')}
+                        variant_obj.options = v.get('options', {})
                         variant_obj.price_override = v.get('price', product.price)
                         variant_obj.cost_price = v.get('cost_price') or None
                         variant_obj.barcode = v.get('barcode', '')
@@ -129,7 +165,7 @@ def edit_product(request):
                 else:
                     ProductVariant.objects.create(
                         product=product,
-                        options={"Variant": v.get('name', '')},
+                        options=v.get('options', {}),
                         price_override=v.get('price', product.price),
                         cost_price=v.get('cost_price') or None,
                         barcode=v.get('barcode', ''),

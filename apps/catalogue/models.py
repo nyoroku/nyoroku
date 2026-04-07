@@ -53,13 +53,15 @@ class Product(models.Model):
         if not self.has_variants:
             return "[]"
         vs = []
-        for v in self.variants.filter(stock_qty__gt=0):
+        for v in self.variants.all():
             vs.append({
                 'id': str(v.id),
                 'name': v.name,
-                'options': list(v.options.values()),
+                'options': v.options, # Full dict: {"Size": "M", "Color": "Red"}
                 'price': float(v.price),
+                'cost_price': float(v.get_cost_price or 0),
                 'stock_qty': v.stock_qty,
+                'barcode': v.barcode or '',
             })
         return json.dumps(vs)
 

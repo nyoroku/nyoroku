@@ -1,0 +1,159 @@
+<div x-data="variantManager()" class="space-y-6">
+    <input type="hidden" name="options_json" :value="JSON.stringify(options)">
+    <input type="hidden" name="variants_json" :value="JSON.stringify(variants)">
+
+    <!-- Option Definitions -->
+    <div class="bg-surface3 border border-border p-6 rounded-[28px] space-y-4">
+        <div class="flex justify-between items-center mb-2">
+            <h4 class="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.15em] ml-1">Product Options</h4>
+            <button type="button" @click="addOption()" class="px-3 py-1.5 bg-brand-green/10 text-brand-green text-[10px] font-extrabold uppercase rounded-lg hover:bg-brand-green/20 transition-colors">+ Add Option Type</button>
+        </div>
+        
+        <div class="space-y-4">
+            <template x-for="(opt, oIndex) in options" :key="oIndex">
+                <div class="bg-surface2 p-4 rounded-2xl border border-border group relative">
+                    <button type="button" @click="removeOption(oIndex)" class="absolute -right-2 -top-2 w-6 h-6 bg-brand-red text-white text-[10px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">✕</button>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="sm:col-span-1">
+                            <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5 block">Option Name</label>
+                            <input type="text" x-model="opt.name" placeholder="e.g. Size, Color" class="w-full bg-surface3 border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-brand-green/40 mt-1">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5 block">Values (Separate with commas)</label>
+                            <input type="text" @input="updateValues(oIndex, $event.target.value)" :value="opt.values.join(', ')" placeholder="e.g. S, M, L" class="w-full bg-surface3 border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-brand-green/40 mt-1">
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <template x-for="val in opt.values" :key="val">
+                                    <span class="px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[10px] text-text-muted" x-text="val"></span>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <div x-show="options.length === 0" class="text-center py-6 text-[10px] text-text-muted italic border-2 border-dashed border-border rounded-2xl opacity-50">
+                No options defined. Add "Color" or "Size" to create variants.
+            </div>
+        </div>
+    </div>
+
+    <!-- Variants List / Manager -->
+    <div x-show="variants.length > 0" class="space-y-4 animate-fade-in">
+        <div class="flex justify-between items-center px-1">
+            <h4 class="text-[11px] font-extrabold text-text-muted uppercase tracking-[0.15em]">Preview & Inventory</h4>
+            <div class="flex gap-2">
+                <button type="button" @click="reorderVariants()" class="px-3 py-1.5 bg-surface3 border border-border text-text-muted text-[10px] font-extrabold uppercase rounded-lg hover:bg-surface active:scale-95 transition-all">↻ Reset Values</button>
+            </div>
+        </div>
+
+        <div class="overflow-hidden border border-border rounded-[28px] bg-surface3">
+            <div class="overflow-x-auto scrollbar-hide">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-surface border-b border-border">
+                            <th class="px-5 py-4 text-[9px] font-black text-text-muted uppercase tracking-[0.2em]">Variant</th>
+                            <th class="px-5 py-4 text-[9px] font-black text-text-muted uppercase tracking-[0.2em] w-28">Price</th>
+                            <th class="px-5 py-4 text-[9px] font-black text-text-muted uppercase tracking-[0.2em] w-28">Cost</th>
+                            <th class="px-5 py-4 text-[9px] font-black text-text-muted uppercase tracking-[0.2em] w-24">Stock</th>
+                            <th class="px-5 py-4 text-[9px] font-black text-text-muted uppercase tracking-[0.2em] w-32">Barcode</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        <template x-for="(v, index) in variants" :key="index">
+                            <tr class="group hover:bg-white/[0.01] transition-colors">
+                                <td class="px-5 py-3">
+                                    <span class="text-xs font-bold text-text-primary uppercase tracking-tight" x-text="variantLabel(v)"></span>
+                                </td>
+                                <td class="px-5 py-3">
+                                    <input type="number" step="0.01" x-model="v.price" class="w-full bg-transparent border-none p-0 text-xs font-bold text-brand-green focus:ring-0">
+                                </td>
+                                <td class="px-5 py-3">
+                                    <input type="number" step="0.01" x-model="v.cost_price" class="w-full bg-transparent border-none p-0 text-xs text-text-muted focus:ring-0">
+                                </td>
+                                <td class="px-5 py-3">
+                                    <input type="number" x-model="v.stock_qty" class="w-full bg-transparent border-none p-0 text-xs text-text-muted font-bold focus:ring-0">
+                                </td>
+                                <td class="px-5 py-3">
+                                    <input type="text" x-model="v.barcode" placeholder="Auto" class="w-full bg-transparent border-none p-0 text-[10px] font-mono text-text-muted/60 focus:ring-0">
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function variantManager() {
+        return {
+            options: [],
+            variants: [],
+            init() {
+                // Initialize from existing if editing
+                this.$watch('options', () => this.generateVariants(), { deep: true });
+                // We'll hook into the parent's openEdit to populate this
+                this.$root.addEventListener('populate-variants', (e) => {
+                    const data = e.detail;
+                    this.options = data.options || [];
+                    this.variants = data.variants || [];
+                });
+            },
+            addOption() {
+                if (this.options.length >= 3) return; // Limit to 3 options like Shopify
+                this.options.push({ name: '', values: [] });
+            },
+            removeOption(index) {
+                this.options.splice(index, 1);
+            },
+            updateValues(index, raw) {
+                this.options[index].values = raw.split(',').map(v => v.trim()).filter(v => v !== '');
+            },
+            variantLabel(v) {
+                return Object.values(v.options).join(' / ');
+            },
+            generateVariants() {
+                if (this.options.length === 0) {
+                    this.variants = [];
+                    return;
+                }
+                
+                // Only generate if all options have values
+                if (this.options.some(opt => opt.values.length === 0 || opt.name === '')) return;
+
+                // Cartesian Product helper
+                const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
+                
+                const optionValues = this.options.map(opt => opt.values.map(val => ({ [opt.name]: val })));
+                const permutations = this.options.length === 1 ? optionValues[0] : cartesian(...optionValues);
+                
+                const newVariants = (this.options.length === 1 ? permutations : permutations).map(p => {
+                    // Combine array of objects into one object if multiple options
+                    const combinedOptions = Array.isArray(p) ? p.reduce((acc, curr) => ({...acc, ...curr}), {}) : p;
+                    
+                    // Look for existing variant to preserve data
+                    const existing = this.variants.find(v => JSON.stringify(v.options) === JSON.stringify(combinedOptions));
+                    
+                    if (existing) return existing;
+
+                    return {
+                        options: combinedOptions,
+                        price: this.editForm.price || 0,
+                        cost_price: this.editForm.cost_price || 0,
+                        stock_qty: 0,
+                        barcode: ''
+                    };
+                });
+                
+                this.variants = newVariants;
+            },
+            reorderVariants() {
+                // Bulk reset logic or just re-gen
+                this.variants.forEach(v => {
+                    v.price = this.editForm.price;
+                    v.cost_price = this.editForm.cost_price;
+                });
+            }
+        }
+    }
+</script>

@@ -11,21 +11,70 @@
     showNewSupplier: false,
     newSupplier: { name: '', phone: '' },
     
-    addItem(p) {
-        let ex = this.items.find(i => i.product_id == p.id);
+    // Variant Selection
+    variantModal: false,
+    selectedProduct: null,
+    productVariants: [],
+
+    async selectProduct(p) {
+        if (!p.has_variants) {
+            this.addItem(p);
+            return;
+        }
+        
+        // Fetch variants
+        const resp = await fetch(`/procurement/get-variants/${p.id}/`);
+        this.productVariants = await resp.json();
+        
+        // Add 'qty' field to each variant for the modal UI
+        this.productVariants.forEach(v => v.qty = 0);
+        
+        this.selectedProduct = p;
+        this.variantModal = true;
+    },
+
+    addItem(p, variantId = null, variantName = null) {
+        let ex = this.items.find(i => i.product_id == p.id && i.variant_id == variantId);
         if (ex) {
             ex.qty++;
             ex.total_cost = (ex.qty * ex.unit_cost).toFixed(2);
         } else {
             this.items.push({
                 product_id: p.id,
-                name: p.name,
+                variant_id: variantId,
+                name: variantName ? `${p.name} (${variantName})` : p.name,
+                image: p.image,
                 qty: 1,
                 unit_cost: parseFloat(p.cost_price || 0),
                 total_cost: parseFloat(p.cost_price || 0).toFixed(2)
             });
         }
     },
+
+    addVariantsToCart() {
+        this.productVariants.forEach(v => {
+            if (v.qty > 0) {
+                // Check if already in items
+                let ex = this.items.find(i => i.variant_id == v.id);
+                if (ex) {
+                    ex.qty += v.qty;
+                    ex.total_cost = (ex.qty * ex.unit_cost).toFixed(2);
+                } else {
+                    this.items.push({
+                        product_id: this.selectedProduct.id,
+                        variant_id: v.id,
+                        name: `${this.selectedProduct.name} (${v.name})`,
+                        image: this.selectedProduct.image,
+                        qty: v.qty,
+                        unit_cost: parseFloat(v.cost_price || 0),
+                        total_cost: (v.qty * parseFloat(v.cost_price || 0)).toFixed(2)
+                    });
+                }
+            }
+        });
+        this.variantModal = false;
+    },
+
     removeItem(idx) {
         this.items.splice(idx, 1);
     },
@@ -55,8 +104,12 @@
         if (resp.redirected) {
             window.location.href = resp.url;
         } else {
-            const data = await resp.json();
-            if (data.error) alert(data.error);
+            try {
+                const data = await resp.json();
+                if (data.error) alert(data.error);
+            } catch(e) {
+                console.error('Submission error', e);
+            }
         }
     }
 }">
@@ -161,7 +214,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-10">
                     {% for p in products %}
                     <template x-if="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase()) || '{{ p.barcode|default:'' }}' === searchQuery">
-                        <div @click="addItem({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}' })"
+                        <div @click="selectProduct({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}', has_variants: {% if p.has_variants %}true{% else %}false{% endif %} })"
                              class="group relative p-6 glass border border-white/[0.04] rounded-[32px] hover:bg-white/[0.04] hover:border-brand-whatsapp/30 cursor-pointer transition-all active:scale-[0.98] overflow-hidden">
                              <div class="absolute -right-4 -top-4 w-24 h-24 bg-brand-whatsapp/5 blur-3xl group-hover:bg-brand-whatsapp/10 transition-all"></div>
                              
@@ -267,5 +320,57 @@
         </div>
     </div>
 
+    <!-- Variant Selection Modal -->
+    <template x-if="variantModal">
+        <div class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/90 backdrop-blur-xl" @click="variantModal = false"></div>
+            <div class="relative w-full max-w-2xl bg-surface2 border border-white/[0.08] rounded-[48px] shadow-2xl overflow-hidden p-10 animate-scale-in">
+                
+                <div class="flex justify-between items-start mb-10">
+                    <div class="flex items-center gap-6">
+                        <div class="w-20 h-20 rounded-[28px] bg-white/[0.04] border border-white/5 flex items-center justify-center text-5xl" x-text="selectedProduct.image"></div>
+                        <div>
+                            <h3 class="font-display font-800 text-4xl text-white tracking-tight" x-text="selectedProduct.name"></h3>
+                            <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mt-2">Select Variations to Order</p>
+                        </div>
+                    </div>
+                    <button @click="variantModal = false" class="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/5 text-text-muted flex items-center justify-center hover:text-white transition-all">✕</button>
+                </div>
+
+                <div class="max-h-[40vh] overflow-y-auto space-y-3 custom-scroll px-2">
+                    <template x-for="v in productVariants" :key="v.id">
+                        <div class="bg-white/[0.02] border border-white/[0.04] p-5 rounded-[28px] flex items-center justify-between group hover:bg-white/[0.04] transition-all">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-white text-[15px] truncate" x-text="v.name"></h4>
+                                <div class="flex items-center gap-3 mt-1">
+                                    <span class="text-[11px] font-bold text-brand-whatsapp" x-text="'KES ' + v.cost_price"></span>
+                                    <span class="w-1 h-1 rounded-full bg-white/20"></span>
+                                    <span class="text-[9px] font-bold text-text-muted uppercase tracking-widest" x-text="v.stock_qty + ' in stock'"></span>
+                                </div>
+                            </div>
+                            <div class="flex items-center bg-black/30 rounded-2xl border border-white/[0.04] p-1.5">
+                                <button @click="if(v.qty > 0) v.qty--" class="w-10 h-10 flex items-center justify-center text-text-muted transition-all active:scale-75">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12h14"/></svg>
+                                </button>
+                                <input type="number" x-model.number="v.qty" class="w-14 bg-transparent text-center font-display font-800 text-white text-lg outline-none">
+                                <button @click="v.qty++" class="w-10 h-10 flex items-center justify-center text-brand-whatsapp transition-all active:scale-75">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="mt-10 flex gap-4">
+                    <button @click="variantModal = false" class="flex-1 h-18 glass border border-white/[0.04] text-text-muted rounded-2xl font-display font-800 text-[12px] uppercase tracking-widest transition-all">Cancel</button>
+                    <button @click="addVariantsToCart()" class="flex-[2] h-18 bg-brand-whatsapp text-white rounded-2xl font-display font-800 text-[12px] uppercase tracking-widest shadow-glow-green-sm transition-all active:scale-[0.98]">Confirm Additions</button>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
+<style>
+    @keyframes scaleIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+</style>
 {% endblock %}

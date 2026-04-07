@@ -26,4 +26,5 @@ urlpatterns = [
     path('<uuid:pk>/submit/', views.po_submit, name='po_submit'),
     path('<uuid:pk>/approve/', views.po_approve, name='po_approve'),
     path('<uuid:pk>/receive/', views.po_receive, name='po_receive'),
+    path('get-variants/<uuid:pk>/', views.get_product_variants, name='get_product_variants'),
 ]

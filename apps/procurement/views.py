@@ -77,40 +77,63 @@ def product_search(request):
     products = Product.objects.filter(name__icontains=query, approved=True)[:5]
     html = ""
     for p in products:
+        has_variants = 'true' if p.has_variants else 'false'
         html += f"""
         <div class='flex items-center justify-between p-4 border-b border-white/[0.04] hover:bg-white/[0.02] cursor-pointer'
-             hx-post='/procurement/add-item-direct/{p.id}/' hx-target='body'
+             @click='selectProduct({{ id: "{p.id}", name: "{p.name}", image: "{p.image}", cost_price: {p.cost_price or 0}, has_variants: {has_variants}}})'
              onclick='document.getElementById("search-results").innerHTML=""; document.getElementById("search-input").value=""'>
             <div class='flex items-center gap-3'>
                 <span class='text-2xl'>{p.image}</span>
                 <div>
                    <div class='font-bold text-white text-sm'>{p.name}</div>
-                   <div class='text-[10px] text-text-muted font-bold uppercase'>Code: {p.barcode or '---'}</div>
+                   <div class='text-[10px] text-text-muted font-bold uppercase'>{'Has Variants' if p.has_variants else 'Standard'}</div>
                 </div>
             </div>
-            <button type='button' @click='openAddItem("{p.id}", "{p.name|escapejs}", "{p.image|escapejs}", {p.cost_price or 0})'
+            <button type='button'
                     class='px-4 py-2 bg-brand-whatsapp/10 text-brand-whatsapp text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-brand-whatsapp hover:text-white transition-all'>
                 Select
             </button>
         </div>
         """
-    # Note: Using a slightly different approach for the search result click to trigger the Alpine modal
-    # I'll refine this in the template.
     return HttpResponse(html)
+
+@login_required
+def get_product_variants(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    variants = product.variants.all()
+    vs = []
+    for v in variants:
+        vs.append({
+            'id': str(v.id),
+            'name': v.name,
+            'cost_price': float(v.get_cost_price or 0),
+            'stock_qty': v.stock_qty
+        })
+    import json
+    return HttpResponse(json.dumps(vs), content_type="application/json")
 
 @login_required
 def po_add_item(request, pk):
     po = get_object_or_404(PurchaseOrder, pk=pk)
     if request.method == 'POST' and po.status == 'draft':
         product_id = request.POST.get('product_id')
+        variant_id = request.POST.get('variant_id')
         product = get_object_or_404(Product, id=product_id)
         qty = int(request.POST.get('qty', 1))
+        
+        # If variant_id is provided, get variant name for the line item
+        v_name = ""
+        if variant_id:
+            v = get_object_or_404(ProductVariant, id=variant_id, product=product)
+            v_name = f" ({v.name})"
+            
         unit_cost = float(request.POST.get('unit_cost') or product.cost_price or 0)
         
         items = list(po.items)
         items.append({
             'product_id': str(product.id),
-            'name': product.name,
+            'variant_id': variant_id,
+            'name': f"{product.name}{v_name}",
             'qty': qty,
             'unit_cost': unit_cost,
             'total_cost': round(qty * unit_cost, 2)
@@ -177,15 +200,29 @@ def po_receive(request, pk):
     if po.status == 'approved':
         # Cycle through items and update stock
         for item in po.items:
-            try:
-                product = Product.objects.get(id=item['product_id'])
-                # Update stock
-                product.stock_qty += int(item['qty'])
-                # Update cost price to the most recent procurement price
-                product.cost_price = item['unit_cost']
-                product.save()
-            except Product.DoesNotExist:
-                continue
+            qty = int(item['qty'])
+            unit_cost = float(item['unit_cost'])
+            
+            variant_id = item.get('variant_id')
+            if variant_id:
+                try:
+                    v = ProductVariant.objects.get(id=variant_id)
+                    v.stock_qty += qty
+                    v.cost_price = unit_cost
+                    v.save()
+                    # Also update parent cost price if shared
+                    v.product.cost_price = unit_cost
+                    v.product.save()
+                except ProductVariant.DoesNotExist:
+                    pass
+            else:
+                try:
+                    product = Product.objects.get(id=item['product_id'])
+                    product.stock_qty += qty
+                    product.cost_price = unit_cost
+                    product.save()
+                except Product.DoesNotExist:
+                    continue
                 
         # Finalize PO status
         po.status = 'received'
