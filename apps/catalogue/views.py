@@ -82,23 +82,39 @@ def add_product(request):
 
     if variants_json:
         import json
+        from decimal import Decimal, InvalidOperation
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
             variants = json.loads(variants_json)
+            # Remove existing variants if any (to handle re-submissions or bulk updates)
+            product.variants.all().delete()
+            
             for v in variants:
-                ProductVariant.objects.create(
-                    product=product,
-                    options=v.get('options', {}),
-                    price_override=v.get('price', price),
-                    cost_price=v.get('cost_price') or None,
-                    barcode=v.get('barcode', ''),
-                    stock_qty=v.get('stock_qty', 0),
-                    reorder_level=v.get('reorder_level', 5)
-                )
-            if variants:
+                try:
+                    price_val = Decimal(str(v.get('price', product.price)))
+                    variant_cost = v.get('cost_price')
+                    variant_cost = Decimal(str(variant_cost)) if variant_cost not in [None, '', 0, '0'] else None
+                    
+                    ProductVariant.objects.create(
+                        product=product,
+                        options=v.get('options', {}),
+                        price_override=price_val,
+                        cost_price=variant_cost,
+                        barcode=v.get('barcode') or None,
+                        stock_qty=int(v.get('stock_qty', 0)),
+                        reorder_level=5
+                    )
+                except (InvalidOperation, ValueError, TypeError) as e:
+                    logger.error(f"Error creating single variant: {str(e)}")
+                    continue
+            
+            if product.variants.exists():
                 product.has_variants = True
                 product.save()
-        except json.JSONDecodeError:
-            pass
+        except Exception as e:
+            logger.error(f"Error parsing variants_json: {str(e)}")
     
     return redirect('catalogue:inventory')
 
@@ -145,6 +161,10 @@ def edit_product(request):
 
     if variants_json:
         import json
+        from decimal import Decimal, InvalidOperation
+        import logging
+        logger = logging.getLogger(__name__)
+        
         try:
             variants = json.loads(variants_json)
             # Remove existing variants not in the new list (if they have IDs)
@@ -152,30 +172,38 @@ def edit_product(request):
             product.variants.exclude(id__in=keep_ids).delete()
             
             for v in variants:
-                if v.get('id'):
-                    variant_obj = ProductVariant.objects.filter(id=v['id'], product=product).first()
-                    if variant_obj:
-                        variant_obj.options = v.get('options', {})
-                        variant_obj.price_override = v.get('price', product.price)
-                        variant_obj.cost_price = v.get('cost_price') or None
-                        variant_obj.barcode = v.get('barcode', '')
-                        variant_obj.stock_qty = v.get('stock_qty', 0)
-                        variant_obj.reorder_level = v.get('reorder_level', 5)
-                        variant_obj.save()
-                else:
-                    ProductVariant.objects.create(
-                        product=product,
-                        options=v.get('options', {}),
-                        price_override=v.get('price', product.price),
-                        cost_price=v.get('cost_price') or None,
-                        barcode=v.get('barcode', ''),
-                        stock_qty=v.get('stock_qty', 0),
-                        reorder_level=v.get('reorder_level', 5)
-                    )
-            product.has_variants = bool(variants)
+                try:
+                    price_val = Decimal(str(v.get('price', product.price)))
+                    variant_cost = v.get('cost_price')
+                    variant_cost = Decimal(str(variant_cost)) if variant_cost not in [None, '', 0, '0'] else None
+                    
+                    if v.get('id'):
+                        variant_obj = ProductVariant.objects.filter(id=v['id'], product=product).first()
+                        if variant_obj:
+                            variant_obj.options = v.get('options', {})
+                            variant_obj.price_override = price_val
+                            variant_obj.cost_price = variant_cost
+                            variant_obj.barcode = v.get('barcode') or None
+                            variant_obj.stock_qty = int(v.get('stock_qty', 0))
+                            variant_obj.save()
+                    else:
+                        ProductVariant.objects.create(
+                            product=product,
+                            options=v.get('options', {}),
+                            price_override=price_val,
+                            cost_price=variant_cost,
+                            barcode=v.get('barcode') or None,
+                            stock_qty=int(v.get('stock_qty', 0)),
+                            reorder_level=5
+                        )
+                except (InvalidOperation, ValueError, TypeError) as e:
+                    logger.error(f"Error updating single variant: {str(e)}")
+                    continue
+            
+            product.has_variants = product.variants.exists()
             product.save()
-        except json.JSONDecodeError:
-            pass
+        except Exception as e:
+            logger.error(f"Error parsing variants_json in edit: {str(e)}")
             
     return redirect('catalogue:inventory')
 
