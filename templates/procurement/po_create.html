@@ -37,16 +37,16 @@
             <div class="space-y-6">
                 <div>
                     <div class="flex items-center justify-between mb-4 ml-1">
-                        <label for="supplier_id" class="block text-[11px] font-display font-800 text-text-muted uppercase tracking-[0.4em]">Lifecycle Origin (Vendor)</label>
+                        <label for="supplier_id" class="block text-[11px] font-display font-800 text-text-muted uppercase tracking-[0.4em]">Supplier</label>
                         <a href="{% url 'procurement:supplier_list' %}" class="text-[10px] font-bold text-brand-whatsapp uppercase tracking-widest hover:brightness-125 transition-all flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            New Origin
+                            New Supplier
                         </a>
                     </div>
                     <div class="relative group">
                         <select name="supplier_id" id="supplier_id" required
                                 class="w-full bg-surface3 border-2 border-white/[0.04] rounded-[28px] py-6 px-10 text-xl font-bold text-white focus:border-brand-whatsapp/40 focus:ring-8 focus:ring-brand-whatsapp/5 outline-none transition-all appearance-none cursor-pointer shadow-inner">
-                            <option value="" disabled selected>-- Select Vendor Stream --</option>
+                            <option value="" disabled selected>-- Select Supplier --</option>
                             {% for supplier in suppliers %}
                             <option value="{{ supplier.id }}">{{ supplier.name }}</option>
                             {% endfor %}
@@ -61,7 +61,7 @@
             <div class="pt-8">
                 <button type="submit" 
                         class="w-full h-20 bg-brand-whatsapp text-white rounded-[32px] font-display font-800 text-[18px] uppercase tracking-widest flex items-center justify-center gap-6 transition-all active:scale-[0.98] shadow-[0_16px_60px_rgba(37,211,102,0.4)] hover:brightness-110 group">
-                    Start Cycle
+                    Start Order
                     <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center transition-transform group-hover:translate-x-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </div>

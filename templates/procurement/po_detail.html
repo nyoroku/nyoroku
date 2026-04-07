@@ -83,7 +83,7 @@
             <!-- Supplier Card -->
             <div class="bg-surface2 border border-white/[0.04] p-8 rounded-[48px] shadow-card relative overflow-hidden group">
                 <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none"></div>
-                <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mb-6 ml-1">Supplier Cycle</p>
+                <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mb-6 ml-1">Supplier Info</p>
                 
                 <div class="flex items-start gap-6">
                     <div class="w-16 h-16 rounded-[22px] bg-brand-whatsapp/10 flex items-center justify-center text-brand-whatsapp border border-brand-whatsapp/20 shadow-glow-green-sm transition-transform group-hover:scale-105">
@@ -100,7 +100,7 @@
             <!-- HTMX Product Search (Visible only in Draft) -->
             {% if po.status == 'draft' %}
             <div class="bg-surface2/50 border border-white/[0.04] p-8 rounded-[40px] shadow-card">
-                 <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mb-6">Catalogue Acquisition</p>
+                 <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em] mb-6">Add Products</p>
                  <div class="relative">
                      <input type="text" id="search-input" name="q" placeholder="Search product name..."
                             hx-get="{% url 'procurement:product_search' %}" hx-trigger="keyup changed delay:300ms" hx-target="#search-results"
@@ -118,7 +118,7 @@
         <div class="lg:col-span-2 space-y-8">
             <div class="bg-surface2 border border-white/[0.04] rounded-[52px] overflow-hidden shadow-card animate-slide-up">
                 <div class="p-10 border-b border-white/[0.04] flex items-center justify-between bg-white/[0.01]">
-                    <h2 class="font-display font-800 text-3xl text-white tracking-tight">Nexus Line Items</h2>
+                    <h2 class="font-display font-800 text-3xl text-white tracking-tight">Order Items</h2>
                     <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest">{{ po.items|length }} Items</span>
                 </div>
 
@@ -128,8 +128,8 @@
                             <tr class="border-b border-white/[0.04] bg-white/[0.005]">
                                 <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em]">Item Specification</th>
                                 <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-center">Qty</th>
-                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-right">Unit Flux</th>
-                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-right">Extension Sum</th>
+                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-right">Cost</th>
+                                <th class="px-10 py-6 text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] text-right">Total</th>
                                 {% if po.status == 'draft' %}<th class="px-10 py-6 text-right"></th>{% endif %}
                             </tr>
                         </thead>
@@ -172,8 +172,8 @@
                                         <div class="w-20 h-20 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mb-6">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                                         </div>
-                                        <p class="font-display font-800 uppercase tracking-[0.4em] text-lg">Empty Cycle Vector</p>
-                                        <p class="text-sm font-medium mt-2">Acquire items from the catalogue to proceed</p>
+                                        <p class="font-display font-800 uppercase tracking-[0.4em] text-lg">No Items Added</p>
+                                        <p class="text-sm font-medium mt-2">Search for products on the left to add them</p>
                                     </div>
                                 </td>
                             </tr>
@@ -183,7 +183,7 @@
                         <tfoot>
                             <tr class="bg-white/[0.02]">
                                 <td colspan="3" class="px-10 py-10 text-right">
-                                    <span class="text-[12px] font-display font-800 text-text-muted uppercase tracking-[0.5em] mr-4">Nexus Total Collective</span>
+                                    <span class="text-[12px] font-display font-800 text-text-muted uppercase tracking-[0.5em] mr-4">Total Amount</span>
                                 </td>
                                 <td colspan="{% if po.status == 'draft' %}2{% else %}1{% endif %}" class="px-10 py-10 text-right bg-brand-whatsapp/5">
                                     <span class="font-display font-800 text-4xl text-brand-whatsapp tracking-tighter tabular-nums drop-shadow-md">KES {{ po.total_cost|floatformat:2 }}</span>
@@ -204,7 +204,7 @@
              x-show="addItemModal" x-transition:enter="transition transform duration-280 cubic-bezier(.34,1.46,.64,1)" x-transition:enter-start="opacity-0 scale-95 translate-y-8" x-transition:enter-end="opacity-100 scale-100 translate-y-0">
              <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none"></div>
              
-             <h3 class="font-display font-800 text-3xl text-white tracking-tight mb-8" x-text="'Acquiring: ' + selectedProduct.name"></h3>
+             <h3 class="font-display font-800 text-3xl text-white tracking-tight mb-8" x-text="'Add to Order: ' + selectedProduct.name"></h3>
              
              <form action="{% url 'procurement:po_add_item' po.id %}" method="POST" class="space-y-6 relative z-10">
                  {% csrf_token %}
@@ -217,7 +217,7 @@
                                 class="w-full h-16 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-6 text-white font-bold focus:border-brand-whatsapp/40 outline-none transition-all">
                      </div>
                      <div>
-                         <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3 ml-1">Unit Cost (Flux)</label>
+                         <label class="block text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3 ml-1">Unit Cost</label>
                          <input type="number" step="0.01" name="unit_cost" required :value="selectedProduct.unit_cost"
                                 class="w-full h-16 bg-surface3 border-2 border-white/[0.04] rounded-3xl px-6 text-white font-bold focus:border-brand-whatsapp/40 outline-none transition-all">
                      </div>
@@ -230,7 +230,7 @@
                     </button>
                     <button type="submit"
                             class="flex-[2] h-18 bg-brand-whatsapp text-white rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest transition-all active:scale-95 shadow-glow-green-sm hover:brightness-110">
-                        Commit to Nexus
+                        Add to Order
                     </button>
                  </div>
              </form>
@@ -240,8 +240,8 @@
     <!-- Audit Trail / Progress -->
     <div class="bg-surface2 border border-white/[0.04] rounded-[52px] shadow-card animate-slide-up mt-10">
         <div class="p-10 border-b border-white/[0.04] flex items-center justify-between bg-white/[0.01]">
-            <h2 class="font-display font-800 text-3xl text-white tracking-tight leading-none">Protocol Trail</h2>
-            <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Audit Consistency Log</p>
+            <h2 class="font-display font-800 text-3xl text-white tracking-tight leading-none">Order History</h2>
+            <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Audit Log</p>
         </div>
         <div class="p-10 space-y-8">
             {% for entry in po.trail.all %}
@@ -265,7 +265,7 @@
             </div>
             {% empty %}
             <div class="py-12 text-center opacity-20">
-                <p class="font-display font-800 uppercase tracking-widest">Sequential Log Empty</p>
+                <p class="font-display font-800 uppercase tracking-widest">No activities yet</p>
             </div>
             {% endfor %}
         </div>
