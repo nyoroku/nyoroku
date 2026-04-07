@@ -20,7 +20,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="text-[9px] font-black text-text-muted uppercase tracking-widest mb-1.5 block">Values (Separate with commas)</label>
-                            <input type="text" @input="updateValues(oIndex, $event.target.value)" :value="opt.values.join(', ')" placeholder="e.g. S, M, L" class="w-full bg-surface3 border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-brand-green/40 mt-1">
+                            <input type="text" x-model="opt.rawValues" @input="updateValues(oIndex)" placeholder="e.g. S, M, L" class="w-full bg-surface3 border border-border rounded-xl px-3 py-2.5 text-xs text-text-primary focus:border-brand-green/40 mt-1">
                             <div class="flex flex-wrap gap-2 mt-2">
                                 <template x-for="val in opt.values" :key="val">
                                     <span class="px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[10px] text-text-muted" x-text="val"></span>
@@ -95,18 +95,22 @@
                 // We'll hook into the parent's openEdit to populate this
                 this.$root.addEventListener('populate-variants', (e) => {
                     const data = e.detail;
-                    this.options = data.options || [];
+                    this.options = (data.options || []).map(opt => ({
+                        ...opt,
+                        rawValues: opt.values.join(', ')
+                    }));
                     this.variants = data.variants || [];
                 });
             },
             addOption() {
                 if (this.options.length >= 3) return; // Limit to 3 options like Shopify
-                this.options.push({ name: '', values: [] });
+                this.options.push({ name: '', values: [], rawValues: '' });
             },
             removeOption(index) {
                 this.options.splice(index, 1);
             },
-            updateValues(index, raw) {
+            updateValues(index) {
+                const raw = this.options[index].rawValues || '';
                 this.options[index].values = raw.split(',').map(v => v.trim()).filter(v => v !== '');
             },
             variantLabel(v) {
