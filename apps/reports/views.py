@@ -5,9 +5,9 @@ from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
 from pos.models import Transaction
-from pos.models import Transaction
 from expenses.models import Expense
 from catalogue.models import Product, ProductVariant
+import collections
 
 @login_required
 def dashboard(request):
@@ -42,26 +42,51 @@ def dashboard(request):
     revenue = txs.aggregate(Sum('total'))['total__sum'] or Decimal('0')
     expenses = exps.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
     
-    # Compute Cost of Goods Sold (COGS)
-    cogs = 0.0
+    # Optimize COGS and Top Products
+    # 1. Collect all product IDs seen across all transactions
+    product_ids = set()
     for tx in txs:
-        for item in tx.items:
-            qty = int(item.get('qty', 1))
-            if 'cost_price' in item:
+        for item in (tx.items or []):
+            if isinstance(item, dict) and 'id' in item:
+                product_ids.add(item['id'])
+    
+    # 2. Fetch all products in bulk to avoid N+1 queries
+    products_map = Product.objects.in_bulk(list(product_ids))
+    
+    cogs = 0.0
+    product_totals = collections.defaultdict(lambda: {'name': 'Unknown', 'qty': 0, 'revenue': 0})
+    
+    for tx in txs:
+        items = tx.items or []
+        for item in items:
+            if not isinstance(item, dict): continue
+            
+            pid = item.get('id')
+            qty = int(item.get('qty', 0))
+            price = float(item.get('price', 0))
+            rev = price * qty
+            
+            # Top products tracking
+            p_stats = product_totals[pid]
+            if p_stats['name'] == 'Unknown':
+                p_stats['name'] = item.get('name', f"Product #{pid}")
+            p_stats['qty'] += qty
+            p_stats['revenue'] += rev
+            
+            # COGS calculation
+            if 'cost_price' in item and item['cost_price'] is not None:
                 cogs += float(item['cost_price']) * qty
             else:
-                try:
-                    product = Product.objects.get(id=item.get('id'))
-                    cogs += float(product.cost_price or 0) * qty
-                except Product.DoesNotExist:
-                    pass
+                p_obj = products_map.get(pid)
+                if p_obj:
+                    cogs += float(p_obj.cost_price or 0) * qty
+
+    top_products = sorted(product_totals.values(), key=lambda x: x['revenue'], reverse=True)[:5]
     
     gross_profit = float(revenue) - cogs
     net_profit = gross_profit - float(expenses)
     tx_count = txs.count()
     avg_basket = float(revenue) / tx_count if tx_count > 0 else 0
-    
-    # Margin % (Gross Margin)
     margin = (gross_profit / float(revenue) * 100) if revenue > 0 else 0
     
     # Payment breakdown
@@ -70,38 +95,27 @@ def dashboard(request):
     
     # 7-day chart data
     chart_days = []
+    # Optimization: One query for all 7 days might be better, but let's keep it simple for now or fetch in bulk.
+    # Actually, let's group by date in one query.
+    chart_qs = Transaction.objects.filter(
+        created_at__gte=end_date - timedelta(days=7),
+        status='complete'
+    ).extra({'day': 'date(created_at)'}).values('day').annotate(daily_rev=Sum('total')).order_by('day')
+    
+    rev_by_day = {str(d['day']): d['daily_rev'] for d in chart_qs}
+    
     for i in range(6, -1, -1):
         day = end_date - timedelta(days=i)
-        day_start = day.replace(hour=0, minute=0, second=0, microsecond=0)
-        day_end = day_start + timedelta(days=1)
-        day_rev = Transaction.objects.filter(created_at__range=(day_start, day_end), status='complete').aggregate(Sum('total'))['total__sum'] or 0
+        day_str = day.strftime('%Y-%m-%d')
         chart_days.append({
             'label': day.strftime('%a'),
-            'value': float(day_rev),
+            'value': float(rev_by_day.get(day_str, 0)),
             'is_today': i == 0
         })
 
-    # Top products (simplified since items are JSON)
-    # In a real app we'd query a line item model, but here let's aggregate from JSON if possible 
-    # or just show a placeholder for MVP if JSON aggregation is too complex for SQLite shell.
-    # We can do it in Python.
-    product_totals = {}
-    for tx in txs:
-        for item in tx.items:
-            pid = item['id']
-            qty = int(item['qty'])
-            rev = float(item['price']) * qty
-            if pid not in product_totals:
-                product_totals[pid] = {'name': item['name'], 'qty': 0, 'revenue': 0}
-            product_totals[pid]['qty'] += qty
-            product_totals[pid]['revenue'] += rev
-            
-    top_products = sorted(product_totals.values(), key=lambda x: x['revenue'], reverse=True)[:5]
-    
     # Low Stock Alerts
-    from django.db.models import F
     low_stock_products = Product.objects.filter(approved=True, has_variants=False, stock_qty__lte=F('reorder_level'), stock_qty__gt=0)
-    low_stock_variants = ProductVariant.objects.filter(stock_qty__lte=F('reorder_level'), stock_qty__gt=0).select_related('parent')
+    low_stock_variants = ProductVariant.objects.filter(stock_qty__lte=F('reorder_level'), stock_qty__gt=0).select_related('product')
 
     context = {
         'period': period,
