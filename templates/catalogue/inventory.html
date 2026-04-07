@@ -10,12 +10,12 @@
     {% if user.role == 'admin' %}
     <div class="flex gap-2 mb-6 p-1 bg-surface2 border border-border rounded-2xl max-w-xs">
         <a href="?status=all" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 {% if active_status == 'all' %}bg-brand-whatsapp text-white shadow-[0_0_15px_rgba(37,211,102,0.4)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
+           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 {% if active_status == 'all' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
             <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Active</span>
             <span class="text-[11px] font-bold mt-0.5">All Products</span>
         </a>
         <a href="?status=pending" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative {% if active_status == 'pending' %}bg-brand-whatsapp text-white shadow-[0_0_15px_rgba(37,211,102,0.4)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
+           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative {% if active_status == 'pending' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
             <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Review</span>
             <span class="text-[11px] font-bold mt-0.5">Products</span>
             {% if pending_count > 0 %}
