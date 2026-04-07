@@ -1,6 +1,6 @@
 <div x-data="variantManager()" class="space-y-6">
-    <input type="hidden" name="options_json" :value="JSON.stringify(options)">
-    <input type="hidden" name="variants_json" :value="JSON.stringify(variants)">
+    <input type="hidden" name="options_json" :value="JSON.stringify(Alpine.raw(options))">
+    <input type="hidden" name="variants_json" :value="JSON.stringify(Alpine.raw(variants))">
 
     <!-- Option Definitions -->
     <div class="bg-surface3 border border-border p-6 rounded-[28px] space-y-4">
@@ -100,6 +100,8 @@
                         rawValues: opt.values.join(', ')
                     }));
                     this.variants = data.variants || [];
+                    this.basePrice = data.price || 0;
+                    this.baseCost = data.cost_price || 0;
                 });
             },
             addOption() {
@@ -142,8 +144,8 @@
 
                     return {
                         options: combinedOptions,
-                        price: this.editForm.price || 0,
-                        cost_price: this.editForm.cost_price || 0,
+                        price: this.basePrice || 0,
+                        cost_price: this.baseCost || 0,
                         stock_qty: 0,
                         barcode: ''
                     };

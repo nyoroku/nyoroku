@@ -72,7 +72,6 @@
             <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'" method="POST" class="space-y-4">
                 {% csrf_token %}
                 <template x-if="isEdit"><input type="hidden" name="id" :value="editForm.id"></template>
-                <input type="hidden" name="variants_json" :value="JSON.stringify(editForm.variants)">
                 
                 <div class="flex items-center gap-4 bg-surface3 border border-border p-4 rounded-2xl">
                     <div class="w-14 h-14 bg-surface border border-border rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-brand-green/30 transition-colors shrink-0" id="emoji-display" title="Click to change">📦</div>
@@ -143,9 +142,9 @@
                 document.getElementById('emoji-input').value = '📦'; 
                 document.getElementById('emoji-display').innerText = '📦'; 
                 this.addModal = true; 
-                // Reset variant manager
+                // Reset variant manager with current base prices
                 this.$nextTick(() => {
-                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: [], variants: [] } }));
+                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: [], variants: [], price: this.editForm.price, cost_price: this.editForm.cost_price } }));
                 });
             },
             openEdit(p, rawVariants=[], options=[]) { 
@@ -156,7 +155,7 @@
                 this.addModal = true; 
                 // Populate variant manager
                 this.$nextTick(() => {
-                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: options, variants: rawVariants } }));
+                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: options, variants: rawVariants, price: p.price, cost_price: p.cost_price } }));
                 });
             }
         }
