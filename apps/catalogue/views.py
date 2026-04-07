@@ -93,7 +93,9 @@ def add_product(request):
             
             for v in variants:
                 try:
-                    price_val = Decimal(str(v.get('price', product.price)))
+                    price_input = v.get('price_override') or v.get('price')
+                    price_val = Decimal(str(price_input)) if price_input not in [None, ''] else None
+                    
                     variant_cost = v.get('cost_price')
                     variant_cost = Decimal(str(variant_cost)) if variant_cost not in [None, '', 0, '0'] else None
                     
@@ -173,7 +175,10 @@ def edit_product(request):
             
             for v in variants:
                 try:
-                    price_val = Decimal(str(v.get('price', product.price)))
+                    # Support both 'price_override' and 'price' keys for flexibility
+                    price_input = v.get('price_override') or v.get('price')
+                    price_val = Decimal(str(price_input)) if price_input not in [None, ''] else None
+                    
                     variant_cost = v.get('cost_price')
                     variant_cost = Decimal(str(variant_cost)) if variant_cost not in [None, '', 0, '0'] else None
                     

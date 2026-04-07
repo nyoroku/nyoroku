@@ -69,7 +69,7 @@
                 </button>
             </div>
 
-            <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'" method="POST" class="space-y-4">
+            <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'" method="POST" @submit="submitForm" class="space-y-4">
                 {% csrf_token %}
                 <template x-if="isEdit"><input type="hidden" name="id" :value="editForm.id"></template>
                 
@@ -133,30 +133,86 @@
         return {
             addModal: false,
             isEdit: false,
-            editForm: { id: '', name: '', category: '', price: '', cost_price: '', stock_qty: '1', barcode: '', image: '📦', variants: [] },
+            editForm: { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', barcode: '', image: '📦', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
+
+            addOption() {
+                if (this.editForm.options.length >= 3) return;
+                this.editForm.options.push({ name: '', values: [], rawValues: '' });
+                this.generateVariants();
+            },
+            removeOption(index) {
+                this.editForm.options.splice(index, 1);
+                this.generateVariants();
+            },
+            updateValues(index) {
+                const opt = this.editForm.options[index];
+                const raw = opt.rawValues || '';
+                opt.values = raw.split(',').map(v => v.trim()).filter(v => v !== '');
+                this.generateVariants();
+            },
+            addManualVariant() {
+                this.editForm.variants.push({
+                    options: {},
+                    price: this.editForm.price || 0,
+                    cost_price: this.editForm.cost_price || 0,
+                    stock_qty: 0,
+                    barcode: '',
+                    isManual: true
+                });
+            },
+            variantLabel(v) {
+                if (Object.keys(v.options).length === 0) return "Manual Item";
+                return Object.values(v.options).join(' / ');
+            },
+            generateVariants() {
+                if (this.editForm.options.length === 0) return;
+                if (this.editForm.options.some(opt => opt.values.length === 0 || opt.name === '')) return;
+
+                const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
+                const optionValues = this.editForm.options.map(opt => opt.values.map(val => ({ [opt.name]: val })));
+                const permutations = this.editForm.options.length === 1 ? optionValues[0] : cartesian(...optionValues);
+                
+                const manualVariants = this.editForm.variants.filter(v => v.isManual);
+                const autoVariants = (this.editForm.options.length === 1 ? permutations : permutations).map(p => {
+                    const combinedOptions = Array.isArray(p) ? p.reduce((acc, curr) => ({...acc, ...curr}), {}) : p;
+                    const existing = this.editForm.variants.find(v => !v.isManual && JSON.stringify(v.options) === JSON.stringify(combinedOptions));
+                    if (existing) return existing;
+
+                    return {
+                        options: combinedOptions,
+                        price: this.editForm.price || 0,
+                        cost_price: this.editForm.cost_price || 0,
+                        stock_qty: 0,
+                        barcode: ''
+                    };
+                });
+                this.editForm.variants = [...autoVariants, ...manualVariants];
+            },
+
             openAdd() { 
                 this.isEdit = false; 
-                this.editForm = { id: '', name: '', category: '', price: '', cost_price: '', stock_qty: '1', barcode: '', image: '📦', variants: [] }; 
+                this.editForm = { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', barcode: '', image: '📦', options: [], variants: [] }; 
                 const catEl = document.querySelector('[name=category]');
                 if (catEl && catEl.options.length > 0) this.editForm.category = catEl.options[0].value;
                 document.getElementById('emoji-input').value = '📦'; 
                 document.getElementById('emoji-display').innerText = '📦'; 
                 this.addModal = true; 
-                // Reset variant manager with current base prices
-                this.$nextTick(() => {
-                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: [], variants: [], price: this.editForm.price, cost_price: this.editForm.cost_price } }));
-                });
             },
             openEdit(p, rawVariants=[], options=[]) { 
                 this.isEdit = true; 
-                this.editForm = { ...p, variants: rawVariants }; 
+                this.editForm = { 
+                    ...p, 
+                    variants: rawVariants, 
+                    options: options.map(opt => ({ ...opt, rawValues: opt.values.join(', ') })) 
+                }; 
                 document.getElementById('emoji-input').value = p.image || '📦'; 
                 document.getElementById('emoji-display').innerText = p.image || '📦'; 
                 this.addModal = true; 
-                // Populate variant manager
-                this.$nextTick(() => {
-                    this.$root.dispatchEvent(new CustomEvent('populate-variants', { detail: { options: options, variants: rawVariants, price: p.price, cost_price: p.cost_price } }));
-                });
+            },
+            submitForm(e) {
+                // Ensure JSONs are up to date!
+                this.editForm.rawOptions_json = JSON.stringify(this.editForm.options);
+                this.editForm.rawVariants_json = JSON.stringify(this.editForm.variants);
             }
         }
     }
