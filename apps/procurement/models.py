@@ -41,7 +41,16 @@ class PurchaseOrder(models.Model):
 
     @property
     def total_cost(self):
-        return sum(item.get('total_cost', 0) for item in self.items)
+        from decimal import Decimal, InvalidOperation
+        total = Decimal('0')
+        for item in self.items:
+            try:
+                # Robust conversion to handle strings, ints, and existing decimals
+                cost = Decimal(str(item.get('total_cost', 0)))
+                total += cost
+            except (InvalidOperation, ValueError, TypeError):
+                continue
+        return total
 
     def save(self, *args, **kwargs):
         if not self.lpo_number:

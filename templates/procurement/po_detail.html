@@ -14,25 +14,67 @@
     // Numpad Support
     numpadTarget: null,
     showNumpad: false,
+    numpadMode: 'qty', // 'qty' or 'price'
 
     async selectProduct(p) {
         // Fetch variants if it has them
         if (p.has_variants) {
             const resp = await fetch(`/procurement/get-variants/${p.id}/`);
             const data = await resp.json();
-            this.productVariants = data.map(v => ({ ...v, qty: 0 }));
+            // Add 'qty' and 'edit_cost'
+            this.productVariants = data.map(v => ({ 
+                ...v, 
+                qty: 0, 
+                edit_cost: parseFloat(v.cost_price || 0) 
+            }));
             this.selectedProduct = p;
             this.variantModal = true;
         } else {
             // Standard product - open the single-item numpad directly
             this.selectedProduct = { ...p, unit_cost: p.cost_price, qty: 1 };
             this.numpadTarget = this.selectedProduct;
+            this.numpadMode = 'qty';
             this.showNumpad = true;
         }
     },
     
     get modalTotalQty() {
         return this.productVariants.reduce((s, v) => s + Number(v.qty), 0);
+    },
+
+    numpadPress(n) {
+        if (!this.numpadTarget) return;
+        
+        // Target can be a variant in modal or selectedProduct for simple items
+        let current = '';
+        if (this.numpadMode === 'qty') current = String(this.numpadTarget.qty);
+        else current = String(this.numpadTarget.edit_cost || this.numpadTarget.unit_cost || 0);
+
+        if (n === 'C') {
+            if (this.numpadMode === 'qty') this.numpadTarget.qty = 0;
+            else if (this.numpadTarget.edit_cost !== undefined) this.numpadTarget.edit_cost = 0;
+            else this.numpadTarget.unit_cost = 0;
+            return;
+        }
+        
+        if (n === '⌫') {
+            current = current.slice(0, -1);
+            if (current === '' || current === '-') current = '0';
+        } else if (n === '.') {
+            if (this.numpadMode === 'qty') return;
+            if (current.includes('.')) return;
+            current += '.';
+        } else {
+            if (current === '0') current = n;
+            else current += n;
+        }
+
+        if (this.numpadMode === 'qty') this.numpadTarget.qty = parseInt(current) || 0;
+        else {
+            const val = parseFloat(current) || 0;
+            if (this.numpadTarget.edit_cost !== undefined) this.numpadTarget.edit_cost = val;
+            else this.numpadTarget.unit_cost = val;
+        }
     }
 }">
 
@@ -217,13 +259,18 @@
                 <div class="flex-grow overflow-y-auto p-6 md:p-8 no-scrollbar custom-scroll">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <template x-for="v in productVariants" :key="v.id">
-                            <div @click="selectedProduct.variant_id = v.id; selectedProduct.variant_name = v.name; selectedProduct.unit_cost = v.cost_price; numpadTarget = selectedProduct; variantModal = false; showNumpad = true;"
+                            <div @click="selectedProduct.variant_id = v.id; selectedProduct.variant_name = v.name; selectedProduct.unit_cost = v.edit_cost; numpadTarget = selectedProduct; numpadMode = 'qty'; variantModal = false; showNumpad = true;"
                                  class="p-6 bg-white/[0.02] border border-white/[0.04] rounded-[28px] hover:bg-brand-whatsapp/10 hover:border-brand-whatsapp/30 transition-all cursor-pointer group">
                                 <div class="flex flex-col h-full justify-between">
                                     <h4 class="font-bold text-white text-[16px] leading-tight mb-4" x-text="v.name"></h4>
                                     <div class="flex items-center justify-between">
-                                        <span class="text-[11px] font-bold text-brand-whatsapp" x-text="'KES ' + v.cost_price"></span>
-                                        <div class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-text-muted group-hover:bg-brand-whatsapp group-hover:text-white group-hover:border-transparent transition-all">
+                                        <div class="flex flex-col">
+                                            <span class="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-1">Cost Price</span>
+                                            <span @click.stop="numpadTarget = v; numpadMode = 'price'; showNumpad = true;" 
+                                                  class="text-[11px] font-bold text-brand-whatsapp bg-brand-whatsapp/5 px-2 py-1 rounded-lg border border-brand-whatsapp/20 hover:bg-brand-whatsapp/20 transition-all" 
+                                                  x-text="'KES ' + v.edit_cost"></span>
+                                        </div>
+                                        <div class="w-10 h-10 rounded-2xl bg-white/[0.02] border border-white/10 flex items-center justify-center text-text-muted group-hover:bg-brand-whatsapp group-hover:text-white group-hover:border-transparent transition-all">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m12 5 7 7-7 7"/><path d="M19 12H5"/></svg>
                                         </div>
                                     </div>
@@ -243,14 +290,13 @@
             
             <div class="relative w-full max-w-sm flex flex-col items-center">
                 <div class="text-center mb-10">
-                    <p class="text-brand-whatsapp font-bold uppercase tracking-[0.4em] text-[10px] mb-4">Adding Item to order</p>
+                    <p class="text-brand-whatsapp font-bold uppercase tracking-[0.4em] text-[10px] mb-4" x-text="numpadMode === 'qty' ? 'Set Quantity' : 'Set Cost Price'"></p>
                     <h3 class="font-display font-800 text-3xl text-white leading-tight uppercase" x-text="selectedProduct.name + (selectedProduct.variant_name ? ' (' + selectedProduct.variant_name + ')' : '')"></h3>
-                    <p class="text-[11px] font-bold text-text-muted/60 mt-2" x-text="'Unit Cost: KES ' + selectedProduct.unit_cost"></p>
                 </div>
 
                 <div class="w-full bg-white/[0.04] border-2 border-brand-whatsapp/20 rounded-[40px] px-8 py-10 mb-8 flex flex-col items-center justify-center">
-                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-4">Set Quantity</span>
-                    <span class="font-display font-800 text-8xl text-white tabular-nums tracking-tighter" x-text="numpadTarget.qty"></span>
+                    <span class="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-4" x-text="numpadMode === 'qty' ? 'Units' : 'Price per Unit'"></span>
+                    <span class="font-display font-800 text-8xl text-white tabular-nums tracking-tighter" x-text="numpadMode === 'qty' ? numpadTarget.qty : (numpadTarget.edit_cost || numpadTarget.unit_cost)"></span>
                 </div>
 
                 <form action="{% url 'procurement:po_add_item' po.id %}" method="POST" class="w-full">
@@ -261,22 +307,20 @@
                     <input type="hidden" name="qty" :value="numpadTarget.qty">
                     
                     <div class="grid grid-cols-3 gap-3 w-full mb-8">
-                        <template x-for="n in ['1','2','3','4','5','6','7','8','9','C','0','⌫']">
-                            <button type="button" @click="
-                                if(n === 'C') numpadTarget.qty = 0;
-                                else if(n === '⌫') numpadTarget.qty = Math.floor(numpadTarget.qty / 10);
-                                else {
-                                    const newVal = String(numpadTarget.qty) + n;
-                                    numpadTarget.qty = parseInt(newVal) || 0;
-                                }
-                            " 
+                        <template x-for="n in ['1','2','3','4','5','6','7','8','9','.', '0','⌫']">
+                            <button type="button" @click="numpadPress(n)" 
                             class="h-[72px] bg-white/[0.03] border border-white/[0.04] rounded-2xl flex items-center justify-center text-2xl font-bold text-white transition-all active:scale-90"
                             x-text="n"></button>
                         </template>
                     </div>
 
                     <div class="flex gap-4">
-                        <button type="button" @click="showNumpad = false" class="flex-1 h-20 glass border border-white/[0.04] text-text-muted rounded-[24px] font-display font-800 text-[12px] uppercase tracking-widest transition-all">Abort</button>
+                        <template x-if="numpadTarget.edit_cost !== undefined && numpadMode === 'price'">
+                            <button type="button" @click="numpadMode = 'qty'" class="flex-1 h-20 bg-brand-whatsapp text-white rounded-[24px] font-display font-800 text-[12px] uppercase tracking-widest shadow-glow-green-sm transition-all active:scale-95">Set Qty First</button>
+                        </template>
+                        <template x-if="numpadMode === 'qty'">
+                            <button type="button" @click="showNumpad = false" class="flex-1 h-20 glass border border-white/[0.04] text-text-muted rounded-[24px] font-display font-800 text-[12px] uppercase tracking-widest transition-all">Abort</button>
+                        </template>
                         <button type="submit" :disabled="numpadTarget.qty <= 0" class="flex-[2] h-20 bg-brand-whatsapp text-white rounded-[24px] font-display font-800 text-[12px] uppercase tracking-widest shadow-glow-green-sm transition-all active:scale-95 disabled:opacity-20">Confirm Addition</button>
                     </div>
                 </form>

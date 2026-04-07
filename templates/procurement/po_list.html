@@ -30,62 +30,62 @@
         </div>
     </div>
 
-    <!-- History Content -->
-    <div class="space-y-6">
+    <!-- History Content (Mobile First Grid) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6 pb-20">
         {% for po in pos %}
-        <div class="group relative glass border border-white/[0.04] p-8 rounded-[40px] hover:bg-white/[0.03] transition-all hover:border-white/10 animate-slide-up">
-            <div class="absolute top-0 right-10 w-32 h-32 bg-brand-whatsapp/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <div class="group relative glass border border-white/[0.04] p-6 sm:p-8 rounded-[40px] hover:bg-white/[0.03] transition-all hover:border-brand-whatsapp/20 animate-slide-up">
+            <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none rounded-[40px]"></div>
             
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
-                <div class="flex items-start gap-6">
-                    <div class="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-text-muted group-hover:text-brand-whatsapp transition-colors">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                <!-- Info Section -->
+                <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 shrink-0 rounded-[22px] bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-text-muted group-hover:text-brand-whatsapp group-hover:bg-brand-whatsapp/5 transition-all">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
                     </div>
-                    <div>
-                        <div class="flex items-center gap-3 mb-2">
-                            <h3 class="font-display font-800 text-2xl text-white tracking-tight">Order #{{ po.id|stringformat:"04d" }}</h3>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-3 mb-2">
+                            <h3 class="font-display font-800 text-2xl text-white tracking-tight uppercase">#{{ po.lpo_number|slice:"-4:" }}</h3>
                             <!-- Status Badge -->
                             {% if po.status == 'draft' %}
-                                <span class="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-[9px] font-bold text-blue-400 uppercase tracking-widest shadow-[0_0_15px_rgba(59,130,246,0.2)]">Draft</span>
+                                <span class="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-[8px] font-black text-blue-400 uppercase tracking-widest">Draft</span>
                             {% elif po.status == 'pending' %}
-                                <span class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[9px] font-bold text-amber-500 uppercase tracking-widest animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.2)]">Pending Approval</span>
+                                <span class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[8px] font-black text-amber-500 uppercase tracking-widest animate-pulse">Pending</span>
                             {% elif po.status == 'received' %}
-                                <span class="px-3 py-1 rounded-full bg-brand-whatsapp/10 border border-brand-whatsapp/30 text-[9px] font-bold text-brand-whatsapp uppercase tracking-widest shadow-glow-green-xs">Stock Added</span>
+                                <span class="px-3 py-1 rounded-full bg-brand-whatsapp/10 border border-brand-whatsapp/30 text-[8px] font-black text-brand-whatsapp uppercase tracking-widest shadow-glow-green-xs">Arrived</span>
+                            {% else %}
+                                <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[8px] font-black text-text-muted uppercase tracking-widest">{{ po.status }}</span>
                             {% endif %}
                         </div>
-                        <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-                            <div class="flex items-center gap-2">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-text-muted"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                                <span class="text-[11px] font-bold text-text-muted uppercase tracking-widest">{{ po.supplier.name }}</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-text-muted font-bold text-[11px] uppercase tracking-widest">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                {{ po.created_at|date:"d M, Y" }}
-                            </div>
+                        <div class="flex items-center gap-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">
+                            <span class="truncate max-w-[120px]">{{ po.supplier.name }}</span>
+                            <span class="w-1 h-1 rounded-full bg-white/10"></span>
+                            <span>{{ po.created_at|date:"d M" }}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex flex-row lg:flex-row items-center justify-between lg:justify-end gap-10 border-t lg:border-t-0 border-white/[0.04] pt-6 lg:pt-0">
-                    <div class="text-left lg:text-right">
-                        <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-1">Items Summary</p>
-                        <p class="font-display font-800 text-3xl text-white tracking-tighter tabular-nums">PO {{ po.id|stringformat:"04d" }}</p>
+                <!-- Stats & Actions -->
+                <div class="flex items-center justify-between lg:justify-end gap-6 border-t lg:border-t-0 border-white/[0.04] pt-6 lg:pt-0">
+                    <div class="text-left lg:text-right shrink-0">
+                        <p class="text-[9px] font-bold text-text-muted uppercase tracking-[0.3em] mb-1">Total Value</p>
+                        <p class="font-display font-800 text-3xl text-brand-whatsapp tracking-tighter tabular-nums drop-shadow-sm">
+                            KES {{ po.total_cost|floatformat:0 }}
+                        </p>
                     </div>
                     
-                    <div class="flex items-center gap-3">
-                        <a href="{% url 'procurement:po_detail' po.id %}" class="h-14 px-8 rounded-2xl bg-white/[0.04] border border-white/[0.06] text-text-muted font-display font-800 text-[11px] uppercase tracking-widest flex items-center justify-center hover:bg-white/[0.08] hover:text-white transition-all active:scale-95">
-                            View Info
-                        </a>
-                        
+                    <div class="flex items-center gap-2">
                         {% if po.status == 'pending' and user.role == 'admin' %}
                         <form action="{% url 'procurement:quick_approve' po.id %}" method="POST" class="inline-block">
                             {% csrf_token %}
-                            <button type="submit" class="h-14 px-8 rounded-2xl bg-brand-whatsapp text-white font-display font-800 text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 shadow-glow-green-sm hover:brightness-110 active:scale-95 transition-all">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
-                                Approve
+                            <button type="submit" class="w-12 h-12 rounded-2xl bg-brand-whatsapp text-white flex items-center justify-center shadow-glow-green-xs hover:brightness-110 active:scale-90 transition-all">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
                             </button>
                         </form>
                         {% endif %}
+
+                        <a href="{% url 'procurement:po_detail' po.id %}" class="h-14 px-8 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white font-display font-800 text-[11px] uppercase tracking-widest flex items-center justify-center hover:bg-white/[0.08] transition-all active:scale-95">
+                            Manage
+                        </a>
                     </div>
                 </div>
             </div>
@@ -96,7 +96,7 @@
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
             </div>
             <h4 class="font-display font-800 text-xl text-white uppercase tracking-widest">Archive Empty</h4>
-            <p class="text-sm font-medium mt-2">Historical data will populate here as you buy stock</p>
+            <p class="text-sm font-medium mt-2">Historical data will populate here</p>
         </div>
         {% endfor %}
     </div>
