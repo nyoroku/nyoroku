@@ -34,6 +34,13 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def sync_stock(self):
+        """Re-calculate total stock from all variants and save to database."""
+        if self.has_variants:
+            from django.db.models import Sum
+            self.stock_qty = self.variants.aggregate(Sum('stock_qty'))['stock_qty__sum'] or 0
+        super().save(update_fields=['stock_qty'])
+
     def save(self, *args, **kwargs):
         if not self.barcode:
             # Generate a simple barcode if empty
@@ -42,9 +49,7 @@ class Product(models.Model):
 
     @property
     def total_stock(self):
-        if self.has_variants:
-            from django.db.models import Sum
-            return self.variants.aggregate(Sum('stock_qty'))['stock_qty__sum'] or 0
+        # We now keep stock_qty synced, but keep property as double-check
         return self.stock_qty
 
     @property
@@ -93,6 +98,8 @@ class ProductVariant(models.Model):
         if not self.barcode:
             self.barcode = str(uuid.uuid4().int)[:12]
         super().save(*args, **kwargs)
+        # Always sync parent stock after variant change
+        self.product.sync_stock()
 
     @property
     def price(self):
