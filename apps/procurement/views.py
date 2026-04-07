@@ -204,7 +204,8 @@ def po_receive(request, pk):
             unit_cost = float(item['unit_cost'])
             
             variant_id = item.get('variant_id')
-            if variant_id:
+            # Check if variant_id is a valid UUID/string and not just empty or 'null'
+            if variant_id and str(variant_id).strip().lower() not in ['', 'null', 'none']:
                 try:
                     v = ProductVariant.objects.get(id=variant_id)
                     v.stock_qty += qty
@@ -213,15 +214,22 @@ def po_receive(request, pk):
                     # Also update parent cost price if shared
                     v.product.cost_price = unit_cost
                     v.product.save()
-                except ProductVariant.DoesNotExist:
-                    pass
+                except (ProductVariant.DoesNotExist, ValueError):
+                    # Fallback to product if variant ID was invalid but product_id exists
+                    try:
+                        product = Product.objects.get(id=item['product_id'])
+                        product.stock_qty += qty
+                        product.cost_price = unit_cost
+                        product.save()
+                    except (Product.DoesNotExist, ValueError):
+                        continue
             else:
                 try:
                     product = Product.objects.get(id=item['product_id'])
                     product.stock_qty += qty
                     product.cost_price = unit_cost
                     product.save()
-                except Product.DoesNotExist:
+                except (Product.DoesNotExist, ValueError):
                     continue
                 
         # Finalize PO status
