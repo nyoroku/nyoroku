@@ -358,7 +358,7 @@
                     </template>
                 </div>
 
-                <div class="p-10 bg-white/[0.04] border-t border-white/[0.06] backdrop-blur-2xl">
+                <div class="p-10 bg-white/[0.04] border-t border-white/[0.06] backdrop-blur-2xl hidden xl:block">
                     <div class="flex items-center justify-between mb-8">
                         <span class="text-[11px] font-display font-800 text-text-muted uppercase tracking-[0.4em]">Subtotal Cost</span>
                         <div class="text-right">
@@ -382,6 +382,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Mobile Persistent Floating Action Bar -->
+    <template x-if="items.length > 0">
+        <div class="fixed bottom-0 inset-x-0 z-[50] p-6 xl:hidden animate-slide-up">
+            <div class="bg-surface2/80 backdrop-blur-[40px] border border-white/[0.08] rounded-[40px] p-8 shadow-[0_-20px_80px_rgba(0,0,0,0.5)]">
+                <div class="flex items-center justify-between mb-8 px-2">
+                    <span class="text-[10px] font-display font-800 text-text-muted uppercase tracking-[0.4em]">Order Total</span>
+                    <div class="text-right">
+                        <span class="font-display font-800 text-5xl text-brand-whatsapp tracking-tighter" x-text="orderTotal"></span>
+                        <span class="block text-[8px] font-bold text-brand-whatsapp/40">KES Incl. Tax</span>
+                    </div>
+                </div>
+                <button @click="submitOrder()" 
+                        :disabled="!supplierId"
+                        class="w-full h-20 bg-brand-whatsapp text-white rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest shadow-glow-green-sm transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-4">
+                    <span>{% if user.role == 'admin' %}Finish & Add Stock{% else %}Submit Order{% endif %}</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+            </div>
+        </div>
+    </template>
 
     <!-- Variant Selection Drawer (Mint Green Mode) -->
     <template x-if="variantModal">
