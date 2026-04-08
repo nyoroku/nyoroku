@@ -14,7 +14,7 @@ window.allProducts = [
     barcode:     "{{ p.barcode|default:''|escapejs }}",
     stock_qty:   {{ p.total_stock|default:0 }},
     has_variants: {{ p.has_variants|yesno:"true,false" }},
-    variants:    {{ p.variants_json|default:"[]"|safe }}
+    variants:    {{ p.safe_variants_json|default:"[]"|safe }}
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
 ];

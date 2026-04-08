@@ -38,7 +38,7 @@ def index(request):
     "options":  [str(v.name)]  # or split "Red / L" → ["Red", "L"] if your names are composite
 })
         # 2. Add properties to the product object for the template
-        product.variants_json = json.dumps(variants_list)
+        product.safe_variants_json = json.dumps(variants_list)
         product.safe_price = float(product.price or 0)
         product.has_variants = len(variants_list) > 0
         products_with_data.append(product)
