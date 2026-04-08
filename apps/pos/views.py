@@ -31,14 +31,14 @@ def index(request):
         variants_list = []
         for v in product.variants.all():
             variants_list.append({
-                "id": str(v.id),
-                "name": str(v.name),
-                "price": float(v.price if v.price is not None else product.price or 0),
-                "stock_qty": int(v.stock_qty or 0)
-            })
-        
+    "id":       str(v.id),
+    "name":     str(v.name),
+    "price":    float(v.price if v.price is not None else product.price or 0),
+    "stock_qty": int(v.stock_qty or 0),
+    "options":  [str(v.name)]  # or split "Red / L" → ["Red", "L"] if your names are composite
+})
         # 2. Add properties to the product object for the template
-        product.safe_variants_json = json.dumps(variants_list)
+        product.variants_json = json.dumps(variants_list)
         product.safe_price = float(product.price or 0)
         product.has_variants = len(variants_list) > 0
         products_with_data.append(product)

@@ -1,7 +1,25 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block screen_title %}POS{% endblock %}
+{% block screen_title %}POS
+<script>
+// ─── Safe product registry — lives outside any HTML attribute,
+//     so JSON special chars (quotes, semicolons, braces) are harmless.
+window.allProducts = [
+  {% for p in products %}{
+    id:          "{{ p.id }}",
+    name:        "{{ p.name|escapejs }}",
+    price:       {{ p.safe_price|default:0 }},
+    image:       "{{ p.image|default:'🛍️'|escapejs }}",
+    barcode:     "{{ p.barcode|default:''|escapejs }}",
+    stock_qty:   {{ p.total_stock|default:0 }},
+    has_variants: {{ p.has_variants|yesno:"true,false" }},
+    variants:    {{ p.variants_json|default:"[]"|safe }}
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+];
+</script>
+{% endblock %}
 
 {% block content %}
 <style>
@@ -24,7 +42,6 @@
   --tx-low:     rgba(255,255,255,0.15);
   --red:        #FF4D6A;
   --amber:      #FFBA08;
-  /* nav height – matches your base.html bottom nav, adjust if needed */
   --nav-h:      60px;
 }
 *,*::before,*::after{box-sizing:border-box}
@@ -34,39 +51,30 @@ body{font-family:'DM Sans',sans-serif}
 .ns::-webkit-scrollbar{display:none}.ns{-ms-overflow-style:none;scrollbar-width:none}
 .ts::-webkit-scrollbar{width:2px}.ts::-webkit-scrollbar-thumb{background:var(--bdr-act);border-radius:99px}
 
-/* glow tab */
 @keyframes gt{0%,100%{box-shadow:0 0 18px var(--mint-glow)}60%{box-shadow:0 0 32px rgba(110,231,183,.32)}}
 .tglow{animation:gt 2.8s ease-in-out infinite}
 
-/* shimmer */
 @keyframes sh{from{left:-110%}to{left:120%}}
 .csh{position:relative;overflow:hidden}
 .csh::after{content:'';position:absolute;top:0;width:55%;height:100%;background:linear-gradient(90deg,transparent,rgba(110,231,183,.06),transparent);opacity:0;transition:opacity .2s}
 .csh:hover::after{opacity:1;animation:sh .6s ease}
 
-/* scan line */
 @keyframes sl{0%,100%{top:16%}50%{top:76%}}
 .sline{position:absolute;left:8%;right:8%;height:2px;border-radius:99px;background:var(--mint);box-shadow:0 0 16px 4px var(--mint-glow);animation:sl 2s ease-in-out infinite}
 
-/* list anim */
 @keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .au{animation:fu .25s ease both}
 
-/* badge pop */
 @keyframes bp{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
 .bpop{animation:bp .28s cubic-bezier(.34,1.56,.64,1) both}
 
-/* pay card */
 .pc{transition:all .2s cubic-bezier(.34,1.2,.64,1)}.pc:active{transform:scale(.95)}
 
-/* noise */
 .nz::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.025'/%3E%3C/svg%3E")}
 .nz>*{position:relative;z-index:1}
 
-/* CRITICAL: always clear the bottom nav */
 .above-nav{padding-bottom:calc(var(--nav-h) + 12px)!important}
-/* For modals/drawers that are fixed: push CTA above nav */
 .cta-dock{
   position:sticky;bottom:0;
   padding:12px 20px calc(var(--nav-h) + 12px);
@@ -74,40 +82,51 @@ body{font-family:'DM Sans',sans-serif}
   border-top:1px solid var(--bdr);
   z-index:10;
 }
-/* receipt modal must sit above everything */
 #modal-container{position:fixed;inset:0;z-index:9999;pointer-events:none}
 #modal-container:not(:empty){pointer-events:all}
 
-/* pagination */
 .pg-btn{min-width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-family:'Syne',sans-serif;font-weight:800;font-size:12px;border:none;cursor:pointer;transition:all .18s}
 
-/* search bar focus ring */
 .srch:focus{border-color:var(--bdr-act)!important;box-shadow:0 0 0 3px var(--mint-soft)!important;outline:none}
 .srch::placeholder{color:var(--tx-low)}
 
-/* card quick-add (+) button */
-.qadd{position:absolute;bottom:8px;right:8px;width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-center:center;background:var(--mint);border:none;cursor:pointer;opacity:0;transition:opacity .18s,transform .18s;transform:scale(.85)}
+.qadd{position:absolute;bottom:8px;right:8px;width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--mint);border:none;cursor:pointer;opacity:0;transition:opacity .18s,transform .18s;transform:scale(.85)}
 .csh:hover .qadd{opacity:1;transform:scale(1)}
 </style>
 
-<!-- ═══════════════════════════════════════
-     RECEIPT MODAL CONTAINER — z-index 9999, always on top
-════════════════════════════════════════ -->
+<!-- ═══ RECEIPT MODAL CONTAINER ═══ -->
 <div id="modal-container"></div>
 
 <div class="flex flex-col overflow-hidden"
      style="height:calc(100vh - 64px);background:var(--bg-void)"
      x-data="{
-       checkoutLoading:false,
-       addModalOpen:false, addModalProduct:null, selectedVariant:null, addQty:1,
-       scanOpen:false, manualBarcode:'',
-       page:1, perPage:20,
-       get pagedProducts(){
-         let all=Array.from(document.querySelectorAll('#all-products-source .prod-item'));
-         return all;
+       checkoutLoading: false,
+
+       /* ── Add-to-cart modal ── */
+       addModalOpen:    false,
+       addModalProduct: null,
+       selectedVariant: null,
+       addQty:          1,
+
+       /* ── Barcode scanner ── */
+       scanOpen:        false,
+       manualBarcode:   '',
+
+       /* ─────────────────────────────────────────────────────────────
+          openProduct(id)
+          Reads the product from window.allProducts by ID.
+          This keeps ALL JSON out of HTML attributes, which is what
+          caused the Alpine 'Unexpected token ;' error with variants.
+       ───────────────────────────────────────────────────────────── */
+       openProduct(productId) {
+         const prod = window.allProducts.find(p => p.id === productId);
+         if (!prod) return;
+         this.addModalProduct  = prod;
+         this.selectedVariant  = null;
+         this.addQty           = 1;
+         this.addModalOpen     = true;
        }
      }">
-
 
   <!-- ══════════ HEADER ══════════ -->
   <header class="shrink-0 flex items-center gap-2 px-4 py-2.5"
@@ -117,12 +136,9 @@ body{font-family:'DM Sans',sans-serif}
       <span style="color:var(--mint)">▸</span> Floki
     </div>
 
-    <!-- Search — wider, with clear button and category chip -->
     <div class="flex-1 relative flex items-center"
          style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:14px;overflow:hidden"
-         id="search-wrap"
-         onfocuswithin="this.style.borderColor='var(--bdr-act)';this.style.boxShadow='0 0 0 3px var(--mint-soft)'"
-         onblurwithin="this.style.borderColor='var(--bdr)';this.style.boxShadow='none'">
+         id="search-wrap">
       <span class="pl-3 shrink-0" style="color:var(--tx-low)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       </span>
@@ -133,12 +149,10 @@ body{font-family:'DM Sans',sans-serif}
              class="srch flex-1 px-2.5 py-2.5 text-[13px] font-medium bg-transparent border-none"
              style="color:var(--tx);min-width:0"
              autocomplete="off" autocorrect="off" spellcheck="false">
-      <!-- Clear -->
       <button onclick="let i=document.getElementById('search-input');i.value='';i.dispatchEvent(new Event('input'));i.focus()"
               class="shrink-0 mr-2 w-5 h-5 flex items-center justify-center rounded-full opacity-0 transition-opacity"
               id="search-clear"
-              style="background:var(--bg-hi);color:var(--tx-mid)"
-              title="Clear">
+              style="background:var(--bg-hi);color:var(--tx-mid)" title="Clear">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -150,7 +164,7 @@ body{font-family:'DM Sans',sans-serif}
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9V6a2 2 0 0 1 2-2h2"/><path d="M21 9V6a2 2 0 0 0-2-2h-2"/><path d="M3 15v3a2 2 0 0 0 2 2h2"/><path d="M21 15v3a2 2 0 0 0-2 2h-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
     </button>
 
-    <!-- Cart -->
+    <!-- Cart badge -->
     <button x-show="itemCount>0" x-cloak @click="cart.open=true"
             class="shrink-0 h-9 px-4 flex items-center gap-1.5 fd font-800 text-[12px] text-black transition-all active:scale-95"
             style="background:var(--mint);border-radius:12px;border:none;box-shadow:0 4px 20px var(--mint-glow)">
@@ -172,6 +186,7 @@ body{font-family:'DM Sans',sans-serif}
             :style="activeCat==='all'
               ? 'background:var(--mint);color:#000;border-radius:9px'
               : 'background:var(--bg-card);color:var(--tx-mid);border-radius:9px;border:1.5px solid var(--bdr)'">All</button>
+
     {% for cat in categories %}
     <button hx-get="{% url 'pos:index' %}" hx-vals='{"category":"{{ cat.id }}"}' hx-target="#product-grid" hx-include="[name='q']"
             @click="activeCat='{{ cat.id }}'"
@@ -183,30 +198,31 @@ body{font-family:'DM Sans',sans-serif}
     {% endfor %}
   </div>
 
-
-  <!-- ══════════ PRODUCT GRID + PAGINATION ══════════
-       #product-grid is the HTMX swap target for search, categories, and pagination.
-       The partial renders both the card grid AND the pagination bar inside this div.
-  ══════════════════════════════════════════════════ -->
+  <!-- ══════════ PRODUCT GRID ══════════ -->
   <div class="flex-1 flex flex-col overflow-hidden" style="background:var(--bg-void)">
     <div id="product-grid"
          class="flex-1 overflow-auto ns flex flex-col"
          @keydown.window="if($event.key==='Enter'){handleBarcode(manualBarcode);manualBarcode='';}else if($event.target.tagName!=='INPUT'){manualBarcode+=$event.key;}">
       {% include 'pos/partials/product_grid.html' %}
     </div>
-
+  </div>
 
   <!-- ══════════════════════════════════════════
        ADD-TO-CART MODAL
-       • Back button top-left
-       • Sticky CTA pinned above nav height
+
+       ✅ FIX: product card buttons now call openProduct('{{ p.id }}')
+       instead of inlining the full JSON object.
+       openProduct() fetches the data from window.allProducts,
+       which is defined in a <script> block where JSON is safe.
   ══════════════════════════════════════════ -->
   <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[300] flex items-end sm:items-center justify-center">
     <!-- backdrop -->
     <div class="absolute inset-0 backdrop-blur-2xl cursor-pointer"
          style="background:rgba(7,7,15,.95)"
          @click="addModalOpen=false"
-         x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"></div>
+         x-transition:enter="transition duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"></div>
 
     <!-- sheet -->
     <div class="relative w-full sm:max-w-sm flex flex-col nz"
@@ -235,38 +251,43 @@ body{font-family:'DM Sans',sans-serif}
         <div class="pt-2 pb-5 flex flex-col items-center text-center">
           <div class="w-20 h-20 flex items-center justify-center text-5xl mb-4 transition-transform duration-400 hover:scale-110"
                style="background:var(--bg-lift);border:1.5px solid var(--bdr);border-radius:28px">
-            <span x-text="addModalProduct?.image"></span>
+            <span x-text="addModalProduct?.image || '🛍️'"></span>
           </div>
-          <h3 class="fd font-800 text-[19px] text-white tracking-tight mb-1.5 leading-snug" x-text="addModalProduct?.name"></h3>
+          <h3 class="fd font-800 text-[19px] text-white tracking-tight mb-1.5 leading-snug"
+              x-text="addModalProduct?.name"></h3>
           <div class="fd font-800 text-[22px]" style="color:var(--mint)"
-               x-text="'KES '+(selectedVariant?selectedVariant.price:addModalProduct?.price)?.toLocaleString()"></div>
+               x-text="'KES ' + (selectedVariant ? selectedVariant.price : addModalProduct?.price)?.toLocaleString()"></div>
           <div class="mt-1.5 text-[11px]" style="color:var(--tx-low)"
-               x-text="(selectedVariant?selectedVariant.stock_qty:addModalProduct?.stock_qty)+' in stock'"></div>
+               x-text="(selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty) + ' in stock'"></div>
         </div>
 
-        <!-- variants -->
-        <template x-if="addModalProduct?.variants && addModalProduct.variants.length>0">
+        <!-- variants
+             options[] is always an array — falls back to [v.name] if not present.
+             This guard means old data without 'options' still renders correctly. -->
+        <template x-if="addModalProduct?.variants && addModalProduct.variants.length > 0">
           <div class="mb-5">
             <p class="text-[10px] fd font-800 uppercase tracking-[.32em] mb-2.5" style="color:var(--tx-low)">Choose type</p>
             <div class="flex flex-wrap gap-2">
-              <template x-for="v in addModalProduct?.variants" :key="v.id">
-                <button @click="selectedVariant=v;addQty=1"
+              <template x-for="v in addModalProduct.variants" :key="v.id">
+                <button @click="selectedVariant = v; addQty = 1"
                         class="px-4 py-2.5 text-[12px] fd font-800 transition-all active:scale-95 cursor-pointer"
-                        :style="selectedVariant?.id===v.id
+                        :style="selectedVariant?.id === v.id
                           ? 'background:var(--mint);color:#000;border:none;border-radius:10px;box-shadow:0 4px 14px var(--mint-glow)'
                           : 'background:var(--bg-hi);color:var(--tx-mid);border:1.5px solid var(--bdr);border-radius:10px'"
-                        x-text="v.options.join(' / ')"></button>
+                        x-text="Array.isArray(v.options) ? v.options.join(' / ') : v.name"></button>
               </template>
             </div>
           </div>
         </template>
 
         <!-- qty stepper -->
-        <div x-show="(!addModalProduct?.variants?.length)||selectedVariant"
-             x-transition:enter="transition duration-180" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <div x-show="(!addModalProduct?.variants?.length) || selectedVariant"
+             x-transition:enter="transition duration-180"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100">
           <div class="flex items-center justify-between gap-3 p-2.5"
                style="background:var(--bg-void);border:1.5px solid var(--bdr);border-radius:22px">
-            <button @click="if(addQty>1)addQty--"
+            <button @click="if(addQty > 1) addQty--"
                     class="w-11 h-11 flex items-center justify-center transition-all active:scale-90 cursor-pointer border-none"
                     style="background:var(--bg-hi);border-radius:14px;color:var(--tx-mid)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -276,10 +297,10 @@ body{font-family:'DM Sans',sans-serif}
               <div class="text-[9px] fd font-800 uppercase tracking-[.4em] mt-1" style="color:var(--tx-low)">qty</div>
             </div>
             <button @click="
-                      let mx=selectedVariant?selectedVariant.stock_qty:addModalProduct?.stock_qty;
-                      let cid=selectedVariant?selectedVariant.id:addModalProduct?.id;
-                      let inCart=cart.items.find(i=>i.id===cid)?.qty||0;
-                      if(addQty<(mx-inCart)){addQty++}else{alert('No more stock')}"
+                      let mx  = selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty;
+                      let cid = selectedVariant ? selectedVariant.id : addModalProduct?.id;
+                      let inCart = cart.items.find(i => i.id === cid)?.qty || 0;
+                      if (addQty < (mx - inCart)) { addQty++ } else { alert('No more stock available') }"
                     class="w-11 h-11 flex items-center justify-center transition-all active:scale-90 cursor-pointer border-none"
                     style="background:var(--bg-hi);border-radius:14px;color:var(--mint)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -288,35 +309,45 @@ body{font-family:'DM Sans',sans-serif}
         </div>
       </div>
 
-      <!-- ★ STICKY CTA — padded above bottom nav ★ -->
-      <div x-show="(!addModalProduct?.variants?.length)||selectedVariant" class="shrink-0 cta-dock">
+      <!-- sticky CTA -->
+      <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" class="shrink-0 cta-dock">
         <button @click="
-                  let p=selectedVariant?{id:selectedVariant.id,is_variant:true,parent_id:addModalProduct.id,name:selectedVariant.name,price:selectedVariant.price,stock_qty:selectedVariant.stock_qty,image:addModalProduct.image}
-                    :{id:addModalProduct.id,is_variant:false,name:addModalProduct.name,price:addModalProduct.price,stock_qty:addModalProduct.stock_qty,image:addModalProduct.image};
-                  if(addToCart(p,addQty)){addModalOpen=false}"
+                  let p = selectedVariant
+                    ? { id:        selectedVariant.id,
+                        is_variant: true,
+                        parent_id:  addModalProduct.id,
+                        name:       selectedVariant.name || addModalProduct.name,
+                        price:      selectedVariant.price,
+                        stock_qty:  selectedVariant.stock_qty,
+                        image:      addModalProduct.image }
+                    : { id:        addModalProduct.id,
+                        is_variant: false,
+                        name:       addModalProduct.name,
+                        price:      addModalProduct.price,
+                        stock_qty:  addModalProduct.stock_qty,
+                        image:      addModalProduct.image };
+                  if (addToCart(p, addQty)) { addModalOpen = false }"
                 class="w-full h-[50px] fd font-800 text-[13px] uppercase tracking-[.1em] flex items-center justify-center gap-3 cursor-pointer transition-all active:scale-[.98] border-none"
                 style="background:var(--mint);color:#000;border-radius:14px;box-shadow:0 8px 28px var(--mint-glow)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
           Add to Basket
           <span style="color:rgba(0,0,0,.25)">·</span>
-          <span x-text="'KES '+((selectedVariant?selectedVariant.price:addModalProduct?.price)*addQty).toLocaleString()"></span>
+          <span x-text="'KES ' + ((selectedVariant ? selectedVariant.price : addModalProduct?.price) * addQty).toLocaleString()"></span>
         </button>
       </div>
     </div>
   </div>
 
-
   <!-- ══════════════════════════════════════════
        CART DRAWER
-       • Back to products top-left
-       • Items tab | Payment tab
-       • CTA footer padded above bottom nav
   ══════════════════════════════════════════ -->
   <div x-show="cart.open" x-cloak class="fixed inset-0 z-[200] flex flex-col justify-end">
     <div class="absolute inset-0 backdrop-blur-xl cursor-pointer"
          style="background:rgba(7,7,15,.88)"
          @click="cart.open=false"
-         x-transition:enter="transition duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"></div>
+         x-transition:enter="transition duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"></div>
 
     <div class="relative w-full max-w-2xl mx-auto flex flex-col nz"
          style="background:var(--bg-card);border-radius:38px 38px 0 0;max-height:92vh;
@@ -324,9 +355,9 @@ body{font-family:'DM Sans',sans-serif}
                 box-shadow:0 -28px 90px rgba(0,0,0,.9)"
          x-data="{cartView:'items'}"
          x-transition:enter="transition transform duration-440 cubic-bezier(.16,1,.3,1)"
-         x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
+         x-transition:enter-start="translate-y-full"
+         x-transition:enter-end="translate-y-0">
 
-      <!-- handle -->
       <div class="flex justify-center pt-3 shrink-0">
         <div class="w-9 h-1 rounded-full" style="background:var(--bdr)"></div>
       </div>
@@ -343,7 +374,7 @@ body{font-family:'DM Sans',sans-serif}
         <div class="text-center">
           <div class="fd font-800 text-[16px] text-white tracking-tight">Basket</div>
           <div class="text-[10px] fd font-800 uppercase tracking-[.18em] mt-0.5" style="color:var(--tx-low)"
-               x-text="itemCount+' items'"></div>
+               x-text="itemCount + ' items'"></div>
         </div>
         <button @click="clearCart()"
                 class="fd font-800 text-[10px] uppercase tracking-[.12em] px-3 py-2 border-none cursor-pointer transition-all active:scale-90"
@@ -354,7 +385,7 @@ body{font-family:'DM Sans',sans-serif}
       <div class="flex gap-1 mx-5 mt-3 p-1 shrink-0" style="background:var(--bg-void);border-radius:12px">
         <button @click="cartView='items'"
                 class="flex-1 py-2 fd font-800 text-[11px] uppercase tracking-[.14em] transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
-                :style="cartView==='items'?'background:var(--bg-hi);color:var(--tx);border-radius:9px':'background:transparent;color:var(--tx-low)'">
+                :style="cartView==='items' ? 'background:var(--bg-hi);color:var(--tx);border-radius:9px' : 'background:transparent;color:var(--tx-low)'">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           Items
           <span x-show="itemCount>0" x-text="itemCount"
@@ -363,38 +394,37 @@ body{font-family:'DM Sans',sans-serif}
         </button>
         <button @click="cartView='payment'"
                 class="flex-1 py-2 fd font-800 text-[11px] uppercase tracking-[.14em] transition-all border-none cursor-pointer flex items-center justify-center gap-1.5"
-                :style="cartView==='payment'?'background:var(--bg-hi);color:var(--tx);border-radius:9px':'background:transparent;color:var(--tx-low)'">
+                :style="cartView==='payment' ? 'background:var(--bg-hi);color:var(--tx);border-radius:9px' : 'background:transparent;color:var(--tx-low)'">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
           Payment
         </button>
       </div>
 
-      <!-- ─── ITEMS PANEL ─── -->
+      <!-- ITEMS PANEL -->
       <div x-show="cartView==='items'"
-           x-transition:enter="transition duration-180" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0"
+           x-transition:enter="transition duration-180"
+           x-transition:enter-start="opacity-0 translate-x-2"
+           x-transition:enter-end="opacity-100 translate-x-0"
            class="flex-1 overflow-auto ts px-5 pt-3 pb-2 mt-2">
 
-        <template x-for="(item,idx) in cart.items" :key="item.id">
-          <div class="flex items-center gap-6 py-10 au" style="border-bottom:1px solid var(--bdr)"
+        <template x-for="(item, idx) in cart.items" :key="item.id">
+          <div class="flex items-center gap-3 py-3 au" style="border-bottom:1px solid var(--bdr)"
                :style="`animation-delay:${idx*30}ms`">
-            <!-- emoji -->
             <div class="w-10 h-10 shrink-0 flex items-center justify-center text-xl"
                  style="background:var(--bg-lift);border:1.5px solid var(--bdr);border-radius:12px"
-                 x-text="item.image"></div>
-            <!-- info -->
+                 x-text="item.image || '🛍️'"></div>
             <div class="flex-1 min-w-0">
               <div class="text-white font-medium text-[13px] truncate" x-text="item.name"></div>
               <button class="flex items-center gap-1 mt-0.5 border-none bg-transparent p-0 cursor-pointer hover:opacity-70 transition-opacity"
                       @click="let d=prompt('Discount/unit (KES):',item.discount||0);if(d!==null)setLineDiscount(item.id,d)">
                 <span class="fd font-800 text-[12px]" style="color:var(--mint)"
-                      x-text="'KES '+(item.price-(item.discount||0)).toLocaleString()"></span>
-                <template x-if="item.discount>0">
+                      x-text="'KES ' + (item.price - (item.discount || 0)).toLocaleString()"></span>
+                <template x-if="item.discount > 0">
                   <span class="text-[10px] line-through ml-1" style="color:var(--tx-low)" x-text="item.price"></span>
                 </template>
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ml-0.5" style="color:var(--tx-low)"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             </div>
-            <!-- stepper -->
             <div class="flex items-center gap-1 px-1.5 py-1.5 shrink-0"
                  style="background:var(--bg-void);border:1.5px solid var(--bdr);border-radius:12px">
               <button @click="updateQty(item.id,-1)"
@@ -409,15 +439,13 @@ body{font-family:'DM Sans',sans-serif}
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
             </div>
-            <!-- line total -->
             <div class="shrink-0 min-w-[60px] text-right">
               <div class="fd font-800 text-[12px] text-white"
-                   x-text="'KES '+((item.price-(item.discount||0))*item.qty).toLocaleString()"></div>
+                   x-text="'KES ' + ((item.price - (item.discount || 0)) * item.qty).toLocaleString()"></div>
             </div>
           </div>
         </template>
-
-        <template x-if="cart.items.length===0">
+        <template x-if="cart.items.length === 0">
           <div class="flex flex-col items-center justify-center py-16" style="color:var(--tx-low)">
             <div class="text-4xl mb-3 opacity-40">🛒</div>
             <p class="fd font-800 text-[11px] uppercase tracking-[.22em]" style="opacity:.3">Basket is empty</p>
@@ -425,22 +453,23 @@ body{font-family:'DM Sans',sans-serif}
         </template>
       </div>
 
-      <!-- ─── PAYMENT PANEL ─── -->
+      <!-- PAYMENT PANEL -->
       <div x-show="cartView==='payment'"
-           x-transition:enter="transition duration-180" x-transition:enter-start="opacity-0 -translate-x-2" x-transition:enter-end="opacity-100 translate-x-0"
+           x-transition:enter="transition duration-180"
+           x-transition:enter-start="opacity-0 -translate-x-2"
+           x-transition:enter-end="opacity-100 translate-x-0"
            class="flex-1 overflow-auto ts px-5 pt-3 pb-2 mt-2">
 
         <p class="text-[10px] fd font-800 uppercase tracking-[.28em] mb-2.5" style="color:var(--tx-low)">Payment method</p>
 
-        <!-- 2×2 method grid -->
         <div class="grid grid-cols-2 gap-2 mb-4">
           <template x-for="m in [
-              {key:'cash', icon:'💵', label:'Cash',   sub:'Physical notes'},
-              {key:'mpesa',icon:'📱', label:'M-Pesa', sub:'Safaricom STK'},
-              {key:'card', icon:'💳', label:'Card',   sub:'Visa / Mastercard'},
-              {key:'split',icon:'✂️', label:'Split',  sub:'Multiple methods'}
+              {key:'cash',  icon:'💵', label:'Cash',   sub:'Physical notes'},
+              {key:'mpesa', icon:'📱', label:'M-Pesa', sub:'Safaricom STK'},
+              {key:'card',  icon:'💳', label:'Card',   sub:'Visa / Mastercard'},
+              {key:'split', icon:'✂️', label:'Split',  sub:'Multiple methods'}
             ]" :key="m.key">
-            <button @click="payment=m.key;if(m.key==='split'&&splitPayments.length===0)splitPayments.push({method:'cash',amount:0})"
+            <button @click="payment=m.key; if(m.key==='split' && splitPayments.length===0) splitPayments.push({method:'cash',amount:0})"
                     class="pc flex items-center gap-3 px-3.5 py-3.5 text-left cursor-pointer border-none"
                     :style="payment===m.key
                       ? 'background:var(--mint-press);border:1.5px solid var(--bdr-act);border-radius:14px'
@@ -448,7 +477,7 @@ body{font-family:'DM Sans',sans-serif}
               <span class="text-xl shrink-0" x-text="m.icon"></span>
               <div class="min-w-0">
                 <div class="fd font-800 text-[13px] truncate"
-                     :style="payment===m.key?'color:var(--mint)':'color:var(--tx)'" x-text="m.label"></div>
+                     :style="payment===m.key ? 'color:var(--mint)' : 'color:var(--tx)'" x-text="m.label"></div>
                 <div class="text-[10px] truncate" style="color:var(--tx-low)" x-text="m.sub"></div>
               </div>
               <div x-show="payment===m.key" class="ml-auto w-4 h-4 rounded-full flex items-center justify-center shrink-0"
@@ -461,7 +490,9 @@ body{font-family:'DM Sans',sans-serif}
 
         <!-- split entries -->
         <div x-show="payment==='split'"
-             x-transition:enter="transition duration-180" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+             x-transition:enter="transition duration-180"
+             x-transition:enter-start="opacity-0 translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0">
 
           <div class="flex items-center justify-between mb-2.5">
             <p class="text-[10px] fd font-800 uppercase tracking-[.26em]" style="color:var(--tx-low)">Entries</p>
@@ -474,9 +505,8 @@ body{font-family:'DM Sans',sans-serif}
           </div>
 
           <div class="space-y-1.5 mb-3">
-            <template x-for="(sp,idx) in splitPayments" :key="idx">
+            <template x-for="(sp, idx) in splitPayments" :key="idx">
               <div class="flex items-center gap-2 p-2" style="background:var(--bg-void);border:1.5px solid var(--bdr);border-radius:12px">
-                <!-- method toggles -->
                 <div class="flex gap-1 shrink-0">
                   <template x-for="mm in ['cash','mpesa','card']" :key="mm">
                     <button @click="sp.method=mm"
@@ -484,14 +514,12 @@ body{font-family:'DM Sans',sans-serif}
                             :style="sp.method===mm
                               ? 'background:var(--mint);color:#000;border-radius:6px'
                               : 'background:var(--bg-hi);color:var(--tx-mid);border-radius:6px'"
-                            x-text="mm==='mpesa'?'M-P':mm"></button>
+                            x-text="mm==='mpesa' ? 'M-P' : mm"></button>
                   </template>
                 </div>
-                <!-- amount -->
                 <input type="number" x-model.number="sp.amount" placeholder="0"
                        class="flex-1 min-w-0 text-right fd font-800 text-[14px] py-0.5 px-2 focus:outline-none bg-transparent border-none"
                        style="color:var(--mint)">
-                <!-- remove -->
                 <button @click="splitPayments.splice(idx,1)"
                         class="w-6 h-6 flex items-center justify-center border-none cursor-pointer active:scale-90 shrink-0"
                         style="background:rgba(255,77,106,.12);color:var(--red);border-radius:7px">
@@ -501,40 +529,38 @@ body{font-family:'DM Sans',sans-serif}
             </template>
           </div>
 
-          <!-- progress -->
+          <!-- progress bar -->
           <div class="p-3.5 rounded-[12px]" style="background:var(--bg-lift);border:1.5px solid var(--bdr)">
             <div class="flex justify-between text-[11px] fd font-800 uppercase tracking-[.16em] mb-2">
               <span style="color:var(--tx-low)">Collected</span>
-              <span :style="totalPaid>=cartTotal?'color:var(--mint)':'color:var(--red)'"
-                    x-text="'KES '+totalPaid.toLocaleString()"></span>
+              <span :style="totalPaid >= cartTotal ? 'color:var(--mint)' : 'color:var(--red)'"
+                    x-text="'KES ' + totalPaid.toLocaleString()"></span>
             </div>
             <div class="w-full h-1.5 rounded-full overflow-hidden" style="background:var(--bg-void)">
               <div class="h-full rounded-full transition-all duration-400"
-                   :style="`width:${Math.min(100,cartTotal>0?(totalPaid/cartTotal)*100:0)}%;background:${totalPaid>=cartTotal?'var(--mint)':'var(--amber)'}`"></div>
+                   :style="`width:${Math.min(100, cartTotal>0 ? (totalPaid/cartTotal)*100 : 0)}%;background:${totalPaid>=cartTotal ? 'var(--mint)' : 'var(--amber)'}`"></div>
             </div>
             <div class="flex justify-between text-[10px] mt-1.5" style="color:var(--tx-low)">
               <span>KES 0</span>
-              <span x-text="'KES '+cartTotal.toLocaleString()"></span>
+              <span x-text="'KES ' + cartTotal.toLocaleString()"></span>
             </div>
           </div>
         </div>
       </div><!-- end payment panel -->
 
-      <!-- ★ CART FOOTER — total + CTA — padded above bottom nav ★ -->
+      <!-- CART FOOTER -->
       <div class="shrink-0 cta-dock">
         <div class="flex items-center justify-between mb-3">
           <div>
             <div class="text-[10px] fd font-800 uppercase tracking-[.24em] mb-0.5" style="color:var(--tx-low)">Total</div>
             <div class="fd font-800 text-[28px] text-white leading-none">KES <span x-text="cartTotal.toLocaleString()"></span></div>
           </div>
-          <!-- Quick-switch to payment tab from items -->
           <button x-show="cartView==='items'" @click="cartView='payment'"
                   class="flex items-center gap-2 fd font-800 text-[11px] uppercase tracking-[.12em] px-4 py-2.5 border-none cursor-pointer transition-all active:scale-95"
                   style="background:var(--mint-soft);border:1.5px solid var(--bdr-act);border-radius:10px;color:var(--mint)">
             Pay
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </button>
-          <!-- Method badge when on payment tab -->
           <div x-show="cartView==='payment'"
                class="flex items-center gap-1.5 px-3 py-2 rounded-[9px]"
                style="background:var(--mint-soft);border:1.5px solid var(--bdr-act)">
@@ -544,17 +570,24 @@ body{font-family:'DM Sans',sans-serif}
         </div>
 
         <button @click="checkoutLoading=true;
-                  fetch('{% url 'pos:checkout' %}',{
-                    method:'POST',
-                    headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
-                    body:JSON.stringify({items:cart.items,payment_method:payment,split_payments:payment==='split'?splitPayments:[],coupon_code:couponApplied?couponCode:''})
+                  fetch('{% url 'pos:checkout' %}', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+                    body: JSON.stringify({
+                      items:           cart.items,
+                      payment_method:  payment,
+                      split_payments:  payment==='split' ? splitPayments : [],
+                      coupon_code:     couponApplied ? couponCode : ''
+                    })
                   })
-                  .then(r=>r.text())
-                  .then(html=>{
-                    document.getElementById('modal-container').innerHTML=html;
-                    checkoutLoading=false;clearCart();
-                  }).catch(()=>{checkoutLoading=false})"
-                :disabled="checkoutLoading||itemCount===0||(payment==='split'&&totalPaid<cartTotal)"
+                  .then(r => r.text())
+                  .then(html => {
+                    document.getElementById('modal-container').innerHTML = html;
+                    checkoutLoading = false;
+                    clearCart();
+                  })
+                  .catch(() => { checkoutLoading = false })"
+                :disabled="checkoutLoading || itemCount===0 || (payment==='split' && totalPaid<cartTotal)"
                 class="w-full h-[50px] fd font-800 text-[13px] uppercase tracking-[.12em] flex items-center justify-center gap-3 border-none cursor-pointer transition-all active:scale-[.98] disabled:opacity-25 disabled:grayscale"
                 style="background:var(--mint);color:#000;border-radius:14px;box-shadow:0 10px 30px var(--mint-glow)">
           <span x-show="!checkoutLoading" class="flex items-center gap-2.5">
@@ -564,10 +597,8 @@ body{font-family:'DM Sans',sans-serif}
           <span x-show="checkoutLoading" class="animate-pulse" style="color:rgba(0,0,0,.4)">Authorizing…</span>
         </button>
       </div>
-
     </div>
   </div><!-- end cart drawer -->
-
 
   <!-- ══════════ SCAN OVERLAY ══════════ -->
   <div x-show="scanOpen" x-cloak
@@ -583,7 +614,7 @@ body{font-family:'DM Sans',sans-serif}
       <div class="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 rounded-bl-[8px]" style="border-color:var(--mint)"></div>
       <div class="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 rounded-br-[8px]" style="border-color:var(--mint)"></div>
     </div>
-    <button @click="scanOpen=false;if(window.html5QrCode)window.html5QrCode.stop().catch(()=>{})"
+    <button @click="scanOpen=false; if(window.html5QrCode) window.html5QrCode.stop().catch(()=>{})"
             class="mt-8 px-7 py-2.5 fd font-800 text-[10px] uppercase tracking-[.28em] border-none cursor-pointer transition-all active:scale-95"
             style="background:var(--bg-card);color:var(--tx-mid);border:1.5px solid var(--bdr);border-radius:12px">
       Cancel
@@ -593,49 +624,36 @@ body{font-family:'DM Sans',sans-serif}
 </div><!-- end root -->
 
 <script>
-window.allProducts = [
-  {% for p in products %}
-  {
-    id: "{{ p.id }}",
-    name: "{{ p.name|escapejs }}",
-    price: {{ p.price|default:0 }},
-    image: "{{ p.image|escapejs }}",
-    barcode: "{{ p.barcode|default:'' }}",
-    stock_qty: {{ p.total_stock|default:0 }},
-    has_variants: {{ p.has_variants|yesno:"true,false" }},
-    variants: {{ p.variants_json|default:"[]"|safe }}
-  }{% if not forloop.last %},{% endif %}
-  {% endfor %}
-]
-
-// Show/hide search clear button
+// Search clear button visibility
 document.getElementById('search-input').addEventListener('input', function(){
   document.getElementById('search-clear').style.opacity = this.value ? '1' : '0';
 });
 
-// Search wrap focus-within via JS (Safari compat)
+// Search wrap focus ring (Safari compat)
 const sw = document.getElementById('search-wrap');
-document.getElementById('search-input').addEventListener('focus', ()=>{
-  sw.style.borderColor='var(--bdr-act)'; sw.style.boxShadow='0 0 0 3px var(--mint-soft)';
+document.getElementById('search-input').addEventListener('focus', () => {
+  sw.style.borderColor = 'var(--bdr-act)';
+  sw.style.boxShadow   = '0 0 0 3px var(--mint-soft)';
 });
-document.getElementById('search-input').addEventListener('blur', ()=>{
-  sw.style.borderColor='var(--bdr)'; sw.style.boxShadow='none';
+document.getElementById('search-input').addEventListener('blur', () => {
+  sw.style.borderColor = 'var(--bdr)';
+  sw.style.boxShadow   = 'none';
 });
 
 // Barcode scanner
 let html5QrCode;
-function startScanner(){
-  if(!html5QrCode) html5QrCode=new Html5Qrcode("reader");
-  window.html5QrCode=html5QrCode;
+function startScanner() {
+  if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+  window.html5QrCode = html5QrCode;
   html5QrCode.start(
-    {facingMode:"environment"},
-    {fps:20,qrbox:{width:220,height:220}},
-    (text)=>{
-      const app=document.querySelector('[x-data]').__x.$data;
-      if(app.handleBarcode(text)){app.scanOpen=false;html5QrCode.stop();}
+    { facingMode: "environment" },
+    { fps: 20, qrbox: { width: 220, height: 220 } },
+    (text) => {
+      const app = document.querySelector('[x-data]').__x.$data;
+      if (app.handleBarcode(text)) { app.scanOpen = false; html5QrCode.stop(); }
     },
-    ()=>{}
-  ).catch(e=>console.error("Scanner:",e));
+    () => {}
+  ).catch(e => console.error("Scanner:", e));
 }
 </script>
 {% endblock %}
