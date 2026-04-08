@@ -42,13 +42,16 @@ def index(request):
         for v in product.variants.all():
             variants.append({
                 "id": str(v.id),
-                "name": v.name,
-                "price": float(v.price or product.price or 0),
-                "stock_qty": v.stock_qty,
-                "options": list(v.options.values())
+                "name": getattr(v, 'name', str(v)),
+                "price": float(v.price if v.price is not None else product.price or 0),
+                "stock_qty": getattr(v, 'stock_qty', 0),
+                "options": list(v.options.values()) if getattr(v, 'options', None) else []
             })
 
-        product.variants_data = variants  # ← use this in template
+        # CRITICAL FIX: Convert the python list to a JSON string so JS can read it safely
+        product.safe_variants_json = json.dumps(variants)
+        product.has_variants = len(variants) > 0
+        
         products_with_data.append(product)
 
     paginator = Paginator(products_with_data, PER_PAGE)
@@ -177,7 +180,7 @@ def checkout(request):
 
         if coupon_code:
             try:
-                coupon_obj = Coupon.objects.get(code=coupon_code)  # ✅ FIXED
+                coupon_obj = Coupon.objects.get(code=coupon_code)
 
                 if coupon_obj.is_valid:
                     if coupon_obj.discount_type == 'percent':
@@ -395,10 +398,10 @@ def void_transaction(request, pk):
         )
         return JsonResponse({'status': 'pending_approval', 'message': 'Void requested successfully. Requires Admin approval.'})
 
-    transaction.status    = 'voided'
+    transaction.status      = 'voided'
     transaction.void_reason = reason
-    transaction.voided_at = timezone.now()
-    transaction.voided_by = request.user
+    transaction.voided_at   = timezone.now()
+    transaction.voided_by   = request.user
     transaction.save()
 
     for item in transaction.items:
