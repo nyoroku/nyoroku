@@ -15,40 +15,34 @@ def index(request):
     cat_id = request.GET.get('category', '')
     page_num = request.GET.get('page', 1)
 
-    # Fetch products with approval filter
     qs = Product.objects.filter(approved=True).order_by('name')
     if query:
         qs = qs.filter(name__icontains=query)
     if cat_id and cat_id != 'all':
         qs = qs.filter(category_id=cat_id)
 
-    # Prefetch variants to optimize database hits
     qs = qs.prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.all())
     )
 
     products_with_data = []
     for product in qs:
-        # Pre-process numeric data
-        safe_price = float(product.price or 0)
-        
-        # Build variants list for the frontend
-        vars_list = []
+        # 1. Build a clean list of variants
+        variants_list = []
         for v in product.variants.all():
-            vars_list.append({
+            variants_list.append({
                 "id": str(v.id),
                 "name": str(v.name),
-                "price": float(v.price if v.price is not None else safe_price),
+                "price": float(v.price if v.price is not None else product.price or 0),
                 "stock_qty": int(v.stock_qty or 0)
             })
         
-        # Attach processed data to product object
-        product.safe_price = safe_price
-        product.safe_variants_json = json.dumps(vars_list) # Guaranteed to be "[]" if empty
-        product.has_variants = len(vars_list) > 0
+        # 2. Add properties to the product object for the template
+        product.safe_variants_json = json.dumps(variants_list)
+        product.safe_price = float(product.price or 0)
+        product.has_variants = len(variants_list) > 0
         products_with_data.append(product)
 
-    # Pagination
     from django.core.paginator import Paginator
     paginator = Paginator(products_with_data, 24)
     products = paginator.get_page(page_num)
