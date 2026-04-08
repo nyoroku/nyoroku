@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
+from django.db.models import Prefetch
 from django.utils import timezone
 from catalogue.models import Product, Category, ProductVariant
 from .models import Transaction, Coupon, ParkedSale
@@ -13,31 +14,60 @@ PER_PAGE = 24   # cards per page — tweak freely
 
 @login_required
 def index(request):
-    query      = request.GET.get('q', '')
-    cat_id     = request.GET.get('category', '')
-    page_num   = request.GET.get('page', 1)
+    query    = request.GET.get('q', '')
+    cat_id   = request.GET.get('category', '')
+    page_num = request.GET.get('page', 1)
 
+    # Base queryset
     qs = Product.objects.filter(approved=True).order_by('name')
 
     if query:
         qs = qs.filter(name__icontains=query)
-
     if cat_id and cat_id != 'all':
         qs = qs.filter(category_id=cat_id)
 
-    paginator = Paginator(qs, PER_PAGE)
-    products  = paginator.get_page(page_num)   # safe — never raises, clamps to valid range
+    # Prefetch variants (critical for performance + correctness)
+    qs = qs.prefetch_related(
+        Prefetch('variants', queryset=ProductVariant.objects.all())
+    )
+
+    # 🔥 Attach frontend-safe data
+    products_with_data = []
+
+    for product in qs:
+        variants = [
+            {
+                "id": str(v.id),
+                "name": v.name,
+                "price": float(v.price or 0),
+                "stock_qty": v.stock_qty or 0
+            }
+            for v in product.variants.all()
+        ]
+
+        # Always safe JSON (prevents Alpine crashes)
+        product.variants_json = json.dumps(variants)
+
+        # Optional but smart: normalize fields used in JS
+        product.safe_price = float(product.price or 0)
+        product.safe_image = str(product.image or "")
+
+        products_with_data.append(product)
+
+    # Pagination AFTER processing
+    paginator = Paginator(products_with_data, PER_PAGE)
+    products  = paginator.get_page(page_num)
 
     categories = Category.objects.all().order_by('name')
 
     context = {
-        'products':        products,          # Page object — has .number, .has_next, etc.
-        'categories':      categories,
+        'products': products,
+        'categories': categories,
         'active_category': cat_id or 'all',
-        'query':           query,
+        'query': query,
     }
 
-    # HTMX partial — return only the grid+pagination fragment
+    # HTMX partial response
     if request.headers.get('HX-Request'):
         return render(request, 'pos/partials/product_grid.html', context)
 
@@ -143,7 +173,7 @@ def checkout(request):
 
         if coupon_code:
             try:
-                coupon_obj = Coupon.objects.get(code=coupon_code)
+                coupon_obj = Coupon.objects.get(code=code)
                 if coupon_obj.is_valid:
                     if coupon_obj.discount_type == 'percent':
                         coupon_discount = round(subtotal * coupon_obj.discount_value / 100, 2)
