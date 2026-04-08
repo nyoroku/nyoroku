@@ -18,7 +18,7 @@
           id: '{{ product.id }}',
           name: '{{ product.name|escapejs }}',
           price: {{ product.safe_price }},
-          image: '{{ product.safe_image_url|escapejs }}',
+          image: '{{ product.safe_image|escapejs }}',
           stock_qty: {{ product.total_stock }},
           variants: {{ product.safe_variants_json|safe }},
           barcode: '{{ product.barcode|default:""|escapejs }}'
@@ -38,11 +38,7 @@
 
         {# Image/Emoji Display #}
         <div class="text-5xl transition-transform duration-500 group-hover:scale-110 select-none">
-          {% if product.image %}
-            <img src="{{ product.safe_image_url }}" class="w-full h-full object-contain" alt="{{ product.name }}">
-          {% else %}
-            📦
-          {% endif %}
+          {{ product.image|default:"📦" }}
         </div>
 
         {# Stock Label #}

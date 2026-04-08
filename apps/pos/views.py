@@ -34,8 +34,7 @@ def index(request):
     for product in qs:
         # Pre-calculate data to avoid logic in templates
         product.safe_price = float(product.price or 0)
-        # Use .url if your image is a FileField/ImageField
-        product.safe_image_url = product.image.url if product.image else ""
+        product.safe_image = str(product.image or "📦")
         
         # Build clean variant list
         vars_list = []
