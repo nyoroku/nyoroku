@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -10,14 +10,13 @@ from django.utils import timezone
 from catalogue.models import Product, Category, ProductVariant
 from .models import Transaction, Coupon, ParkedSale
 
-PER_PAGE = 24
-
 @login_required
 def index(request):
     query    = request.GET.get('q', '')
     cat_id   = request.GET.get('category', '')
     page_num = request.GET.get('page', 1)
 
+    # 1. Base Queryset with optimized fetching
     qs = Product.objects.filter(approved=True).order_by('name')
 
     if query:
@@ -26,42 +25,40 @@ def index(request):
     if cat_id and cat_id != 'all':
         qs = qs.filter(category_id=cat_id)
 
-    # ✅ Prefetch variants properly
+    # 2. Prefetch variants to avoid N+1 queries
     qs = qs.prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.all())
     )
 
     products_with_data = []
-
     for product in qs:
+        # Pre-calculate data to avoid logic in templates
         product.safe_price = float(product.price or 0)
-        product.safe_image = str(product.image or "")
-
-        # ✅ FIX: Attach variants cleanly for frontend
-        variants = []
-        for v in product.variants.all():
-            variants.append({
-                "id": str(v.id),
-                "name": getattr(v, 'name', str(v)),
-                "price": float(v.price if v.price is not None else product.price or 0),
-                "stock_qty": getattr(v, 'stock_qty', 0),
-                "options": list(v.options.values()) if getattr(v, 'options', None) else []
-            })
-
-        # CRITICAL FIX: Convert the python list to a JSON string so JS can read it safely
-        product.safe_variants_json = json.dumps(variants)
-        product.has_variants = len(variants) > 0
+        # Use .url if your image is a FileField/ImageField
+        product.safe_image_url = product.image.url if product.image else ""
         
+        # Build clean variant list
+        vars_list = []
+        for v in product.variants.all():
+            vars_list.append({
+                "id": str(v.id),
+                "name": str(v.name),
+                "price": float(v.price if v.price is not None else product.price or 0),
+                "stock_qty": int(v.stock_qty or 0)
+            })
+        
+        # Convert variants to a JSON string for Alpine.js
+        product.safe_variants_json = json.dumps(vars_list)
+        product.has_variants = len(vars_list) > 0
         products_with_data.append(product)
 
-    paginator = Paginator(products_with_data, PER_PAGE)
+    # 3. Pagination
+    paginator = Paginator(products_with_data, 24)
     products  = paginator.get_page(page_num)
-
-    categories = Category.objects.all().order_by('name')
 
     context = {
         'products': products,
-        'categories': categories,
+        'categories': Category.objects.all().order_by('name'),
         'active_category': cat_id or 'all',
         'query': query,
     }

@@ -1,148 +1,116 @@
-{% comment %} ═══════════════════════════════════════════════════════
-    Premium POS Grid — Fluid Layout & Enhanced Scroll Performance
-════════════════════════════════════════════════════════ {% endcomment %}
- 
- {# ── CARD GRID ── #}
- {# Use 'grid-cols-2' as base for mobile, scaling up to 6+ on desktop #}
- <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 p-6 overflow-y-auto"
-      style="max-height: calc(100vh - 180px); scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
- 
-   {% for product in products %}
-   <div class="group relative flex flex-col h-full">
-       <button
-         @click="
-           addModalProduct={
-             id:'{{ product.id }}',
-             name:'{{ product.name|escapejs }}',
-             price:{{ product.safe_price }},
-             image:'{{ product.safe_image|escapejs }}',
-             stock_qty:{{ product.total_stock }},
-             variants: {{ product.safe_variants_json|safe }},
-             barcode:'{{ product.barcode }}'
-           };
-           selectedVariant=null;
-           addQty=1;
-           addModalOpen=true"
-         class="relative flex flex-col items-center w-full h-full text-center transition-all duration-200 active:scale-95
-                {% if product.total_stock <= 0 %}opacity-40 grayscale pointer-events-none{% endif %}"
-         style="
-           background: var(--bg-card, #1a1a1a);
-           border: 1px solid var(--bdr, #333);
-           border-radius: 24px;
-           padding: 24px 16px;
-           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
-         "
-         onmouseenter="this.style.borderColor='var(--mint)'; this.style.boxShadow='0 0 20px var(--mint-soft)'"
-         onmouseleave="this.style.borderColor='var(--bdr)'; this.style.boxShadow='0 10px 25px -5px rgba(0, 0, 0, 0.4)'">
- 
-         {# Cart count badge #}
-         <template x-if="cart.items.find(i=>i.id==='{{ product.id }}'||i.parent_id==='{{ product.id }}')">
-           <span class="absolute -top-2 -right-2 z-10 font-bold text-[11px] min-w-[24px] h-[24px] px-1.5 flex items-center justify-center rounded-full shadow-lg"
-                 style="background:var(--mint); color:#000;"
-                 x-text="cart.items.filter(i=>i.id==='{{ product.id }}'||i.parent_id==='{{ product.id }}').reduce((s,i)=>s+i.qty,0)">
-           </span>
-         </template>
- 
-         {# Visual/Image Area #}
-         <div class="w-20 h-20 flex items-center justify-center mb-4 rounded-2xl transition-transform group-hover:scale-110"
-              style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05);">
-           <span class="text-4xl select-none">{{ product.image }}</span>
-         </div>
- 
-         {# Product Info #}
-         <div class="flex-grow flex flex-col justify-between w-full">
-             <h3 class="font-bold text-sm text-white line-clamp-2 leading-tight mb-2">
-               {{ product.name }}
-             </h3>
-             
-             <div class="space-y-2">
-                 <div class="flex items-center justify-center gap-2">
-                   <span class="font-black text-lg" style="color:var(--mint)">
-                     {{ product.price|floatformat:0 }}
-                   </span>
-                   {% if product.has_variants %}
-                   <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
-                         style="background:rgba(0,255,150,0.1); color:var(--mint); border:1px solid rgba(0,255,150,0.2)">
-                     +opts
-                   </span>
-                   {% endif %}
-                 </div>
- 
-                 {# Stock Indicator #}
-                 <div class="text-[10px] font-bold uppercase tracking-widest opacity-60">
-                     {% if product.total_stock <= product.reorder_level %}
-                         <span style="color:var(--red)">● Low: {{ product.total_stock }}</span>
-                     {% else %}
-                         <span style="color:var(--tx-low)">{{ product.total_stock }} in stock</span>
-                     {% endif %}
-                 </div>
-             </div>
-         </div>
- 
-         {# Quick Add Hover Overlay #}
-         {% if not product.has_variants and product.total_stock > 0 %}
-         <div class="absolute inset-x-0 bottom-4 px-4 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-             <button class="w-full py-2 rounded-xl font-bold text-xs uppercase shadow-xl"
-                     style="background:var(--mint); color:#000;"
-                     @click.stop="addToCart({id:'{{ product.id }}',name:'{{ product.name|escapejs }}',price:{{ product.price }},stock_qty:{{ product.total_stock }},image:'{{ product.image }}'}, 1)">
-                 Quick Add
-             </button>
-         </div>
-         {% endif %}
- 
-       </button>
-   </div>
-   {% empty %}
-   <div class="col-span-full flex flex-col items-center justify-center py-40">
-     <div class="opacity-20 text-6xl mb-4">🔍</div>
-     <p class="font-bold text-lg opacity-40 uppercase tracking-[.2em]">No products found</p>
-     <p class="text-sm opacity-30 mt-2">Adjust your search or category filters</p>
-   </div>
-   {% endfor %}
- 
- </div>
- 
- 
- {# ── PAGINATION ── #}
- {% if products.paginator.num_pages > 1 %}
- <div class="sticky bottom-0 z-30 flex items-center justify-between px-8 py-4 backdrop-blur-md"
-      style="background:rgba(10,10,10,0.8); border-top:1px solid var(--bdr)">
- 
-   <div class="font-bold text-xs uppercase tracking-widest opacity-50">
-     Page {{ products.number }} / {{ products.paginator.num_pages }}
-   </div>
- 
-   <div class="flex items-center gap-3">
-     {% if products.has_previous %}
-     <button hx-get="{% url 'pos:index' %}?page={{ products.previous_page_number }}"
-             hx-target="#product-grid" hx-swap="innerHTML"
-             class="w-10 h-10 flex items-center justify-center rounded-xl border border-white/10 hover:bg-white/5">
-       ‹
-     </button>
-     {% endif %}
- 
-     <div class="flex items-center gap-1">
-         {% for i in products.paginator.page_range %}
-             {% if i == products.number %}
-                 <span class="w-10 h-10 flex items-center justify-center rounded-xl font-bold" 
-                       style="background:var(--mint); color:#000">{{ i }}</span>
-             {% elif i >= products.number|add:"-2" and i <= products.number|add:"2" %}
-                 <button hx-get="{% url 'pos:index' %}?page={{ i }}"
-                         hx-target="#product-grid" hx-swap="innerHTML"
-                         class="w-10 h-10 flex items-center justify-center rounded-xl border border-white/5 hover:bg-white/5 opacity-60">
-                     {{ i }}
-                 </button>
-             {% endif %}
-         {% endfor %}
-     </div>
- 
-     {% if products.has_next %}
-     <button hx-get="{% url 'pos:index' %}?page={{ products.next_page_number }}"
-             hx-target="#product-grid" hx-swap="innerHTML"
-             class="w-10 h-10 flex items-center justify-center rounded-xl border border-white/10 hover:bg-white/5">
-       ›
-     </button>
-     {% endif %}
-   </div>
- </div>
- {% endif %}
+{% comment %} 
+  PREMIUM DARK POS GRID
+  - Fixed Alpine.js initialization to prevent module crashes
+  - Aspect-ratio squares for a clean, professional look
+{% endcomment %}
+
+<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 p-5">
+
+  {% for product in products %}
+  <div class="group relative flex flex-col h-full bg-[#18181b] border border-white/5 rounded-[2rem] overflow-hidden hover:border-emerald-500/50 transition-all duration-300 shadow-2xl"
+       {% if product.total_stock <= 0 %}style="opacity: 0.5; filter: grayscale(1); pointer-events: none;"{% endif %}>
+    
+    {# ── Product Click Area ── #}
+    <button 
+      type="button"
+      @click="
+        addModalProduct = {
+          id: '{{ product.id }}',
+          name: '{{ product.name|escapejs }}',
+          price: {{ product.safe_price }},
+          image: '{{ product.safe_image_url|escapejs }}',
+          stock_qty: {{ product.total_stock }},
+          variants: {{ product.safe_variants_json|safe }},
+          barcode: '{{ product.barcode|default:""|escapejs }}'
+        };
+        selectedVariant = null;
+        addQty = 1;
+        addModalOpen = true;
+      "
+      class="flex flex-col w-full h-full text-left focus:outline-none">
+      
+      {# Visual Area (Square) #}
+      <div class="relative aspect-square w-full bg-black/40 flex items-center justify-center p-6">
+        {# Cart Badge (Small Dot) #}
+        <template x-if="cart.items.some(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}')">
+            <div class="absolute top-4 right-4 w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)] z-10"></div>
+        </template>
+
+        {# Image/Emoji Display #}
+        <div class="text-5xl transition-transform duration-500 group-hover:scale-110 select-none">
+          {% if product.image %}
+            <img src="{{ product.safe_image_url }}" class="w-full h-full object-contain" alt="{{ product.name }}">
+          {% else %}
+            📦
+          {% endif %}
+        </div>
+
+        {# Stock Label #}
+        <div class="absolute bottom-3 left-3 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black text-white/50 uppercase tracking-tighter">
+          Qty: {{ product.total_stock }}
+        </div>
+      </div>
+
+      {# Text/Price Area #}
+      <div class="p-4 flex flex-col flex-grow bg-gradient-to-b from-white/[0.02] to-transparent">
+        <h3 class="text-white font-bold text-xs leading-tight line-clamp-2 min-h-[2rem] mb-2">
+          {{ product.name }}
+        </h3>
+        
+        <div class="mt-auto flex items-center justify-between">
+          <div class="flex flex-col">
+            <span class="text-lg font-black text-emerald-400">
+              <span class="text-[10px] opacity-60 mr-0.5">KES</span>{{ product.price|floatformat:0 }}
+            </span>
+          </div>
+
+          {% if product.has_variants %}
+            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black px-2 py-1 rounded-lg uppercase tracking-widest">
+              + Options
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </button>
+
+    {# ── Hover Quick Add ── #}
+    {% if not product.has_variants %}
+    <div class="absolute inset-x-0 bottom-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-black/80 backdrop-blur-sm">
+        <button 
+          @click.stop="addToCart({id:'{{ product.id }}', name:'{{ product.name|escapejs }}', price:{{ product.safe_price }}, stock_qty:{{ product.total_stock }}, image:'{{ product.safe_image_url|escapejs }}'}, 1)"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[10px] py-2.5 rounded-2xl shadow-lg uppercase tracking-widest transition-colors">
+          Add To Cart
+        </button>
+    </div>
+    {% endif %}
+  </div>
+
+  {% empty %}
+  <div class="col-span-full py-40 text-center">
+    <div class="text-white/10 text-6xl mb-4">No results</div>
+    <p class="text-white/30 font-bold uppercase tracking-widest text-sm">Nothing matches your search</p>
+  </div>
+  {% endfor %}
+
+</div>
+
+{# ── PAGINATION ── #}
+{% if products.paginator.num_pages > 1 %}
+<div class="flex items-center justify-center gap-2 p-8">
+  {% if products.has_previous %}
+    <button hx-get="{% url 'pos:index' %}?page={{ products.previous_page_number }}" hx-target="#product-grid" class="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-white transition-colors">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+  {% endif %}
+
+  <div class="px-6 py-2 rounded-2xl bg-white/5 border border-white/5 text-white/50 font-bold text-xs uppercase tracking-widest">
+    Page {{ products.number }} / {{ products.paginator.num_pages }}
+  </div>
+
+  {% if products.has_next %}
+    <button hx-get="{% url 'pos:index' %}?page={{ products.next_page_number }}" hx-target="#product-grid" class="p-3 rounded-2xl bg-white/5 hover:bg-white/10 text-white transition-colors">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+  {% endif %}
+</div>
+{% endif %}
