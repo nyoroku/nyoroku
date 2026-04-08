@@ -624,7 +624,7 @@ body{font-family:'DM Sans',sans-serif}
 </div><!-- end root -->
 
 <script>
-// Search clear button visibility
+// Search clear button
 document.getElementById('search-input').addEventListener('input', function(){
   document.getElementById('search-clear').style.opacity = this.value ? '1' : '0';
 });
@@ -639,6 +639,13 @@ document.getElementById('search-input').addEventListener('blur', () => {
   sw.style.borderColor = 'var(--bdr)';
   sw.style.boxShadow   = 'none';
 });
+
+// window.openProduct — global so HTMX-swapped grid can call it
+window.openProduct = function(productId) {
+  const root = document.querySelector('[x-data]');
+  const data = Alpine.$data(root);
+  data.openProduct(productId);
+};
 
 // Barcode scanner
 let html5QrCode;
