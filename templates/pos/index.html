@@ -126,7 +126,8 @@ body{font-family:'DM Sans',sans-serif}
          this.addQty           = 1;
          this.addModalOpen     = true;
        }
-     }">
+     }"
+     @open-product-modal.window="openProduct($event.detail)">
 
   <!-- ══════════ HEADER ══════════ -->
   <header class="shrink-0 flex items-center gap-2 px-4 py-2.5"
@@ -642,9 +643,7 @@ document.getElementById('search-input').addEventListener('blur', () => {
 
 // window.openProduct — global so HTMX-swapped grid can call it
 window.openProduct = function(productId) {
-  const root = document.querySelector('[x-data]');
-  const data = Alpine.$data(root);
-  data.openProduct(productId);
+  window.dispatchEvent(new CustomEvent('open-product-modal', { detail: productId }));
 };
 
 // Barcode scanner
