@@ -99,7 +99,7 @@ body{font-family:'DM Sans',sans-serif}
      style="height:calc(100vh - 64px);background:var(--bg-void)"
      x-init="window.allProducts=[
        {% for p in products %}
-       {id:'{{ p.id }}',name:'{{ p.name|escapejs }}',price:{{ p.price }},image:'{{ p.image }}',barcode:'{{ p.barcode }}',stock_qty:{{ p.total_stock }},has_variants:{{ p.has_variants|yesno:'true,false' }},variants:{% if p.has_variants %}{{ p.variants_json|safe }}{% else %}[]{% endif %}},
+       {id:'{{ p.id }}',name:'{{ p.name|escapejs }}',price:{{ p.price }},image:'{{ p.image }}',barcode:'{{ p.barcode }}',stock_qty:{{ p.total_stock }},has_variants:{{ p.has_variants|yesno:'true,false' }},variants:{{ p.variants_json|default:'[]'|safe }}},
        {% endfor %}
      ]"
      x-data="{
@@ -380,7 +380,7 @@ body{font-family:'DM Sans',sans-serif}
            class="flex-1 overflow-auto ts px-5 pt-3 pb-2 mt-2">
 
         <template x-for="(item,idx) in cart.items" :key="item.id">
-          <div class="flex items-center gap-3 py-3 au" style="border-bottom:1px solid var(--bdr)"
+          <div class="flex items-center gap-3 py-5 au" style="border-bottom:1px solid var(--bdr)"
                :style="`animation-delay:${idx*30}ms`">
             <!-- emoji -->
             <div class="w-10 h-10 shrink-0 flex items-center justify-center text-xl"

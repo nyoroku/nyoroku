@@ -6,7 +6,7 @@
 ════════════════════════════════════════════════════════ {% endcomment %}
 
 {# ── CARD GRID ── #}
-<div class="grid gap-2.5 pb-2 px-3 pt-3"
+<div class="grid gap-5 pb-2 px-3 pt-3"
      style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
 
   {% for product in products %}
@@ -18,7 +18,7 @@
         price:{{ product.price }},
         image:'{{ product.image }}',
         stock_qty:{{ product.total_stock }},
-        variants:{% if product.has_variants %}{{ product.variants_json|safe }}{% else %}[]{% endif %},
+        variants:{{ product.variants_json|default:'[]'|safe }},
         barcode:'{{ product.barcode }}'
       };
       selectedVariant=null;
