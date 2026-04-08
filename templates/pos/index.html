@@ -296,8 +296,8 @@ body{font-family:'DM Sans',sans-serif}
       <!-- ★ STICKY CTA — padded above bottom nav ★ -->
       <div x-show="(!addModalProduct?.variants?.length)||selectedVariant" class="shrink-0 cta-dock">
         <button @click="
-                  let p=selectedVariant?{id:selectedVariant.id,parent_id:addModalProduct.id,name:selectedVariant.name,price:selectedVariant.price,stock_qty:selectedVariant.stock_qty,image:addModalProduct.image}
-                    :{id:addModalProduct.id,name:addModalProduct.name,price:addModalProduct.price,stock_qty:addModalProduct.stock_qty,image:addModalProduct.image};
+                  let p=selectedVariant?{id:selectedVariant.id,is_variant:true,parent_id:addModalProduct.id,name:selectedVariant.name,price:selectedVariant.price,stock_qty:selectedVariant.stock_qty,image:addModalProduct.image}
+                    :{id:addModalProduct.id,is_variant:false,name:addModalProduct.name,price:addModalProduct.price,stock_qty:addModalProduct.stock_qty,image:addModalProduct.image};
                   if(addToCart(p,addQty)){addModalOpen=false}"
                 class="w-full h-[50px] fd font-800 text-[13px] uppercase tracking-[.1em] flex items-center justify-center gap-3 cursor-pointer transition-all active:scale-[.98] border-none"
                 style="background:var(--mint);color:#000;border-radius:14px;box-shadow:0 8px 28px var(--mint-glow)">

@@ -152,14 +152,13 @@
             if (!code) return;
             const product = this.findProductByBarcode(code);
             if (product) {
-                // If product has variants, open variant modal
+                // Correcting variable names to match index.html
                 if (product.has_variants) {
-                    this.variantModalProduct = product;
-                    this.variantModalOpen = true;
+                    this.addModalProduct = product;
+                    this.selectedVariant = null;
+                    this.addQty = 1;
+                    this.addModalOpen = true;
                 } else {
-                    // Otherwise just add to cart or open qty modal?
-                    // User said: "when you click item to add it should open the increase decrease form"
-                    // So we open the addModal
                     this.addModalProduct = product;
                     this.addQty = 1;
                     this.addModalOpen = true;

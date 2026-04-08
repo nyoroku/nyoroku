@@ -117,11 +117,19 @@ def checkout(request):
         line_discounts_total = Decimal('0')
 
         for item in items:
+            item_id = item.get('id')
+            # Try Variant first for accurate cost and identification
             try:
-                product          = Product.objects.get(id=item.get('id'))
-                item['cost_price'] = float(product.cost_price or 0)
-            except Product.DoesNotExist:
-                item['cost_price'] = 0.0
+                variant = ProductVariant.objects.get(id=item_id)
+                item['cost_price'] = float(variant.cost_price or variant.product.cost_price or 0)
+                item['is_variant'] = True
+            except ProductVariant.DoesNotExist:
+                try:
+                    product = Product.objects.get(id=item_id)
+                    item['cost_price'] = float(product.cost_price or 0)
+                    item['is_variant'] = False
+                except Product.DoesNotExist:
+                    item['cost_price'] = 0.0
 
             qty           = int(item.get('qty', 1))
             line_price    = Decimal(str(item['price']))
