@@ -35,19 +35,6 @@ def index(request):
     products_with_data = []
 
     for product in qs:
-        variants = [
-            {
-                "id": str(v.id),
-                "name": v.name,
-                "price": float(v.price or 0),
-                "stock_qty": v.stock_qty or 0
-            }
-            for v in product.variants.all()
-        ]
-
-        # Always safe JSON (prevents Alpine crashes)
-        product.variants_json = json.dumps(variants)
-
         # Optional but smart: normalize fields used in JS
         product.safe_price = float(product.price or 0)
         product.safe_image = str(product.image or "")
