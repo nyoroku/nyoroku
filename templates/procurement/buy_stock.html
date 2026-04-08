@@ -4,290 +4,1092 @@
 {% block screen_title %}Buy Stock{% endblock %}
 
 {% block content %}
-<div class="px-6 py-8 max-w-7xl mx-auto animate-fade-in" x-data="{
+
+<style>
+  :root {
+    --mint: #A8F5C8;
+    --mint-dim: #6DEAAA;
+    --mint-glow: rgba(168, 245, 200, 0.12);
+    --mint-border: rgba(168, 245, 200, 0.18);
+    --mint-border-strong: rgba(168, 245, 200, 0.35);
+    --surface-0: #0A0C0B;
+    --surface-1: #0F1211;
+    --surface-2: #141917;
+    --surface-3: #1C2320;
+    --surface-4: #222A26;
+    --text-primary: #F0F5F2;
+    --text-secondary: #8B9E94;
+    --text-muted: #4D5E56;
+    --red: #FF5F5F;
+    --font-display: 'DM Serif Display', Georgia, serif;
+    --font-body: 'DM Sans', system-ui, sans-serif;
+    --radius-sm: 14px;
+    --radius-md: 22px;
+    --radius-lg: 32px;
+    --radius-xl: 48px;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+  .buy-wrap * { font-family: var(--font-body); box-sizing: border-box; }
+
+  .buy-wrap {
+    background: var(--surface-0);
+    min-height: 100vh;
+    padding: 48px 24px 120px;
+  }
+
+  .buy-inner { max-width: 1400px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 56px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .page-title {
+    font-family: var(--font-display);
+    font-size: clamp(48px, 7vw, 88px);
+    font-weight: 400;
+    color: var(--text-primary);
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .page-title em {
+    font-style: italic;
+    color: var(--mint);
+  }
+
+  .page-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .eyebrow-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--mint);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .eyebrow-text {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 52px;
+    padding: 0 28px;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+
+  .btn-ghost:hover { 
+    border-color: var(--mint-border); 
+    color: var(--mint); 
+    background: var(--mint-glow); 
+  }
+
+  /* ── Layout Grid ── */
+  .layout-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  @media (min-width: 1200px) {
+    .layout-grid { grid-template-columns: 1fr 420px; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface-1);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .card-inner { padding: 32px; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .section-num {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--mint-glow);
+    border: 1px solid var(--mint-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--mint);
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  /* ── Inputs ── */
+  .field {
+    width: 100%;
+    height: 58px;
+    background: var(--surface-2);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius-md);
+    padding: 0 22px;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 500;
+    font-family: var(--font-body);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .field:focus {
+    border-color: var(--mint-border-strong);
+    background: var(--surface-3);
+  }
+
+  .field option { background: var(--surface-2); }
+
+  .field::placeholder { color: var(--text-muted); }
+
+  /* ── Search bar ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 28px;
+  }
+
+  .search-wrap .field {
+    height: 64px;
+    padding-left: 56px;
+    font-size: 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--mint);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* ── Product Grid ── */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+  }
+
+  .product-card {
+    background: var(--surface-2);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s, transform 0.12s;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    user-select: none;
+  }
+
+  .product-card:hover {
+    border-color: var(--mint-border);
+    background: var(--surface-3);
+  }
+
+  .product-card:active { transform: scale(0.97); }
+
+  .product-emoji {
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-4);
+    border-radius: 14px;
+  }
+
+  .product-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin: 0 0 5px;
+  }
+
+  .product-price {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--mint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  /* ── Supplier Add Form ── */
+  .supplier-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  @media (max-width: 600px) { .supplier-form-grid { grid-template-columns: 1fr; } }
+
+  /* ── Order Bag ── */
+  .bag-wrap {
+    position: sticky;
+    top: 24px;
+  }
+
+  .bag-card {
+    background: var(--surface-1);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius-xl);
+    display: flex;
+    flex-direction: column;
+    max-height: 82vh;
+    overflow: hidden;
+  }
+
+  .bag-header {
+    padding: 28px 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .bag-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    color: var(--text-primary);
+    margin: 0;
+    font-weight: 400;
+  }
+
+  .bag-count {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface-3);
+    border-radius: 100px;
+    padding: 4px 14px;
+  }
+
+  .bag-items {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scrollbar-width: none;
+  }
+
+  .bag-items::-webkit-scrollbar { display: none; }
+
+  .bag-item {
+    background: var(--surface-2);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+  }
+
+  .bag-item-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+  }
+
+  .bag-item-name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .bag-item-emoji {
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .bag-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .btn-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    font-size: 16px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+
+  .btn-remove:hover { color: var(--red); }
+
+  .bag-item-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .control-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .cost-input {
+    width: 100px;
+    height: 40px;
+    background: var(--surface-3);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 0 12px;
+    color: var(--mint);
+    font-size: 14px;
+    font-weight: 700;
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .cost-input:focus { border-color: var(--mint-border-strong); }
+
+  .qty-stepper {
+    display: flex;
+    align-items: center;
+    background: var(--surface-3);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .qty-btn {
+    width: 38px; height: 40px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .qty-btn:hover { color: var(--mint); background: var(--mint-glow); }
+
+  .qty-input {
+    width: 44px; height: 40px;
+    background: none;
+    border: none;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-primary);
+    font-size: 15px;
+    font-weight: 700;
+    font-family: var(--font-body);
+    text-align: center;
+    outline: none;
+  }
+
+  /* ── Bag Footer ── */
+  .bag-footer {
+    padding: 24px 32px;
+    background: rgba(0,0,0,0.25);
+    border-top: 1px solid rgba(255,255,255,0.04);
+    flex-shrink: 0;
+  }
+
+  .total-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .total-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .total-amount {
+    font-family: var(--font-display);
+    font-size: 52px;
+    color: var(--mint);
+    line-height: 1;
+  }
+
+  .total-currency {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-right: 6px;
+  }
+
+  .btn-complete {
+    width: 100%;
+    height: 72px;
+    background: var(--mint);
+    border: none;
+    border-radius: var(--radius-lg);
+    color: #0A1A10;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s, opacity 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-complete::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .btn-complete:hover:not(:disabled) { background: var(--mint-dim); }
+  .btn-complete:active:not(:disabled) { transform: scale(0.98); }
+  .btn-complete:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  /* ── Empty State ── */
+  .bag-empty {
+    padding: 60px 0;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  .bag-empty-icon {
+    display: block;
+    font-size: 40px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  /* ── Variant Drawer ── */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .drawer-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .drawer-panel {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    background: var(--surface-1);
+    border-left: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    animation: slideRight 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .drawer-header {
+    padding: 40px 36px 28px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    flex-shrink: 0;
+  }
+
+  .drawer-eyebrow {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--mint);
+    opacity: 0.7;
+    margin: 0 0 10px;
+  }
+
+  .drawer-product-name {
+    font-family: var(--font-display);
+    font-size: 38px;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.05;
+    font-weight: 400;
+  }
+
+  .drawer-items {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: none;
+  }
+
+  .drawer-items::-webkit-scrollbar { display: none; }
+
+  .variant-row {
+    background: var(--surface-2);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: var(--radius-md);
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    transition: border-color 0.15s;
+  }
+
+  .variant-row:focus-within { border-color: var(--mint-border); }
+
+  .variant-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .variant-cost-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .variant-cost-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .variant-cost-input {
+    width: 88px;
+    height: 34px;
+    background: var(--surface-3);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 0 10px;
+    color: var(--mint);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .variant-cost-input:focus { border-color: var(--mint-border-strong); }
+
+  .variant-qty-input {
+    width: 68px;
+    height: 52px;
+    background: var(--surface-3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 20px;
+    font-weight: 700;
+    font-family: var(--font-display);
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    -moz-appearance: textfield;
+    flex-shrink: 0;
+  }
+
+  .variant-qty-input:focus {
+    border-color: var(--mint-border-strong);
+    background: var(--surface-4);
+  }
+
+  .variant-qty-input::-webkit-inner-spin-button,
+  .variant-qty-input::-webkit-outer-spin-button { display: none; }
+
+  .drawer-footer {
+    padding: 24px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.2);
+  }
+
+  .drawer-qty-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px; height: 26px;
+    background: rgba(10,26,16,0.8);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #0A1A10;
+  }
+
+  /* ── Mobile Bar ── */
+  .mobile-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 16px 20px;
+  }
+
+  .mobile-bar-inner {
+    background: rgba(15,18,17,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius-lg);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .mobile-bar-total {
+    font-family: var(--font-display);
+    font-size: 32px;
+    color: var(--mint);
+  }
+
+  .btn-mobile-complete {
+    height: 52px;
+    padding: 0 28px;
+    background: var(--mint);
+    border: none;
+    border-radius: var(--radius-md);
+    color: #0A1A10;
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+  }
+
+  .btn-mobile-complete:disabled { opacity: 0.25; cursor: not-allowed; }
+
+  /* ── Supplier toggle link ── */
+  .link-mint {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mint);
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    opacity: 0.75;
+    transition: opacity 0.15s;
+  }
+
+  .link-mint:hover { opacity: 1; }
+
+  .btn-mint-solid {
+    width: 100%;
+    height: 54px;
+    background: var(--mint);
+    border: none;
+    border-radius: var(--radius-md);
+    color: #0A1A10;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: var(--font-body);
+  }
+
+  .btn-mint-solid:hover { background: var(--mint-dim); }
+
+  /* Animate fade in */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-in { animation: fadeUp 0.4s ease both; }
+  .delay-1 { animation-delay: 0.05s; }
+  .delay-2 { animation-delay: 0.1s; }
+  .delay-3 { animation-delay: 0.15s; }
+
+  /* Hide number input spinners */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { opacity: 0; }
+</style>
+
+<div class="buy-wrap" x-data="{
     supplierId: '',
     items: [],
     searchQuery: '',
     showNewSupplier: false,
     newSupplier: { name: '', phone: '' },
-    
-    // Variant Selection
-    view: 'listing', // 'listing' or 'sku'
+    view: 'listing',
     selectedProduct: null,
     productVariants: [],
 
     async selectProduct(p) {
         this.selectedProduct = p;
-
         if (!p.has_variants) {
-            // Decent Flow: Add directly to bag
             this.addToBag(p.id, null, p.name, p.image, parseFloat(p.cost_price || 0), 1);
             return;
         }
-        
-        // Variant flow: Fetch and open list
         const resp = await fetch(`/procurement/get-variants/${p.id}/`);
         const data = await resp.json();
-        this.productVariants = data.map(v => ({ 
-            ...v, 
-            qty: 0, 
-            edit_cost: parseFloat(v.cost_price || 0) 
-        }));
+        this.productVariants = data.map(v => ({ ...v, qty: 0, edit_cost: parseFloat(v.cost_price || 0) }));
         this.view = 'sku';
     },
 
     addToBag(prodId, varId, name, image, cost, qty) {
         const finalCost = parseFloat(cost || 0);
         const finalQty = Number(qty || 1);
-        
         let ex = this.items.find(i => String(i.product_id) === String(prodId) && String(i.variant_id) === String(varId));
         if (ex) {
             ex.qty = Number(ex.qty) + finalQty;
             ex.unit_cost = finalCost;
             ex.total_cost = (ex.qty * finalCost).toFixed(2);
         } else {
-            this.items.push({
-                product_id: prodId,
-                variant_id: varId,
-                name: name,
-                image: image,
-                qty: finalQty,
-                unit_cost: finalCost,
-                total_cost: (finalQty * finalCost).toFixed(2)
-            });
+            this.items.push({ product_id: prodId, variant_id: varId, name, image, qty: finalQty, unit_cost: finalCost, total_cost: (finalQty * finalCost).toFixed(2) });
         }
     },
 
     addVariantsToCart() {
         this.productVariants.forEach(v => {
-            if (Number(v.qty) > 0) {
-                this.addToBag(this.selectedProduct.id, v.id, v.name, this.selectedProduct.image, v.edit_cost, v.qty);
-            }
+            if (Number(v.qty) > 0) this.addToBag(this.selectedProduct.id, v.id, v.name, this.selectedProduct.image, v.edit_cost, v.qty);
         });
         this.view = 'listing';
     },
 
-    removeItem(idx) {
-        this.items.splice(idx, 1);
-    },
-    get orderTotal() {
-        return this.items.reduce((s, i) => s + parseFloat(i.total_cost), 0).toFixed(2);
-    },
-    get modalTotalQty() {
-        return this.productVariants.reduce((s, v) => s + (Number(v.qty) || 0), 0);
-    },
+    removeItem(idx) { this.items.splice(idx, 1); },
+
+    get orderTotal() { return this.items.reduce((s, i) => s + parseFloat(i.total_cost), 0).toFixed(2); },
+
+    get modalTotalQty() { return this.productVariants.reduce((s, v) => s + (Number(v.qty) || 0), 0); },
 
     async submitOrder() {
-        if (!this.supplierId) {
-            alert('Please select a supplier first.');
-            return;
-        }
-        if (this.items.length === 0) {
-            alert('Order bag is empty.');
-            return;
-        }
-        
+        if (!this.supplierId) { alert('Please select a supplier first.'); return; }
+        if (this.items.length === 0) { alert('Order bag is empty.'); return; }
         const fd = new FormData();
         fd.append('supplier_id', this.supplierId);
         fd.append('items_json', JSON.stringify(this.items));
-        
-        const resp = await fetch('{% url "procurement:buy_stock" %}', {
-            method: 'POST',
-            body: fd,
-            headers: { 'X-CSRFToken': '{{ csrf_token }}' }
-        });
-        
-        if (resp.redirected) {
-            window.location.href = resp.url;
-        } else {
-            const data = await resp.json();
-            if (data.error) alert(data.error);
-        }
+        const resp = await fetch('{% url "procurement:buy_stock" %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+        if (resp.redirected) { window.location.href = resp.url; }
+        else { const data = await resp.json(); if (data.error) alert(data.error); }
     }
 }">
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        <!-- Header -->
-        <div class="lg:col-span-12 mb-4">
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h1 class="font-display font-800 text-6xl text-white tracking-tight leading-none">Buy New Stock</h1>
-                    <div class="flex items-center gap-3 mt-4">
-                        <span class="w-2 h-2 rounded-full bg-brand-whatsapp animate-pulse"></span>
-                        <p class="text-text-muted font-bold text-[11px] uppercase tracking-[0.3em]">Supply Management</p>
-                    </div>
-                </div>
-                <a href="{% url 'procurement:po_list' %}" class="h-14 px-8 glass border border-white/[0.04] text-text-muted rounded-2xl font-display font-800 text-[11px] uppercase tracking-widest flex items-center gap-3 transition-all hover:text-white">
-                    Stock History
-                </a>
-            </div>
+  <div class="buy-inner">
+
+    <!-- Page Header -->
+    <div class="page-header animate-in">
+      <div>
+        <h1 class="page-title">Buy <em>Stock</em></h1>
+        <div class="page-eyebrow">
+          <span class="eyebrow-dot"></span>
+          <span class="eyebrow-text">Supply Management</span>
         </div>
-
-        <!-- Left Column: Browsing -->
-        <div class="lg:col-span-12 xl:col-span-7 space-y-8">
-            
-            <!-- Supplier Section -->
-            <div class="glass-strong p-8 rounded-[40px] shadow-2xl relative overflow-hidden group">
-                <div class="flex items-center justify-between mb-8">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-brand-whatsapp/10 border border-brand-whatsapp/20 flex items-center justify-center text-brand-whatsapp">
-                            <span class="font-display font-800 text-xs text-brand-whatsapp">01</span>
-                        </div>
-                        <p class="text-[10px] font-bold text-white uppercase tracking-[0.4em]">Supplier</p>
-                    </div>
-                    <button @click="showNewSupplier = !showNewSupplier" class="text-[10px] font-bold uppercase tracking-widest text-brand-whatsapp">
-                        <span x-text="showNewSupplier ? 'Cancel' : '+ Add New Supplier'"></span>
-                    </button>
-                </div>
-
-                <div x-show="!showNewSupplier">
-                    <select x-model="supplierId" class="w-full h-16 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-8 text-white font-bold outline-none focus:border-brand-whatsapp/40 transition-all appearance-none">
-                        <option value="" class="bg-surface2">-- Select Supplier --</option>
-                        {% for s in suppliers %}
-                        <option value="{{ s.id }}" class="bg-surface2">{{ s.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div x-show="showNewSupplier" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <input type="text" x-model="newSupplier.name" placeholder="Supplier Name" class="w-full h-14 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-6 text-white text-sm outline-none">
-                     <input type="text" x-model="newSupplier.phone" placeholder="Phone" class="w-full h-14 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-6 text-white text-sm outline-none">
-                     <button @click="async () => {
-                        if(!newSupplier.name) return;
-                        const fd = new FormData(); fd.append('name', newSupplier.name); fd.append('phone', newSupplier.phone);
-                        await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
-                        window.location.reload();
-                     }" class="md:col-span-2 h-14 bg-brand-whatsapp text-white rounded-2xl font-bold uppercase text-xs">Create & Select</button>
-                </div>
-            </div>
-
-            <!-- Product Search -->
-            <div class="space-y-6">
-                <div class="relative">
-                    <input type="text" x-model="searchQuery" placeholder="Search or Scan Item..." class="w-full h-18 bg-white/[0.02] border border-white/[0.04] rounded-3xl px-14 text-white font-medium outline-none focus:border-brand-whatsapp/40">
-                    <div class="absolute left-6 top-1/2 -translate-y-1/2 text-brand-whatsapp opacity-40">
-                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-20">
-                    {% for p in products %}
-                    <template x-if="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase()) || '{{ p.barcode|default:'' }}' === searchQuery">
-                        <div @click="selectProduct({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}', has_variants: {% if p.has_variants %}true{% else %}false{% endif %} })"
-                             class="p-6 glass border border-white/[0.04] rounded-[32px] hover:border-brand-whatsapp/30 cursor-pointer active:scale-[0.98] transition-all flex items-center gap-4">
-                             <div class="text-3xl" x-text="'{{ p.image|escapejs }}'"></div>
-                             <div>
-                                 <div class="font-bold text-white text-lg leading-none mb-1">{{ p.name }}</div>
-                                 <div class="text-xs font-bold text-brand-whatsapp uppercase">KES {{ p.cost_price|default:0 }}</div>
-                             </div>
-                        </div>
-                    </template>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column: Order Bag -->
-        <div class="lg:col-span-12 xl:col-span-5 sticky top-24">
-            <div class="glass-strong rounded-[48px] overflow-hidden flex flex-col max-h-[80vh]">
-                <div class="p-8 border-b border-white/[0.04] flex items-center justify-between">
-                    <h2 class="font-display font-800 text-2xl text-white">Order Bag</h2>
-                    <span class="text-xs text-text-muted" x-text="items.length + ' types'"></span>
-                </div>
-
-                <div class="flex-grow overflow-y-auto p-6 space-y-4 no-scrollbar">
-                    <template x-for="(item, index) in items" :key="index">
-                        <div class="bg-white/[0.02] border border-white/[0.04] p-5 rounded-[28px] space-y-4">
-                             <div class="flex items-center justify-between">
-                                 <div class="flex items-center gap-3 min-w-0">
-                                     <span class="text-xl" x-text="item.image"></span>
-                                     <h4 class="font-bold text-white truncate" x-text="item.name"></h4>
-                                 </div>
-                                 <button @click="removeItem(index)" class="text-text-muted hover:text-brand-red p-2">✕</button>
-                             </div>
-                             <div class="flex items-center justify-between gap-4">
-                                 <div class="flex flex-col">
-                                     <span class="text-[9px] text-white/60 uppercase mb-1">Unit Cost</span>
-                                     <input type="number" x-model.number="item.unit_cost" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="w-24 bg-black/20 border-none rounded-xl px-3 py-2 text-brand-whatsapp font-bold outline-none">
-                                 </div>
-                                 <div class="flex flex-col items-end">
-                                     <span class="text-[9px] text-white/60 uppercase mb-1">Quantity</span>
-                                     <div class="flex items-center bg-black/30 rounded-xl p-1">
-                                         <button @click="if(item.qty > 1) { item.qty--; item.total_cost = (item.qty * item.unit_cost).toFixed(2); }" class="w-8 h-8 text-text-muted">－</button>
-                                         <input type="number" x-model.number="item.qty" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="w-10 bg-transparent text-center text-white font-bold outline-none">
-                                         <button @click="item.qty++; item.total_cost = (item.qty * item.unit_cost).toFixed(2);" class="w-8 h-8 text-brand-whatsapp">＋</button>
-                                     </div>
-                                 </div>
-                             </div>
-                        </div>
-                    </template>
-                    <template x-if="items.length === 0">
-                        <div class="py-20 text-center opacity-20 font-bold uppercase tracking-widest text-xs">Bag is empty</div>
-                    </template>
-                </div>
-
-                <div class="p-8 bg-white/[0.04] border-t border-white/[0.06]">
-                    <div class="flex items-center justify-between mb-6">
-                        <span class="text-text-muted font-bold uppercase text-[10px]">Total KES</span>
-                        <span class="font-display font-800 text-5xl text-brand-whatsapp" x-text="orderTotal"></span>
-                    </div>
-                    <button @click="submitOrder()" :disabled="items.length === 0 || !supplierId" class="w-full h-20 bg-brand-whatsapp text-white rounded-[28px] font-display font-800 text-[18px] uppercase tracking-widest disabled:opacity-20 active:scale-[0.98] transition-all">
-                        Complete Order
-                    </button>
-                </div>
-            </div>
-        </div>
+      </div>
+      <a href="{% url 'procurement:po_list' %}" class="btn-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Stock History
+      </a>
     </div>
 
-    <!-- Variant Selector Drawer (Decent & Simple) -->
-    <template x-if="view === 'sku'">
-        <div class="fixed inset-0 z-[100] flex justify-end">
-            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="view = 'listing'"></div>
-            <div class="relative w-full md:w-[450px] h-full bg-brand-whatsapp shadow-2xl flex flex-col animate-slide-in-right">
-                <div class="p-10 pb-6 shrink-0 text-slate-900 text-center">
-                    <p class="text-[9px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Select Variants</p>
-                    <h2 class="font-display font-900 text-4xl leading-tight" x-text="selectedProduct.name"></h2>
-                </div>
-                <div class="flex-grow overflow-y-auto px-6 py-4 space-y-3 no-scrollbar">
-                    <template x-for="v in productVariants" :key="v.id">
-                        <div class="p-6 bg-white/10 rounded-[32px] border border-black/5 flex items-center justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-bold text-slate-900 truncate mb-1" x-text="v.name"></h4>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[9px] text-slate-900/40 font-bold uppercase">Cost:</span>
-                                    <input type="number" x-model.number="v.edit_cost" class="w-24 bg-black/10 rounded-lg px-2 py-1 text-slate-900 font-bold text-xs border-none outline-none">
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-center">
-                                <span class="text-[9px] text-slate-900/60 uppercase mb-1">Pick Qty</span>
-                                <input type="number" x-model.number="v.qty" class="w-16 h-12 bg-white text-slate-900 rounded-xl border-none text-center font-display font-900 text-xl outline-none shadow-sm" placeholder="0">
-                            </div>
-                        </div>
-                    </template>
-                </div>
-                <div class="p-8 bg-black/10 shrink-0">
-                    <button @click="addVariantsToCart()" :disabled="modalTotalQty === 0" class="w-full h-18 bg-white text-brand-whatsapp rounded-[24px] font-display font-800 text-[14px] uppercase tracking-widest active:scale-95 transition-all">
-                        Add <span x-text="modalTotalQty"></span> to Order Bag
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div class="layout-grid">
 
-    <!-- Mobile Subtotal Bar -->
-    <template x-if="items.length > 0">
-        <div class="fixed bottom-0 inset-x-0 z-[50] p-6 lg:hidden">
-            <div class="bg-surface2/90 backdrop-blur-xl rounded-[40px] p-6 shadow-2xl flex items-center justify-between border border-white/5">
-                <div>
-                    <span class="text-[8px] text-text-muted uppercase font-bold">Total</span>
-                    <div class="font-display font-800 text-3xl text-brand-whatsapp" x-text="orderTotal"></div>
-                </div>
-                <button @click="submitOrder()" :disabled="!supplierId" class="h-14 px-8 bg-brand-whatsapp text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-glow-green-sm">
-                    Complete
-                </button>
+      <!-- Left: Browse -->
+      <div style="display: flex; flex-direction: column; gap: 28px;">
+
+        <!-- Supplier Card -->
+        <div class="card animate-in delay-1">
+          <div class="card-inner">
+            <div class="section-label">
+              <div class="section-num">01</div>
+              <p class="section-title">Choose Supplier</p>
+              <button @click="showNewSupplier = !showNewSupplier" class="link-mint" style="margin-left: auto;">
+                <span x-text="showNewSupplier ? '← Back' : '+ New Supplier'"></span>
+              </button>
             </div>
+
+            <div x-show="!showNewSupplier" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+              <select x-model="supplierId" class="field">
+                <option value="" class="bg-surface2">— Select a supplier —</option>
+                {% for s in suppliers %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div x-show="showNewSupplier" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+              <div class="supplier-form-grid" style="margin-bottom: 12px;">
+                <input type="text" x-model="newSupplier.name" placeholder="Supplier name" class="field">
+                <input type="text" x-model="newSupplier.phone" placeholder="Phone number" class="field">
+              </div>
+              <button @click="async () => {
+                  if(!newSupplier.name) return;
+                  const fd = new FormData(); fd.append('name', newSupplier.name); fd.append('phone', newSupplier.phone);
+                  await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+                  window.location.reload();
+              }" class="btn-mint-solid">
+                Create Supplier & Continue
+              </button>
+            </div>
+          </div>
         </div>
-    </template>
+
+        <!-- Product Browser Card -->
+        <div class="card animate-in delay-2">
+          <div class="card-inner" style="padding-bottom: 8px;">
+            <div class="section-label">
+              <div class="section-num">02</div>
+              <p class="section-title">Select Products</p>
+            </div>
+
+            <div class="search-wrap">
+              <input type="text" x-model="searchQuery" placeholder="Search or scan barcode…" class="field">
+              <div class="search-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="product-grid" style="padding: 4px 20px 24px;">
+            {% for p in products %}
+            <template x-if="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase()) || '{{ p.barcode|default:'' }}' === searchQuery">
+              <div class="product-card"
+                   @click="selectProduct({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}', has_variants: {% if p.has_variants %}true{% else %}false{% endif %} })">
+                <div class="product-emoji" x-text="'{{ p.image|escapejs }}'"></div>
+                <div>
+                  <p class="product-name">{{ p.name }}</p>
+                  <p class="product-price">KES {{ p.cost_price|default:0 }}</p>
+                </div>
+              </div>
+            </template>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: Order Bag -->
+      <div class="bag-wrap animate-in delay-3">
+        <div class="bag-card">
+          <div class="bag-header">
+            <h2 class="bag-title">Order Bag</h2>
+            <span class="bag-count" x-text="items.length + (items.length === 1 ? ' item' : ' items')"></span>
+          </div>
+
+          <div class="bag-items">
+            <template x-for="(item, index) in items" :key="index">
+              <div class="bag-item">
+                <div class="bag-item-top">
+                  <div class="bag-item-name-wrap">
+                    <span class="bag-item-emoji" x-text="item.image"></span>
+                    <span class="bag-item-name" x-text="item.name"></span>
+                  </div>
+                  <button class="btn-remove" @click="removeItem(index)" aria-label="Remove">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <div class="bag-item-controls">
+                  <div class="control-group">
+                    <span class="control-label">Unit Cost</span>
+                    <input type="number" x-model.number="item.unit_cost" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="cost-input" min="0">
+                  </div>
+                  <div class="control-group" style="align-items: flex-end;">
+                    <span class="control-label">Quantity</span>
+                    <div class="qty-stepper">
+                      <button class="qty-btn" @click="if(item.qty > 1) { item.qty--; item.total_cost = (item.qty * item.unit_cost).toFixed(2); }">−</button>
+                      <input type="number" x-model.number="item.qty" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="qty-input" min="1">
+                      <button class="qty-btn" @click="item.qty++; item.total_cost = (item.qty * item.unit_cost).toFixed(2);">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <template x-if="items.length === 0">
+              <div class="bag-empty">
+                <span class="bag-empty-icon">🛍</span>
+                Bag is empty
+              </div>
+            </template>
+          </div>
+
+          <div class="bag-footer">
+            <div class="total-row">
+              <span class="total-label">Total</span>
+              <div>
+                <span class="total-currency">KES</span>
+                <span class="total-amount" x-text="orderTotal"></span>
+              </div>
+            </div>
+            <button class="btn-complete" @click="submitOrder()" :disabled="items.length === 0 || !supplierId">
+              Complete Order
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Variant Drawer -->
+  <template x-if="view === 'sku'">
+    <div class="drawer-overlay">
+      <div class="drawer-scrim" @click="view = 'listing'"></div>
+      <div class="drawer-panel">
+        <div class="drawer-header">
+          <p class="drawer-eyebrow">Select Variants</p>
+          <h2 class="drawer-product-name" x-text="selectedProduct.name"></h2>
+        </div>
+
+        <div class="drawer-items">
+          <template x-for="v in productVariants" :key="v.id">
+            <div class="variant-row">
+              <div style="flex: 1; min-width: 0;">
+                <p class="variant-name" x-text="v.name"></p>
+                <div class="variant-cost-wrap">
+                  <span class="variant-cost-label">Cost</span>
+                  <input type="number" x-model.number="v.edit_cost" class="variant-cost-input" min="0">
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <span class="control-label">Qty</span>
+                <input type="number" x-model.number="v.qty" class="variant-qty-input" placeholder="0" min="0">
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="drawer-footer">
+          <button @click="addVariantsToCart()" :disabled="modalTotalQty === 0" class="btn-complete" style="height: 62px; font-size: 12px;">
+            Add <span x-text="modalTotalQty"></span> to Order Bag
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Mobile Bottom Bar -->
+  <template x-if="items.length > 0">
+    <div class="mobile-bar" style="display: block;" x-show="true">
+      <div class="mobile-bar-inner">
+        <div>
+          <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">Total</div>
+          <div class="mobile-bar-total" x-text="'KES ' + orderTotal"></div>
+        </div>
+        <button class="btn-mobile-complete" @click="submitOrder()" :disabled="!supplierId">
+          Complete
+        </button>
+      </div>
+    </div>
+  </template>
+
 </div>
 {% endblock %}
