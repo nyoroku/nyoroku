@@ -10,7 +10,7 @@ from django.utils import timezone
 from catalogue.models import Product, Category, ProductVariant
 from .models import Transaction, Coupon, ParkedSale
 
-PER_PAGE = 24   # cards per page — tweak freely
+PER_PAGE = 24
 
 @login_required
 def index(request):
@@ -18,30 +18,39 @@ def index(request):
     cat_id   = request.GET.get('category', '')
     page_num = request.GET.get('page', 1)
 
-    # Base queryset
     qs = Product.objects.filter(approved=True).order_by('name')
 
     if query:
         qs = qs.filter(name__icontains=query)
+
     if cat_id and cat_id != 'all':
         qs = qs.filter(category_id=cat_id)
 
-    # Prefetch variants (critical for performance + correctness)
+    # ✅ Prefetch variants properly
     qs = qs.prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.all())
     )
 
-    # 🔥 Attach frontend-safe data
     products_with_data = []
 
     for product in qs:
-        # Optional but smart: normalize fields used in JS
         product.safe_price = float(product.price or 0)
         product.safe_image = str(product.image or "")
 
+        # ✅ FIX: Attach variants cleanly for frontend
+        variants = []
+        for v in product.variants.all():
+            variants.append({
+                "id": str(v.id),
+                "name": v.name,
+                "price": float(v.price or product.price or 0),
+                "stock_qty": v.stock_qty,
+                "options": list(v.options.values())
+            })
+
+        product.variants_data = variants  # ← use this in template
         products_with_data.append(product)
 
-    # Pagination AFTER processing
     paginator = Paginator(products_with_data, PER_PAGE)
     products  = paginator.get_page(page_num)
 
@@ -54,14 +63,14 @@ def index(request):
         'query': query,
     }
 
-    # HTMX partial response
     if request.headers.get('HX-Request'):
         return render(request, 'pos/partials/product_grid.html', context)
 
     return render(request, 'pos/index.html', context)
 
 
-# ─── everything below is unchanged ───────────────────────────────────
+# ───────────────────────────────────────────────
+
 
 @login_required
 @require_http_methods(["POST"])
@@ -88,6 +97,7 @@ def validate_coupon(request):
             reason = 'Coupon usage limit reached'
         elif not coupon.is_active:
             reason = 'Coupon is inactive'
+
         return HttpResponse(
             f'<div id="coupon-feedback" class="text-brand-red text-xs font-bold animate-shake">'
             f'❌ {reason}</div>'
@@ -117,28 +127,34 @@ def validate_coupon(request):
     )
 
 
+# ───────────────────────────────────────────────
+
+
 @login_required
 @require_http_methods(["POST"])
 def checkout(request):
     try:
-        data            = json.loads(request.body)
-        items           = data.get('items', [])
-        payment_method  = data.get('payment_method', 'cash')
-        split_payments  = data.get('split_payments', [])
-        coupon_code     = data.get('coupon_code', '').strip().upper()
+        data           = json.loads(request.body)
+        items          = data.get('items', [])
+        payment_method = data.get('payment_method', 'cash')
+        split_payments = data.get('split_payments', [])
+        coupon_code    = data.get('coupon_code', '').strip().upper()
 
         if not items:
             return HttpResponse('Empty cart', status=400)
 
-        subtotal             = Decimal('0')
+        subtotal = Decimal('0')
         line_discounts_total = Decimal('0')
 
         for item in items:
             item_id = item.get('id')
-            # Try Variant first for accurate cost and identification
+
+            # ✅ Variant-first logic
             try:
                 variant = ProductVariant.objects.get(id=item_id)
-                item['cost_price'] = float(variant.cost_price or variant.product.cost_price or 0)
+                item['cost_price'] = float(
+                    variant.cost_price or variant.product.cost_price or 0
+                )
                 item['is_variant'] = True
             except ProductVariant.DoesNotExist:
                 try:
@@ -147,34 +163,41 @@ def checkout(request):
                     item['is_variant'] = False
                 except Product.DoesNotExist:
                     item['cost_price'] = 0.0
+                    item['is_variant'] = False
 
             qty           = int(item.get('qty', 1))
             line_price    = Decimal(str(item['price']))
             line_discount = Decimal(str(item.get('discount', 0)))
 
             line_discounts_total += line_discount * qty
-            subtotal             += (line_price - line_discount) * qty
+            subtotal += (line_price - line_discount) * qty
 
-        coupon_obj    = None
+        coupon_obj      = None
         coupon_discount = Decimal('0')
 
         if coupon_code:
             try:
-                coupon_obj = Coupon.objects.get(code=code)
+                coupon_obj = Coupon.objects.get(code=coupon_code)  # ✅ FIXED
+
                 if coupon_obj.is_valid:
                     if coupon_obj.discount_type == 'percent':
-                        coupon_discount = round(subtotal * coupon_obj.discount_value / 100, 2)
+                        coupon_discount = round(
+                            subtotal * coupon_obj.discount_value / 100, 2
+                        )
                     else:
-                        coupon_discount = min(coupon_obj.discount_value, subtotal)
+                        coupon_discount = min(
+                            coupon_obj.discount_value, subtotal
+                        )
 
                     if coupon_obj.min_order and subtotal < coupon_obj.min_order:
                         coupon_discount = Decimal('0')
-                        coupon_obj      = None
+                        coupon_obj = None
                     else:
                         coupon_obj.used_count += 1
                         coupon_obj.save()
                 else:
                     coupon_obj = None
+
             except Coupon.DoesNotExist:
                 coupon_obj = None
 
@@ -193,11 +216,14 @@ def checkout(request):
             status          = 'complete'
         )
 
+        # ✅ Stock handling
         for item in items:
             item_id = item.get('id')
             qty     = int(item.get('qty', 0))
+
             if not item_id or qty <= 0:
                 continue
+
             try:
                 variant = ProductVariant.objects.get(id=item_id)
                 variant.stock_qty = max(0, variant.stock_qty - qty)
@@ -210,10 +236,17 @@ def checkout(request):
                 except Product.DoesNotExist:
                     pass
 
-        return render(request, 'pos/partials/receipt_modal.html', {'transaction': transaction})
+        return render(
+            request,
+            'pos/partials/receipt_modal.html',
+            {'transaction': transaction}
+        )
 
     except (json.JSONDecodeError, ValueError, KeyError) as e:
-        return HttpResponse(f'Error processing checkout: {str(e)}', status=400)
+        return HttpResponse(
+            f'Error processing checkout: {str(e)}',
+            status=400
+        )
 
 
 @login_required
