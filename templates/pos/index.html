@@ -86,7 +86,7 @@ body{font-family:'DM Sans',sans-serif}
 .srch::placeholder{color:var(--tx-low)}
 
 /* card quick-add (+) button */
-.qadd{position:absolute;bottom:8px;right:8px;width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--mint);border:none;cursor:pointer;opacity:0;transition:opacity .18s,transform .18s;transform:scale(.85)}
+.qadd{position:absolute;bottom:8px;right:8px;width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-center:center;background:var(--mint);border:none;cursor:pointer;opacity:0;transition:opacity .18s,transform .18s;transform:scale(.85)}
 .csh:hover .qadd{opacity:1;transform:scale(1)}
 </style>
 
@@ -97,11 +97,6 @@ body{font-family:'DM Sans',sans-serif}
 
 <div class="flex flex-col overflow-hidden"
      style="height:calc(100vh - 64px);background:var(--bg-void)"
-     x-init="window.allProducts=[
-       {% for p in products %}
-       {id:'{{ p.id }}',name:'{{ p.name|escapejs }}',price:{{ p.price }},image:'{{ p.image }}',barcode:'{{ p.barcode }}',stock_qty:{{ p.total_stock }},has_variants:{{ p.has_variants|yesno:'true,false' }},variants:{{ p.variants_json|default:'[]'|safe }}},
-       {% endfor %}
-     ]"
      x-data="{
        checkoutLoading:false,
        addModalOpen:false, addModalProduct:null, selectedVariant:null, addQty:1,
@@ -380,7 +375,7 @@ body{font-family:'DM Sans',sans-serif}
            class="flex-1 overflow-auto ts px-5 pt-3 pb-2 mt-2">
 
         <template x-for="(item,idx) in cart.items" :key="item.id">
-          <div class="flex items-center gap-3 py-5 au" style="border-bottom:1px solid var(--bdr)"
+          <div class="flex items-center gap-6 py-10 au" style="border-bottom:1px solid var(--bdr)"
                :style="`animation-delay:${idx*30}ms`">
             <!-- emoji -->
             <div class="w-10 h-10 shrink-0 flex items-center justify-center text-xl"
@@ -598,6 +593,21 @@ body{font-family:'DM Sans',sans-serif}
 </div><!-- end root -->
 
 <script>
+window.allProducts = [
+  {% for p in products %}
+  {
+    id: "{{ p.id }}",
+    name: "{{ p.name|escapejs }}",
+    price: {{ p.price|default:0 }},
+    image: "{{ p.image|escapejs }}",
+    barcode: "{{ p.barcode|default:'' }}",
+    stock_qty: {{ p.total_stock|default:0 }},
+    has_variants: {{ p.has_variants|yesno:"true,false" }},
+    variants: {{ p.variants_json|default:"[]"|safe }}
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+]
+
 // Show/hide search clear button
 document.getElementById('search-input').addEventListener('input', function(){
   document.getElementById('search-clear').style.opacity = this.value ? '1' : '0';

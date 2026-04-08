@@ -6,8 +6,8 @@
 ════════════════════════════════════════════════════════ {% endcomment %}
 
 {# ── CARD GRID ── #}
-<div class="grid gap-5 pb-2 px-3 pt-3"
-     style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr))">
+<div class="grid gap-16 pb-2 px-3 pt-3"
+     style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
 
   {% for product in products %}
   <button
@@ -26,10 +26,10 @@
       addModalOpen=true"
     class="csh relative flex flex-col cursor-pointer text-left transition-all active:scale-[.95] w-full group
            {% if product.total_stock == 0 %}opacity-30 pointer-events-none grayscale{% endif %}"
-    style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:18px;
-           padding:10px 10px 34px;
-           box-shadow:0 4px 16px rgba(0,0,0,.35);
-           transition:border-color .2s,box-shadow .2s,transform .15s"
+    style="background:var(--bg-card);border:1.5px solid var(--bdr);border-radius:32px;
+           padding:40px 40px 64px;
+           box-shadow:0 10px 30px rgba(0,0,0,.45);
+           transition:border-color .3s,box-shadow .3s,transform .15s"
     onmouseenter="this.style.borderColor='var(--bdr-act)';this.style.boxShadow='0 8px 28px rgba(0,0,0,.5),0 0 20px var(--mint-soft)'"
     onmouseleave="this.style.borderColor='var(--bdr)';this.style.boxShadow='0 4px 16px rgba(0,0,0,.35)'">
 
