@@ -139,6 +139,12 @@
       return {
         sidebarOpen: false,
         cart: { items: [], open: false },
+        checkoutLoading: false,
+        
+        /* ── Barcode scanner ── */
+        scanOpen:        false,
+        manualBarcode:   '',
+        
         payment: 'cash',
         couponCode: '',
         couponDiscount: 0,
@@ -147,6 +153,22 @@
         couponError: '',
         amountTendered: null,
         splitPayments: [],
+        
+        /* ── POS Modal State ── */
+        addModalOpen:    false,
+        addModalProduct: null,
+        selectedVariant: null,
+        addQty:          1,
+
+        openProduct(productId) {
+          if (!window.allProducts) return;
+          const prod = window.allProducts.find(p => p.id === productId);
+          if (!prod) return;
+          this.addModalProduct  = prod;
+          this.selectedVariant  = null;
+          this.addQty           = 1;
+          this.addModalOpen     = true;
+        },
         
         handleBarcode(code) {
             if (!code) return;

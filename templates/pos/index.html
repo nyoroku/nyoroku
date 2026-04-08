@@ -98,36 +98,7 @@ body{font-family:'DM Sans',sans-serif}
 <div id="modal-container"></div>
 
 <div class="flex flex-col overflow-hidden"
-     style="height:calc(100vh - 64px);background:var(--bg-void)"
-     x-data="{
-       checkoutLoading: false,
-
-       /* ── Add-to-cart modal ── */
-       addModalOpen:    false,
-       addModalProduct: null,
-       selectedVariant: null,
-       addQty:          1,
-
-       /* ── Barcode scanner ── */
-       scanOpen:        false,
-       manualBarcode:   '',
-
-       /* ─────────────────────────────────────────────────────────────
-          openProduct(id)
-          Reads the product from window.allProducts by ID.
-          This keeps ALL JSON out of HTML attributes, which is what
-          caused the Alpine 'Unexpected token ;' error with variants.
-       ───────────────────────────────────────────────────────────── */
-       openProduct(productId) {
-         const prod = window.allProducts.find(p => p.id === productId);
-         if (!prod) return;
-         this.addModalProduct  = prod;
-         this.selectedVariant  = null;
-         this.addQty           = 1;
-         this.addModalOpen     = true;
-       }
-     }"
-     @open-product-modal.window="openProduct($event.detail)">
+     style="height:calc(100vh - 64px);background:var(--bg-void)">
 
   <!-- ══════════ HEADER ══════════ -->
   <header class="shrink-0 flex items-center gap-2 px-4 py-2.5"
