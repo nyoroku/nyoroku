@@ -15,24 +15,13 @@
     view: 'listing', // 'listing' or 'sku'
     selectedProduct: null,
     productVariants: [],
-    
-    // Numpad Support
-    numpadTarget: null, 
-    showNumpad: false,
-    numpadMode: 'qty', // 'qty' or 'price'
-    isSingleItemRef: false, // UI flag for Numpad button
-    singleItem: { qty: 1, edit_cost: 0 },
 
     async selectProduct(p) {
         this.selectedProduct = p;
 
         if (!p.has_variants) {
-            // Simplified flow: Open numpad directly for single product
-            this.singleItem = { qty: 1, edit_cost: parseFloat(p.cost_price || 0) };
-            this.numpadTarget = this.singleItem;
-            this.numpadMode = 'qty';
-            this.isSingleItemRef = true;
-            this.showNumpad = true;
+            // Decent Flow: Add directly to bag
+            this.addToBag(p.id, null, p.name, p.image, parseFloat(p.cost_price || 0), 1);
             return;
         }
         
@@ -44,58 +33,35 @@
             qty: 0, 
             edit_cost: parseFloat(v.cost_price || 0) 
         }));
-        
-        this.isSingleItemRef = false;
         this.view = 'sku';
     },
 
-    addSingleToCart() {
-        const cost = parseFloat(this.singleItem.edit_cost || 0);
-        const qty = Number(this.singleItem.qty || 1);
+    addToBag(prodId, varId, name, image, cost, qty) {
+        const finalCost = parseFloat(cost || 0);
+        const finalQty = Number(qty || 1);
         
-        let ex = this.items.find(i => i.product_id == this.selectedProduct.id && !i.variant_id);
+        let ex = this.items.find(i => String(i.product_id) === String(prodId) && String(i.variant_id) === String(varId));
         if (ex) {
-            ex.qty = Number(ex.qty) + qty;
-            ex.unit_cost = cost;
-            ex.total_cost = (ex.qty * cost).toFixed(2);
+            ex.qty = Number(ex.qty) + finalQty;
+            ex.unit_cost = finalCost;
+            ex.total_cost = (ex.qty * finalCost).toFixed(2);
         } else {
             this.items.push({
-                product_id: this.selectedProduct.id,
-                variant_id: null,
-                name: this.selectedProduct.name,
-                image: this.selectedProduct.image,
-                qty: qty,
-                unit_cost: cost,
-                total_cost: (qty * cost).toFixed(2)
+                product_id: prodId,
+                variant_id: varId,
+                name: name,
+                image: image,
+                qty: finalQty,
+                unit_cost: finalCost,
+                total_cost: (finalQty * finalCost).toFixed(2)
             });
         }
-        this.showNumpad = false;
     },
 
     addVariantsToCart() {
         this.productVariants.forEach(v => {
-            const vQty = Number(v.qty);
-            if (vQty > 0) {
-                // Ensure ID comparison is robust (string to string)
-                let ex = this.items.find(i => String(i.variant_id) === String(v.id));
-                const finalCost = parseFloat(v.edit_cost || 0);
-                
-                if (ex) {
-                    ex.qty = Number(ex.qty) + vQty;
-                    ex.unit_cost = finalCost;
-                    ex.total_cost = (Number(ex.qty) * finalCost).toFixed(2);
-                } else {
-                    this.items.push({
-                        product_id: this.selectedProduct.id,
-                        variant_id: v.id,
-                        // v.name is the full name from the model: 'Product (Option)'
-                        name: v.name, 
-                        image: this.selectedProduct.image,
-                        qty: vQty,
-                        unit_cost: finalCost,
-                        total_cost: (vQty * finalCost).toFixed(2)
-                    });
-                }
+            if (Number(v.qty) > 0) {
+                this.addToBag(this.selectedProduct.id, v.id, v.name, this.selectedProduct.image, v.edit_cost, v.qty);
             }
         });
         this.view = 'listing';
@@ -110,39 +76,6 @@
     get modalTotalQty() {
         return this.productVariants.reduce((s, v) => s + (Number(v.qty) || 0), 0);
     },
-    get modalTotalCost() {
-        return this.productVariants.reduce((s, v) => s + (Number(v.qty || 0) * parseFloat(v.edit_cost || 0)), 0).toFixed(2);
-    },
-
-    numpadPress(n) {
-        if (!this.numpadTarget) return;
-        
-        let current = String(this.numpadMode === 'qty' ? (this.numpadTarget.qty || 0) : (this.numpadTarget.edit_cost || 0));
-        
-        if (n === 'C') {
-            if (this.numpadMode === 'qty') this.numpadTarget.qty = 0;
-            else this.numpadTarget.edit_cost = 0;
-            return;
-        }
-        
-        if (n === 'OK') {
-            if (this.isSingleItemRef) this.addSingleToCart();
-            else this.showNumpad = false;
-            return;
-        }
-
-        if (n === '.') {
-            if (this.numpadMode === 'qty') return; // Qty only int
-            if (current.includes('.')) return;
-            current += '.';
-        } else {
-            if (current === '0') current = n;
-            else current += n;
-        }
-
-        if (this.numpadMode === 'qty') this.numpadTarget.qty = parseInt(current) || 0;
-        else this.numpadTarget.edit_cost = parseFloat(current) || 0;
-    },
 
     async submitOrder() {
         if (!this.supplierId) {
@@ -150,7 +83,7 @@
             return;
         }
         if (this.items.length === 0) {
-            alert('Please add at least one item.');
+            alert('Order bag is empty.');
             return;
         }
         
@@ -167,12 +100,8 @@
         if (resp.redirected) {
             window.location.href = resp.url;
         } else {
-            try {
-                const data = await resp.json();
-                if (data.error) alert(data.error);
-            } catch(e) {
-                console.error('Submission error', e);
-            }
+            const data = await resp.json();
+            if (data.error) alert(data.error);
         }
     }
 }">
@@ -185,343 +114,180 @@
                 <div>
                     <h1 class="font-display font-800 text-6xl text-white tracking-tight leading-none">Buy New Stock</h1>
                     <div class="flex items-center gap-3 mt-4">
-                        <span class="w-2 h-2 rounded-full bg-brand-whatsapp animate-pulse shadow-glow-green-sm"></span>
-                        <p class="text-text-muted font-bold text-[11px] uppercase tracking-[0.3em]">Supply Cycle Management</p>
+                        <span class="w-2 h-2 rounded-full bg-brand-whatsapp animate-pulse"></span>
+                        <p class="text-text-muted font-bold text-[11px] uppercase tracking-[0.3em]">Supply Management</p>
                     </div>
                 </div>
-                <div class="flex gap-4">
-                    <a href="{% url 'procurement:po_list' %}" class="h-14 px-8 glass border border-white/[0.04] text-text-muted rounded-2xl font-display font-800 text-[11px] uppercase tracking-widest flex items-center gap-3 transition-all hover:text-white hover:border-white/10 active:scale-95 group">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:-translate-x-1"><path d="m15 18-6-6 6-6"/></svg>
-                        Stock History
-                    </a>
-                </div>
+                <a href="{% url 'procurement:po_list' %}" class="h-14 px-8 glass border border-white/[0.04] text-text-muted rounded-2xl font-display font-800 text-[11px] uppercase tracking-widest flex items-center gap-3 transition-all hover:text-white">
+                    Stock History
+                </a>
             </div>
         </div>
 
-        <!-- Left: Product Selection & Supplier -->
+        <!-- Left Column: Browsing -->
         <div class="lg:col-span-12 xl:col-span-7 space-y-8">
             
-            <!-- Step 1: Supplier -->
+            <!-- Supplier Section -->
             <div class="glass-strong p-8 rounded-[40px] shadow-2xl relative overflow-hidden group">
-                <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none"></div>
                 <div class="flex items-center justify-between mb-8">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-brand-whatsapp/10 border border-brand-whatsapp/20 flex items-center justify-center text-brand-whatsapp">
-                            <span class="font-display font-800 text-xs">01</span>
+                            <span class="font-display font-800 text-xs text-brand-whatsapp">01</span>
                         </div>
-                        <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Select Supplier</p>
+                        <p class="text-[10px] font-bold text-white uppercase tracking-[0.4em]">Supplier</p>
                     </div>
-                    <button @click="showNewSupplier = !showNewSupplier" 
-                            class="text-[10px] font-bold uppercase tracking-widest transition-all px-4 py-2 rounded-xl border border-white/[0.08] hover:bg-white/[0.04]"
-                            :class="showNewSupplier ? 'text-brand-red' : 'text-brand-whatsapp'">
-                        <span x-text="showNewSupplier ? 'Cancel' : '+ New Supplier'"></span>
+                    <button @click="showNewSupplier = !showNewSupplier" class="text-[10px] font-bold uppercase tracking-widest text-brand-whatsapp">
+                        <span x-text="showNewSupplier ? 'Cancel' : '+ Add New Supplier'"></span>
                     </button>
                 </div>
 
-                <div x-show="!showNewSupplier" x-transition.opacity>
-                    <div class="relative">
-                        <select x-model="supplierId" 
-                                class="w-full h-18 bg-white/[0.02] border-2 border-white/[0.04] rounded-2xl px-8 text-white font-display font-800 text-lg outline-none focus:border-brand-whatsapp/40 transition-all cursor-pointer appearance-none">
-                            <option value="" class="bg-surface2">-- Choose Supplier --</option>
-                            {% for s in suppliers %}
-                            <option value="{{ s.id }}" class="bg-surface2">{{ s.name }}</option>
-                            {% endfor %}
-                        </select>
-                        <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-text-muted">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                        </div>
+                <div x-show="!showNewSupplier">
+                    <select x-model="supplierId" class="w-full h-16 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-8 text-white font-bold outline-none focus:border-brand-whatsapp/40 transition-all appearance-none">
+                        <option value="" class="bg-surface2">-- Select Supplier --</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}" class="bg-surface2">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div x-show="showNewSupplier" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <input type="text" x-model="newSupplier.name" placeholder="Supplier Name" class="w-full h-14 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-6 text-white text-sm outline-none">
+                     <input type="text" x-model="newSupplier.phone" placeholder="Phone" class="w-full h-14 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-6 text-white text-sm outline-none">
+                     <button @click="async () => {
+                        if(!newSupplier.name) return;
+                        const fd = new FormData(); fd.append('name', newSupplier.name); fd.append('phone', newSupplier.phone);
+                        await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+                        window.location.reload();
+                     }" class="md:col-span-2 h-14 bg-brand-whatsapp text-white rounded-2xl font-bold uppercase text-xs">Create & Select</button>
+                </div>
+            </div>
+
+            <!-- Product Search -->
+            <div class="space-y-6">
+                <div class="relative">
+                    <input type="text" x-model="searchQuery" placeholder="Search or Scan Item..." class="w-full h-18 bg-white/[0.02] border border-white/[0.04] rounded-3xl px-14 text-white font-medium outline-none focus:border-brand-whatsapp/40">
+                    <div class="absolute left-6 top-1/2 -translate-y-1/2 text-brand-whatsapp opacity-40">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     </div>
                 </div>
 
-                <div x-show="showNewSupplier" x-transition:enter="transition transform duration-200" x-transition:enter-start="opacity-0 scale-95" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <input type="text" x-model="newSupplier.name" placeholder="Supplier Name" 
-                            class="w-full h-16 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-6 text-white font-bold placeholder:opacity-20 outline-none focus:border-brand-whatsapp/30">
-                     <input type="text" x-model="newSupplier.phone" placeholder="Phone Number" 
-                            class="w-full h-16 bg-white/[0.02] border border-white/[0.04] rounded-2xl px-6 text-white font-bold placeholder:opacity-20 outline-none focus:border-brand-whatsapp/30">
-                     <button @click="async () => {
-                        if(!newSupplier.name) return;
-                        const fd = new FormData();
-                        fd.append('name', newSupplier.name);
-                        fd.append('phone', newSupplier.phone);
-                        await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
-                        window.location.reload();
-                     }" class="md:col-span-2 h-16 bg-brand-whatsapp text-white rounded-2xl font-display font-800 text-[13px] uppercase tracking-widest shadow-glow-green-sm transition-all active:scale-[0.98]">
-                        Create & Select
-                     </button>
-                </div>
-            </div>
-
-    <!-- Step 2: Search & Select (Listing ALWAYS visible) -->
-    <div class="lg:col-span-12 xl:col-span-7 space-y-8">
-        <div class="flex items-center gap-3 ml-4">
-            <div class="w-10 h-10 rounded-xl bg-brand-whatsapp/10 border border-brand-whatsapp/20 flex items-center justify-center text-brand-whatsapp">
-                <span class="font-display font-800 text-xs">02</span>
-            </div>
-            <p class="text-[10px] font-bold text-text-muted uppercase tracking-[0.4em]">Choose Products</p>
-        </div>
-
-        <!-- Premium Scanner Search -->
-        <div class="relative group">
-            <input type="text" x-model="searchQuery" 
-                   placeholder="Search for products or scan barcode..."
-                   class="w-full h-20 glass-strong border-2 border-white/[0.04] rounded-[32px] px-16 text-xl text-white font-medium focus:border-brand-whatsapp/40 focus:ring-8 focus:ring-brand-whatsapp/5 outline-none transition-all placeholder:text-text-muted/30">
-            <div class="absolute left-6 top-1/2 -translate-y-1/2 text-brand-whatsapp transition-transform duration-300 group-focus-within:scale-110">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </div>
-            <div class="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                 <div class="px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/5 text-[9px] font-bold text-text-muted uppercase tracking-widest hidden md:block">Ready to Scan</div>
-            </div>
-        </div>
-
-        <!-- Product Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-24">
-            {% for p in products %}
-            <template x-if="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase()) || '{{ p.barcode|default:'' }}' === searchQuery">
-                <div @click="selectProduct({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}', has_variants: {% if p.has_variants %}true{% else %}false{% endif %} })"
-                     class="group relative p-6 glass border border-white/[0.04] rounded-[32px] hover:bg-white/[0.04] hover:border-brand-whatsapp/30 cursor-pointer transition-all active:scale-[0.98] overflow-hidden">
-                     <div class="absolute -right-4 -top-4 w-24 h-24 bg-brand-whatsapp/5 blur-3xl group-hover:bg-brand-whatsapp/10 transition-all"></div>
-                     
-                     <div class="flex items-center gap-5">
-                         <div class="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-500">
-                             {{ p.image }}
-                         </div>
-                         <div class="flex-1 min-w-0">
-                             <div class="font-display font-800 text-white text-lg tracking-tight truncate leading-tight">{{ p.name }}</div>
-                             <div class="flex items-center gap-3 mt-1.5">
-                                 <span class="text-[11px] font-bold text-brand-whatsapp uppercase tracking-widest">KES {{ p.cost_price|default:0 }}</span>
-                                 <span class="w-1 h-1 rounded-full bg-white/20"></span>
-                                 <span class="text-[9px] font-bold text-text-muted uppercase tracking-widest">Stock: {{ p.total_stock }}</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-20">
+                    {% for p in products %}
+                    <template x-if="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase()) || '{{ p.barcode|default:'' }}' === searchQuery">
+                        <div @click="selectProduct({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}', has_variants: {% if p.has_variants %}true{% else %}false{% endif %} })"
+                             class="p-6 glass border border-white/[0.04] rounded-[32px] hover:border-brand-whatsapp/30 cursor-pointer active:scale-[0.98] transition-all flex items-center gap-4">
+                             <div class="text-3xl" x-text="'{{ p.image|escapejs }}'"></div>
+                             <div>
+                                 <div class="font-bold text-white text-lg leading-none mb-1">{{ p.name }}</div>
+                                 <div class="text-xs font-bold text-brand-whatsapp uppercase">KES {{ p.cost_price|default:0 }}</div>
                              </div>
-                         </div>
-                     </div>
+                        </div>
+                    </template>
+                    {% endfor %}
                 </div>
-            </template>
-            {% endfor %}
+            </div>
+        </div>
+
+        <!-- Right Column: Order Bag -->
+        <div class="lg:col-span-12 xl:col-span-5 sticky top-24">
+            <div class="glass-strong rounded-[48px] overflow-hidden flex flex-col max-h-[80vh]">
+                <div class="p-8 border-b border-white/[0.04] flex items-center justify-between">
+                    <h2 class="font-display font-800 text-2xl text-white">Order Bag</h2>
+                    <span class="text-xs text-text-muted" x-text="items.length + ' types'"></span>
+                </div>
+
+                <div class="flex-grow overflow-y-auto p-6 space-y-4 no-scrollbar">
+                    <template x-for="(item, index) in items" :key="index">
+                        <div class="bg-white/[0.02] border border-white/[0.04] p-5 rounded-[28px] space-y-4">
+                             <div class="flex items-center justify-between">
+                                 <div class="flex items-center gap-3 min-w-0">
+                                     <span class="text-xl" x-text="item.image"></span>
+                                     <h4 class="font-bold text-white truncate" x-text="item.name"></h4>
+                                 </div>
+                                 <button @click="removeItem(index)" class="text-text-muted hover:text-brand-red p-2">✕</button>
+                             </div>
+                             <div class="flex items-center justify-between gap-4">
+                                 <div class="flex flex-col">
+                                     <span class="text-[9px] text-white/40 uppercase mb-1">Unit Cost</span>
+                                     <input type="number" x-model.number="item.unit_cost" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="w-24 bg-black/20 border-none rounded-xl px-3 py-2 text-brand-whatsapp font-bold outline-none">
+                                 </div>
+                                 <div class="flex flex-col items-end">
+                                     <span class="text-[9px] text-white/40 uppercase mb-1">Quantity</span>
+                                     <div class="flex items-center bg-black/30 rounded-xl p-1">
+                                         <button @click="if(item.qty > 1) { item.qty--; item.total_cost = (item.qty * item.unit_cost).toFixed(2); }" class="w-8 h-8 text-text-muted">－</button>
+                                         <input type="number" x-model.number="item.qty" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="w-10 bg-transparent text-center text-white font-bold outline-none">
+                                         <button @click="item.qty++; item.total_cost = (item.qty * item.unit_cost).toFixed(2);" class="w-8 h-8 text-brand-whatsapp">＋</button>
+                                     </div>
+                                 </div>
+                             </div>
+                        </div>
+                    </template>
+                    <template x-if="items.length === 0">
+                        <div class="py-20 text-center opacity-20 font-bold uppercase tracking-widest text-xs">Bag is empty</div>
+                    </template>
+                </div>
+
+                <div class="p-8 bg-white/[0.04] border-t border-white/[0.06]">
+                    <div class="flex items-center justify-between mb-6">
+                        <span class="text-text-muted font-bold uppercase text-[10px]">Total KES</span>
+                        <span class="font-display font-800 text-5xl text-brand-whatsapp" x-text="orderTotal"></span>
+                    </div>
+                    <button @click="submitOrder()" :disabled="items.length === 0 || !supplierId" class="w-full h-20 bg-brand-whatsapp text-white rounded-[28px] font-display font-800 text-[18px] uppercase tracking-widest disabled:opacity-20 active:scale-[0.98] transition-all">
+                        Complete Order
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Variant Selection Drawer (Vibrant Mint Theme) -->
+    <!-- Variant Selector Drawer (Decent & Simple) -->
     <template x-if="view === 'sku'">
         <div class="fixed inset-0 z-[100] flex justify-end">
             <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="view = 'listing'"></div>
-            <div class="relative w-full md:w-[500px] h-full bg-brand-whatsapp shadow-[-20px_0_80px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-slide-in-right">
-                
-                <!-- Drawer Header -->
-                <div class="p-10 pb-6 shrink-0 text-white">
-                    <div class="flex items-center justify-between mb-8">
-                        <button @click="view = 'listing'" class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] opacity-60 hover:opacity-100 transition-opacity">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m15 18-6-6 6-6"/></svg>
-                            Back
-                        </button>
-                        <span class="text-[9px] font-black uppercase tracking-[0.5em] opacity-40">Sku Selection</span>
-                    </div>
-                    <div class="flex items-center gap-6">
-                        <div class="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center text-5xl" x-text="selectedProduct.image"></div>
-                        <h3 class="font-display font-900 text-4xl leading-tight" x-text="selectedProduct.name"></h3>
-                    </div>
+            <div class="relative w-full md:w-[450px] h-full bg-brand-whatsapp shadow-2xl flex flex-col animate-slide-in-right">
+                <div class="p-10 pb-6 shrink-0 text-white text-center">
+                    <p class="text-[9px] font-black uppercase tracking-[0.4em] opacity-40 mb-2">Select Variants</p>
+                    <h2 class="font-display font-900 text-4xl leading-tight" x-text="selectedProduct.name"></h2>
                 </div>
-
-                <!-- SKU List (Light on Mint) -->
-                <div class="flex-grow overflow-y-auto px-8 py-4 no-scrollbar custom-scroll">
-                    <div class="space-y-3">
-                        <template x-for="v in productVariants" :key="v.id">
-                            <div class="p-6 bg-white/10 hover:bg-white/20 rounded-[32px] border border-white/10 transition-all flex items-center justify-between gap-4">
-                                <div class="flex-1">
-                                    <h4 class="font-bold text-white text-lg tracking-tight mb-2" x-text="v.name"></h4>
-                                    <div @click="numpadTarget = v; numpadMode = 'price'; showNumpad = true;" class="inline-flex items-center gap-3 px-3 py-1 bg-black/20 rounded-lg cursor-pointer">
-                                        <span class="text-[9px] font-black text-white/40 uppercase tracking-widest">Cost</span>
-                                        <span class="text-white font-display font-800" x-text="v.edit_cost"></span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center gap-1 bg-black/30 p-1 rounded-2xl border border-white/5">
-                                    <button @click="if(v.qty > 0) v.qty--" class="w-10 h-10 rounded-xl flex items-center justify-center text-white/40 hover:text-white transition-all">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12h14"/></svg>
-                                    </button>
-                                    <button @click="numpadTarget = v; numpadMode = 'qty'; showNumpad = true;" class="min-w-[48px] h-10 flex items-center justify-center font-display font-900 text-2xl text-white underline underline-offset-4 decoration-white/20" x-text="v.qty"></button>
-                                    <button @click="v.qty++" class="w-10 h-10 rounded-xl flex items-center justify-center text-white hover:brightness-125 transition-all">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M12 5v14M5 12h14"/></svg>
-                                    </button>
+                <div class="flex-grow overflow-y-auto px-6 py-4 space-y-3 no-scrollbar">
+                    <template x-for="v in productVariants" :key="v.id">
+                        <div class="p-6 bg-white/10 rounded-[32px] border border-white/10 flex items-center justify-between gap-4">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-white truncate mb-2" x-text="v.name"></h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[9px] text-white/40 font-bold uppercase">Cost:</span>
+                                    <input type="number" x-model.number="v.edit_cost" class="w-24 bg-black/20 rounded-lg px-2 py-1 text-white font-bold text-xs border-none outline-none">
                                 </div>
                             </div>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Drawer Action -->
-                <div class="p-10 bg-black/10 shrink-0">
-                    <button @click="addVariantsToCart()" :disabled="modalTotalQty === 0" class="w-full h-22 bg-white text-brand-whatsapp rounded-[32px] font-display font-900 text-[15px] uppercase tracking-[0.3em] shadow-2xl transition-all active:scale-95 disabled:opacity-20 flex items-center justify-center gap-6">
-                        <span x-text="'Add ' + modalTotalQty + ' Units'"></span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m9 18 6-6-6-6"/></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </template>
-
-        <!-- Right: Current Order Sidebar -->
-        <div class="lg:col-span-12 xl:col-span-5 sticky top-24">
-            <div class="glass-strong border border-white/[0.04] rounded-[48px] overflow-hidden shadow-2xl flex flex-col h-full max-h-[85vh]">
-                <div class="p-10 border-b border-white/[0.04] flex items-center justify-between bg-white/[0.02]">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-brand-whatsapp/10 border border-brand-whatsapp/20 flex items-center justify-center text-brand-whatsapp">
-                            <span class="font-display font-800 text-xs">03</span>
-                        </div>
-                        <h2 class="font-display font-800 text-3xl text-white tracking-tight">Order</h2>
-                    </div>
-                    <span class="px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/5 text-[10px] font-bold text-text-muted uppercase tracking-[.3em] font-display" 
-                          x-text="items.length + ' ITEMS'"></span>
-                </div>
-
-                <div class="flex-grow overflow-y-auto p-8 space-y-4 no-scrollbar custom-scroll">
-                    <template x-for="(item, index) in items" :key="item.product_id">
-                        <div class="bg-white/[0.02] border border-white/[0.04] p-5 rounded-[28px] group transition-all hover:bg-white/[0.04]"
-                             x-transition:enter="transition duration-300 transform" x-transition:enter-start="opacity-0 translate-x-4">
-                             <div class="flex items-center gap-4">
-                                 <div class="w-12 h-12 flex items-center justify-center text-2xl rounded-xl bg-white/[0.02]" x-text="item.image"></div>
-                                 <div class="flex-1 min-w-0">
-                                     <h4 class="font-bold text-white text-[15px] truncate" x-text="item.name"></h4>
-                                     <div class="text-[11px] font-bold text-brand-whatsapp/60 mt-0.5" x-text="'KES ' + parseFloat(item.unit_cost).toLocaleString()"></div>
-                                 </div>
-                                 <button @click="removeItem(index)" class="w-10 h-10 rounded-xl flex items-center justify-center text-text-muted hover:bg-brand-red/10 hover:text-brand-red transition-all">
-                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                                 </button>
-                             </div>
-                             
-                             <div class="flex items-center justify-between mt-4 pl-16">
-                                 <div class="flex items-center bg-black/30 rounded-xl border border-white/[0.04] p-1 scale-90 -ml-4 origin-left">
-                                     <button @click="if(item.qty > 1) { item.qty--; item.total_cost = (item.qty * item.unit_cost).toFixed(2); }" class="w-8 h-8 flex items-center justify-center text-text-muted transition-all active:scale-75">
-                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12h14"/></svg>
-                                     </button>
-                                     <input type="number" x-model.number="item.qty" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" 
-                                            class="w-12 bg-transparent text-center font-display font-800 text-white text-sm outline-none">
-                                     <button @click="item.qty++; item.total_cost = (item.qty * item.unit_cost).toFixed(2);" class="w-8 h-8 flex items-center justify-center text-brand-whatsapp transition-all active:scale-75">
-                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-                                     </button>
-                                 </div>
-                                 <div class="text-right">
-                                     <div class="font-display font-800 text-white text-lg tracking-tight tabular-nums" x-text="'KES ' + parseFloat(item.total_cost).toLocaleString()"></div>
-                                 </div>
-                             </div>
-                        </div>
-                    </template>
-                    
-                    <template x-if="items.length === 0">
-                        <div class="flex flex-col items-center justify-center h-full py-20 opacity-20 text-center">
-                            <div class="w-16 h-16 rounded-full border-2 border-dashed border-white/20 mb-6 flex items-center justify-center">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                            <div class="flex flex-col items-center">
+                                <span class="text-[9px] text-white/40 uppercase mb-1">Pick Qty</span>
+                                <input type="number" x-model.number="v.qty" class="w-16 h-12 bg-white text-brand-whatsapp rounded-xl border-none text-center font-display font-900 text-xl outline-none" placeholder="0">
                             </div>
-                            <p class="font-display font-800 uppercase tracking-widest text-xs">Nothing in basket</p>
                         </div>
                     </template>
                 </div>
-
-                <div class="p-10 bg-white/[0.04] border-t border-white/[0.06] backdrop-blur-2xl hidden xl:block">
-                    <div class="flex items-center justify-between mb-8">
-                        <span class="text-[11px] font-display font-800 text-text-muted uppercase tracking-[0.4em]">Subtotal Cost</span>
-                        <div class="text-right">
-                            <span class="font-display font-800 text-6xl text-brand-whatsapp tracking-tighter drop-shadow-[0_8px_20px_rgba(37,211,102,0.15)]" x-text="orderTotal"></span>
-                            <span class="block text-[10px] font-bold text-brand-whatsapp/40 mt-1">KES + VAT (Inc)</span>
-                        </div>
-                    </div>
-                    <button @click="submitOrder()" 
-                            :disabled="items.length === 0 || !supplierId"
-                            class="group relative w-full h-22 overflow-hidden bg-brand-whatsapp text-white rounded-[32px] font-display font-800 text-[18px] uppercase tracking-[.25em] flex items-center justify-center gap-6 transition-all active:scale-[0.98] shadow-[0_25px_80px_rgba(37,211,102,0.35)] disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed">
-                        <div class="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
-                        <span class="relative">
-                            {% if user.role == 'admin' %}Finish & Add Stock{% else %}Submit Order{% endif %}
-                        </span>
-                        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center relative translate-x-0 group-hover:translate-x-1 transition-transform">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m12 5 7 7-7 7"/><path d="M19 12H5"/></svg>
-                        </div>
+                <div class="p-8 bg-black/10 shrink-0">
+                    <button @click="addVariantsToCart()" :disabled="modalTotalQty === 0" class="w-full h-18 bg-white text-brand-whatsapp rounded-[24px] font-display font-800 text-[14px] uppercase tracking-widest active:scale-95 transition-all">
+                        Add <span x-text="modalTotalQty"></span> to Order Bag
                     </button>
-                    <p class="text-center text-[9px] font-bold text-text-muted uppercase tracking-[.3em] mt-5 opacity-40">Transaction Audit Logic Enabled</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Mobile Persistent Floating Action Bar -->
+    <!-- Mobile Subtotal Bar -->
     <template x-if="items.length > 0">
-        <div class="fixed bottom-0 inset-x-0 z-[50] p-6 xl:hidden animate-slide-up">
-            <div class="bg-surface2/80 backdrop-blur-[40px] border border-white/[0.08] rounded-[40px] p-8 shadow-[0_-20px_80px_rgba(0,0,0,0.5)]">
-                <div class="flex items-center justify-between mb-8 px-2">
-                    <span class="text-[10px] font-display font-800 text-text-muted uppercase tracking-[0.4em]">Order Total</span>
-                    <div class="text-right">
-                        <span class="font-display font-800 text-5xl text-brand-whatsapp tracking-tighter" x-text="orderTotal"></span>
-                        <span class="block text-[8px] font-bold text-brand-whatsapp/40">KES Incl. Tax</span>
-                    </div>
+        <div class="fixed bottom-0 inset-x-0 z-[50] p-6 lg:hidden">
+            <div class="bg-surface2/90 backdrop-blur-xl rounded-[40px] p-6 shadow-2xl flex items-center justify-between border border-white/5">
+                <div>
+                    <span class="text-[8px] text-text-muted uppercase font-bold">Total</span>
+                    <div class="font-display font-800 text-3xl text-brand-whatsapp" x-text="orderTotal"></div>
                 </div>
-                <button @click="submitOrder()" 
-                        :disabled="!supplierId"
-                        class="w-full h-20 bg-brand-whatsapp text-white rounded-3xl font-display font-800 text-[14px] uppercase tracking-widest shadow-glow-green-sm transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-4">
-                    <span>{% if user.role == 'admin' %}Finish & Add Stock{% else %}Submit Order{% endif %}</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m9 18 6-6-6-6"/></svg>
+                <button @click="submitOrder()" :disabled="!supplierId" class="h-14 px-8 bg-brand-whatsapp text-white rounded-2xl font-bold uppercase text-[11px] tracking-widest shadow-glow-green-sm">
+                    Complete
                 </button>
             </div>
         </div>
     </template>
-
-    <!-- (Legacy Drawer Removed) -->
-
-    <!-- Unified Floating Numpad -->
-    <template x-if="showNumpad">
-        <div class="fixed inset-0 z-[200] flex items-center justify-center p-6">
-            <div class="absolute inset-0 bg-black/98" @click="showNumpad = false"></div>
-            
-            <div class="relative w-full max-w-sm flex flex-col items-center animate-scale-in">
-                <div class="text-center mb-12">
-                    <p class="text-brand-whatsapp font-bold uppercase tracking-[0.5em] text-[9px] mb-4" 
-                       x-text="numpadMode === 'qty' ? 'Setting Units' : 'Setting Cost'"></p>
-                    <h3 class="font-display font-800 text-2xl text-white tracking-tight" 
-                        x-text="isSingleItemRef ? selectedProduct.name : numpadTarget.name"></h3>
-                </div>
-
-                <div class="w-full mb-12 flex flex-col items-center justify-center py-6">
-                    <span class="font-display font-800 text-[120px] text-white tabular-nums tracking-tighter leading-none" 
-                          x-text="numpadMode === 'qty' ? numpadTarget.qty : numpadTarget.edit_cost"></span>
-                </div>
-
-                <div class="grid grid-cols-3 gap-6 w-full mb-12">
-                    <template x-for="n in ['1','2','3','4','5','6','7','8','9','.','0','C']">
-                        <button @click="numpadPress(n)" 
-                        class="h-20 bg-white/[0.04] rounded-[24px] flex items-center justify-center text-3xl font-display font-800 text-white transition-all active:bg-brand-whatsapp active:scale-90"
-                        x-text="n"></button>
-                    </template>
-                </div>
-
-                <div class="w-full flex flex-col gap-4">
-                    <template x-if="isSingleItemRef">
-                        <div class="flex gap-4">
-                            <button @click="numpadMode = (numpadMode === 'qty' ? 'price' : 'qty')" 
-                                    class="flex-1 h-20 bg-white/[0.08] text-white rounded-[28px] font-display font-800 text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 active:scale-95 transition-all">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a4.5 4.5 0 0 0 0 9H18a4.5 4.5 0 0 1 0 9H7"/></svg>
-                                Mode
-                            </button>
-                            <button @click="addSingleToCart()" 
-                                    class="flex-[2] h-20 bg-brand-whatsapp text-white rounded-[28px] font-display font-800 text-[14px] uppercase tracking-widest shadow-glow-green-sm active:scale-95 transition-all flex items-center justify-center gap-4">
-                                Add to Bag
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><path d="m9 18 6-6-6-6"/></svg>
-                            </button>
-                        </div>
-                    </template>
-                    <template x-if="!isSingleItemRef">
-                        <button @click="showNumpad = false" 
-                                class="w-full h-22 bg-brand-whatsapp text-white rounded-[32px] font-display font-800 text-[14px] uppercase tracking-widest shadow-glow-green-sm active:scale-95 transition-all">
-                            Confirm Value
-                        </button>
-                    </template>
-                </div>
-            </div>
-        </div>
-    </template>
 </div>
-
-<style>
-    @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    @keyframes bounceIn { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
-    .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-    .animate-bounce-in { animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-    .scrollbar-hide::-webkit-scrollbar { display: none; }
-    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-</style>
 {% endblock %}
