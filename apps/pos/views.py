@@ -4,7 +4,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.core.paginator import Paginator
 from django.db.models import Prefetch
 from django.utils import timezone
 from catalogue.models import Product, Category, ProductVariant
@@ -12,48 +11,47 @@ from .models import Transaction, Coupon, ParkedSale
 
 @login_required
 def index(request):
-    query    = request.GET.get('q', '')
-    cat_id   = request.GET.get('category', '')
+    query = request.GET.get('q', '')
+    cat_id = request.GET.get('category', '')
     page_num = request.GET.get('page', 1)
 
-    # 1. Base Queryset with optimized fetching
+    # Fetch products with approval filter
     qs = Product.objects.filter(approved=True).order_by('name')
-
     if query:
         qs = qs.filter(name__icontains=query)
-
     if cat_id and cat_id != 'all':
         qs = qs.filter(category_id=cat_id)
 
-    # 2. Prefetch variants to avoid N+1 queries
+    # Prefetch variants to optimize database hits
     qs = qs.prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.all())
     )
 
     products_with_data = []
     for product in qs:
-        # Pre-calculate data to avoid logic in templates
-        product.safe_price = float(product.price or 0)
-        product.safe_image = str(product.image or "📦")
+        # Pre-process numeric data
+        safe_price = float(product.price or 0)
         
-        # Build clean variant list
+        # Build variants list for the frontend
         vars_list = []
         for v in product.variants.all():
             vars_list.append({
                 "id": str(v.id),
                 "name": str(v.name),
-                "price": float(v.price if v.price is not None else product.price or 0),
+                "price": float(v.price if v.price is not None else safe_price),
                 "stock_qty": int(v.stock_qty or 0)
             })
         
-        # Convert variants to a JSON string for Alpine.js
-        product.safe_variants_json = json.dumps(vars_list)
+        # Attach processed data to product object
+        product.safe_price = safe_price
+        product.safe_variants_json = json.dumps(vars_list) # Guaranteed to be "[]" if empty
         product.has_variants = len(vars_list) > 0
         products_with_data.append(product)
 
-    # 3. Pagination
+    # Pagination
+    from django.core.paginator import Paginator
     paginator = Paginator(products_with_data, 24)
-    products  = paginator.get_page(page_num)
+    products = paginator.get_page(page_num)
 
     context = {
         'products': products,
