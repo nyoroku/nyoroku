@@ -187,7 +187,7 @@ body{font-family:'DM Sans',sans-serif}
        openProduct() fetches the data from window.allProducts,
        which is defined in a <script> block where JSON is safe.
   ══════════════════════════════════════════ -->
-  <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[300] flex items-end sm:items-center justify-center">
+  <div x-show="addModalOpen" x-cloak class="fixed inset-0 z-[300] flex items-end sm:items-center justify-center pb-20 sm:pb-0">
     <!-- backdrop -->
     <div class="absolute inset-0 backdrop-blur-2xl cursor-pointer"
          style="background:rgba(7,7,15,.95)"
@@ -313,7 +313,7 @@ body{font-family:'DM Sans',sans-serif}
   <!-- ══════════════════════════════════════════
        CART DRAWER
   ══════════════════════════════════════════ -->
-  <div x-show="cart.open" x-cloak class="fixed inset-0 z-[200] flex flex-col justify-end">
+  <div x-show="cart.open" x-cloak class="fixed inset-0 z-[200] flex flex-col justify-end pb-20 sm:pb-0">
     <div class="absolute inset-0 backdrop-blur-xl cursor-pointer"
          style="background:rgba(7,7,15,.88)"
          @click="cart.open=false"
