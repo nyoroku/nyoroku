@@ -58,7 +58,8 @@ class POSTests(TestCase):
             name="Free Item",
             category=self.category,
             price=0,
-            stock_qty=1
+            stock_qty=1,
+            approved=True
         )
         url = reverse('pos:index')
         response = self.client.get(url)
