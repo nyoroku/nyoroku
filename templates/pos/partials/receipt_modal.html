@@ -1,47 +1,49 @@
-<div x-data="{ open: true }" x-show="open" x-cloak class="fixed inset-0 bg-black/80 flex items-end justify-center z-[200]">
-    <div x-show="open" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0" 
-         class="bg-surface rounded-t-[24px] w-full max-w-[480px] border border-border overflow-hidden">
+<div x-data="{ open: true }" x-show="open" x-cloak class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+    <div x-show="open" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100" 
+         class="bg-surface rounded-[32px] w-full max-w-[400px] border border-border shadow-2xl overflow-hidden">
         
-        <div class="bg-brand-whatsapp p-[22px_24px] text-center">
-            <div class="font-display text-[22px] font-[800] text-[#0a0a0f]">✓ Payment Complete</div>
-            <div class="text-black/55 text-[13px] mt-[4px] font-bold uppercase transition">{{ transaction.payment_method }} · KES {{ transaction.total }}</div>
+        <div class="bg-success p-6 text-center">
+            <div class="text-white text-4xl mb-2">✓</div>
+            <div class="text-white font-bold text-[20px] tracking-tight">Payment Complete</div>
+            <div class="text-white/80 text-[12px] font-bold uppercase tracking-widest mt-1">
+                {{ transaction.payment_method }} · KES {{ transaction.total|toLocaleString }}
+            </div>
         </div>
         
-        <div class="p-[20px_24px] font-mono">
-            <div class="border-y border-dashed border-border py-[10px] mb-[12px]">
-                <div class="flex justify-between text-[12px] text-text-muted">
-                    <span class="font-bold uppercase">#{{ transaction.receipt_number|slice:"-6:" }}</span>
-                    <span>{{ transaction.created_at|date:"M d, H:i" }}</span>
-                </div>
-                <div class="text-[12px] text-text-muted mt-[2px]">Cashier: {{ transaction.cashier.name|default:'Admin' }}</div>
+        <div class="p-6 font-mono text-text-primary">
+            <div class="border-y border-dashed border-border py-3 mb-4 flex justify-between text-[11px] font-bold text-text-secondary uppercase">
+                <span>#{{ transaction.receipt_number|slice:"-6:" }}</span>
+                <span>{{ transaction.created_at|date:"M d, H:i" }}</span>
             </div>
             
-            {% for item in items %}
-            <div class="flex justify-between text-[13px] text-text-primary py-[4px]">
-                <span>{{ item.product.name }} × {{ item.qty }}</span>
-                <span class="font-[600]">KES {% widthratio item.price 1 item.qty %}</span>
+            <div class="space-y-2 mb-4">
+                {% for item in items %}
+                <div class="flex justify-between text-[13px]">
+                    <span class="truncate pr-4">{{ item.product.name }} × {{ item.qty }}</span>
+                    <span class="font-bold tabular">KES {{ item.line_total|default:0|floatformat:0 }}</span>
+                </div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <div class="text-xs text-text-muted">See receipt details</div>
-            {% endfor %}
             
             {% if transaction.coupon_discount > 0 %}
-            <div class="flex justify-between text-[13px] text-brand-whatsapp py-[4px] font-bold">
+            <div class="flex justify-between text-[13px] text-success font-bold mb-2">
                 <span>Discount</span>
-                <span>- KES {{ transaction.coupon_discount }}</span>
+                <span class="tabular">- KES {{ transaction.coupon_discount|floatformat:0 }}</span>
             </div>
             {% endif %}
 
-            <div class="border-t border-dashed border-border mt-[12px] pt-[12px] flex justify-between font-[800] text-[17px] text-brand-whatsapp">
-                <span>TOTAL</span><span>KES {{ transaction.total }}</span>
+            <div class="border-t border-dashed border-border pt-4 flex justify-between font-bold text-[20px] text-text-primary">
+                <span>TOTAL</span>
+                <span class="tabular">KES {{ transaction.total|floatformat:0 }}</span>
             </div>
         </div>
         
-        <div class="p-[0_24px_28px] flex gap-[10px]">
-            <a href="/pos/receipt/{{ transaction.id }}/" target="_blank" class="flex-1 bg-surface2 border border-border rounded-[12px] p-[13px] text-text-primary font-[600] text-[14px] cursor-pointer flex items-center justify-center gap-[8px] no-underline hover:bg-surface3">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print
+        <div class="p-6 pt-0 flex flex-col gap-3">
+            <a href="/pos/receipt/{{ transaction.id }}/" target="_blank" class="w-full btn-primary h-12 gap-2 bg-bg-main border border-border !text-text-primary hover:bg-hover no-underline">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Print Receipt
             </a>
-            <button @click="open = false; cart.open = false; clearCart()" class="flex-1 bg-brand-whatsapp border-none rounded-[12px] p-[13px] text-[#0a0a0f] font-[800] text-[14px] cursor-pointer font-display">
+            <button @click="open = false; cart.open = false; clearCart()" class="w-full btn-success h-12 text-[16px]">
                 New Sale
             </button>
         </div>

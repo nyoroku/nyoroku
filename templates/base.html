@@ -9,7 +9,7 @@
   <meta name="description" content="Eli Collection — Premium Point of Sale System">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
   
   {% tailwind_css %}
   
@@ -24,81 +24,44 @@
     
     /* === DESIGN SYSTEM === */
     :root {
-      --brand-whatsapp: #25D366;
-      --brand-green-dark: #128C7E;
-      --brand-green-light: #dcf8c6;
-      --green: #25D366;
-      --green-dark: #128C7E;
-      --green-light: #dcf8c6;
-      --surface: #0a0a0f;
-      --surface-2: #111118;
-      --surface-3: #1a1a24;
-      --text: #ffffff;
-      --text-muted: #888899;
-      --border: rgba(255,255,255,0.08);
+      --bg-main:        #F8F9FB;
+      --bg-surface:     #FFFFFF;
+      --border:         #E5E7EB;
+      --text-primary:   #111827;
+      --text-secondary: #6B7280;
+      --primary:        #2563EB;
+      --success:        #16A34A;
+      --warning:        #F59E0B;
+      --danger:         #DC2626;
+      --cart-bg:        #F1F5F9;
+      --selected-item:  #DBEAFE;
+      --hover:          #F3F4F6;
+      --disabled:       #D1D5DB;
     }
     
     body { 
-      background: #050505; 
-      color: var(--text); 
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      background: var(--bg-main); 
+      color: var(--text-primary); 
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
     
-    /* Noise texture overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      opacity: 0.015;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 9999;
-    }
-    
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    /* Clean Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
     
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
-    /* Typography classes */
-    .syne { font-family: 'Syne', sans-serif; }
-    .jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .dm-mono { font-family: 'DM Mono', monospace; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .tabular { font-variant-numeric: tabular-nums; }
     
-    /* Glass effect */
     .glass {
-      background: rgba(15,15,15,0.6);
-      backdrop-filter: blur(20px) saturate(1.2);
-      -webkit-backdrop-filter: blur(20px) saturate(1.2);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    .glass-strong {
-      background: rgba(10,10,10,0.85);
-      backdrop-filter: blur(40px) saturate(1.4);
-      -webkit-backdrop-filter: blur(40px) saturate(1.4);
-      border: 1px solid rgba(255,255,255,0.06);
-    }
-    
-    /* Green gradient text */
-    .text-gradient-green {
-      background: linear-gradient(135deg, #00C853, #69F0AE);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    
-    /* Ambient glow orbs */
-    .ambient-orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(100px);
-      pointer-events: none;
-      z-index: -1;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
     }
     
     /* Stagger animation helper */
