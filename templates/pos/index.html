@@ -612,10 +612,7 @@ document.getElementById('search-input').addEventListener('blur', () => {
   sw.style.boxShadow   = 'none';
 });
 
-// window.openProduct — global so HTMX-swapped grid can call it
-window.openProduct = function(productId) {
-  window.dispatchEvent(new CustomEvent('open-product-modal', { detail: productId }));
-};
+
 
 // Barcode scanner
 let html5QrCode;
@@ -626,8 +623,8 @@ function startScanner() {
     { facingMode: "environment" },
     { fps: 20, qrbox: { width: 220, height: 220 } },
     (text) => {
-      const app = document.querySelector('[x-data]').__x.$data;
-      if (app.handleBarcode(text)) { app.scanOpen = false; html5QrCode.stop(); }
+      const app = Alpine.$data(document.querySelector('[x-data]'));
+      if (app && app.handleBarcode(text)) { app.scanOpen = false; html5QrCode.stop(); }
     },
     () => {}
   ).catch(e => console.error("Scanner:", e));
