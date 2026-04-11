@@ -1,105 +1,83 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block screen_title %}Stock History{% endblock %}
-
 {% block content %}
-<div class="px-6 py-8 max-w-7xl mx-auto space-y-10 animate-fade-in">
+<div class="px-4 py-6 max-w-4xl mx-auto">
 
-    <!-- Header Area -->
-    <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="font-display font-800 text-6xl text-white tracking-tight leading-none uppercase">Stock History</h1>
-            <div class="flex items-center gap-3 mt-4">
-                <div class="px-3 py-1 rounded-full bg-brand-whatsapp/10 border border-brand-whatsapp/20">
-                    <span class="text-[10px] font-bold text-brand-whatsapp uppercase tracking-widest">Active Procurement</span>
-                </div>
-                <span class="text-text-muted font-bold text-[11px] uppercase tracking-[0.3em] font-display">Archived Records & Tracking</span>
-            </div>
+            <h1 class="text-xl font-bold" style="color: #12343b">Stock Orders</h1>
+            <p class="text-sm" style="color: #6B7280">Purchase history &amp; tracking</p>
         </div>
-        
-        <div class="flex gap-4">
-            <a href="{% url 'procurement:supplier_list' %}" class="h-16 px-10 bg-surface2 border border-white/[0.04] text-text-muted rounded-2xl font-display font-800 text-[11px] uppercase tracking-widest flex items-center justify-center transition-all hover:text-white active:scale-95">
-                Suppliers
-            </a>
-            <a href="{% url 'procurement:buy_stock' %}" class="group relative h-16 px-10 bg-brand-whatsapp text-white rounded-2xl font-display font-800 text-[13px] uppercase tracking-widest flex items-center justify-center gap-4 transition-all active:scale-95 shadow-glow-green-sm hover:brightness-110 overflow-hidden">
-                <div class="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></div>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                Buy New Stock
+        <div class="flex gap-2">
+            <a href="{% url 'procurement:supplier_list' %}" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center no-underline active:scale-95 transition-all"
+               style="background: #F8F9FB; color: #2d545e; border: 1px solid #E5E7EB">Suppliers</a>
+            <a href="{% url 'procurement:buy_stock' %}" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center gap-2 no-underline active:scale-95 transition-all shadow-md"
+               style="background: #2d545e; color: #e1b382">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                Buy Stock
             </a>
         </div>
     </div>
 
-    <!-- History Content (Mobile First Grid) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6 pb-20">
+    <!-- Orders List -->
+    <div class="space-y-3 pb-20">
         {% for po in pos %}
-        <div class="group relative glass border border-white/[0.04] p-6 sm:p-8 rounded-[40px] hover:bg-white/[0.03] transition-all hover:border-brand-whatsapp/20 animate-slide-up">
-            <div class="absolute inset-0 bg-brand-whatsapp/[0.01] pointer-events-none rounded-[40px]"></div>
-            
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-                <!-- Info Section -->
-                <div class="flex items-center gap-6">
-                    <div class="w-16 h-16 shrink-0 rounded-[22px] bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-text-muted group-hover:text-brand-whatsapp group-hover:bg-brand-whatsapp/5 transition-all">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        <a href="{% url 'procurement:po_detail' po.id %}" class="block rounded-2xl p-4 no-underline transition-all active:scale-[0.99]"
+           style="background: white; border: 1px solid #E5E7EB">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center"
+                         style="background: #2d545e15">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2d545e" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
                     </div>
-                    <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-center gap-3 mb-2">
-                            <h3 class="font-display font-800 text-2xl text-white tracking-tight uppercase">#{{ po.lpo_number|slice:"-4:" }}</h3>
-                            <!-- Status Badge -->
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <span class="font-bold text-base" style="color: #12343b">#{{ po.lpo_number|slice:"-4:" }}</span>
                             {% if po.status == 'draft' %}
-                                <span class="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-[8px] font-black text-blue-400 uppercase tracking-widest">Draft</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #2d545e15; color: #2d545e">Draft</span>
                             {% elif po.status == 'pending' %}
-                                <span class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[8px] font-black text-amber-500 uppercase tracking-widest animate-pulse">Pending</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #F59E0B22; color: #D97706">Pending</span>
                             {% elif po.status == 'received' %}
-                                <span class="px-3 py-1 rounded-full bg-brand-whatsapp/10 border border-brand-whatsapp/30 text-[8px] font-black text-brand-whatsapp uppercase tracking-widest shadow-glow-green-xs">Arrived</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #16A34A18; color: #16A34A">Received</span>
                             {% else %}
-                                <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[8px] font-black text-text-muted uppercase tracking-widest">{{ po.status }}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #F8F9FB; color: #6B7280">{{ po.status }}</span>
                             {% endif %}
                         </div>
-                        <div class="flex items-center gap-4 text-text-muted font-bold text-[10px] uppercase tracking-widest">
-                            <span class="truncate max-w-[120px]">{{ po.supplier.name }}</span>
-                            <span class="w-1 h-1 rounded-full bg-white/10"></span>
+                        <div class="flex items-center gap-2 text-xs truncate" style="color: #6B7280">
+                            <span class="truncate">{{ po.supplier.name }}</span>
+                            <span>·</span>
                             <span>{{ po.created_at|date:"d M" }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Stats & Actions -->
-                <div class="flex items-center justify-between lg:justify-end gap-6 border-t lg:border-t-0 border-white/[0.04] pt-6 lg:pt-0">
-                    <div class="text-left lg:text-right shrink-0">
-                        <p class="text-[9px] font-bold text-text-muted uppercase tracking-[0.3em] mb-1">Total Value</p>
-                        <p class="font-display font-800 text-3xl text-brand-whatsapp tracking-tighter tabular-nums drop-shadow-sm">
-                            KES {{ po.total_cost|floatformat:0 }}
-                        </p>
+                <div class="flex items-center gap-3 shrink-0">
+                    {% if po.status == 'pending' and user.role == 'admin' %}
+                    <form action="{% url 'procurement:quick_approve' po.id %}" method="POST" @click.stop>
+                        {% csrf_token %}
+                        <button type="submit" class="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all"
+                                style="background: #16A34A; color: white">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
+                        </button>
+                    </form>
+                    {% endif %}
+                    <div class="text-right">
+                        <div class="font-bold text-lg font-mono tabular" style="color: #2d545e">{{ po.total_cost|floatformat:0 }}</div>
+                        <div class="text-[10px] font-semibold" style="color: #c89666">KES</div>
                     </div>
-                    
-                    <div class="flex items-center gap-2">
-                        {% if po.status == 'pending' and user.role == 'admin' %}
-                        <form action="{% url 'procurement:quick_approve' po.id %}" method="POST" class="inline-block">
-                            {% csrf_token %}
-                            <button type="submit" class="w-12 h-12 rounded-2xl bg-brand-whatsapp text-white flex items-center justify-center shadow-glow-green-xs hover:brightness-110 active:scale-90 transition-all">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
-                            </button>
-                        </form>
-                        {% endif %}
-
-                        <a href="{% url 'procurement:po_detail' po.id %}" class="h-14 px-8 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-white font-display font-800 text-[11px] uppercase tracking-widest flex items-center justify-center hover:bg-white/[0.08] transition-all active:scale-95">
-                            Manage
-                        </a>
-                    </div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
                 </div>
             </div>
-        </div>
+        </a>
         {% empty %}
-        <div class="py-32 flex flex-col items-center justify-center text-center opacity-30">
-            <div class="w-24 h-24 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center mb-6">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-            </div>
-            <h4 class="font-display font-800 text-xl text-white uppercase tracking-widest">Archive Empty</h4>
-            <p class="text-sm font-medium mt-2">Historical data will populate here</p>
+        <div class="flex flex-col items-center justify-center py-20 rounded-2xl" style="background: white; border: 2px dashed #E5E7EB">
+            <div class="text-4xl mb-4 opacity-30">📋</div>
+            <p class="font-semibold" style="color: #6B7280">No stock orders yet</p>
+            <p class="text-xs mt-1" style="color: #9CA3AF">Create your first purchase order</p>
         </div>
         {% endfor %}
     </div>
-
 </div>
 {% endblock %}

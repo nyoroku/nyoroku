@@ -1,829 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block screen_title %}Buy Stock{% endblock %}
-
 {% block content %}
-
-<style>
-  :root {
-    --mint: #A8F5C8;
-    --mint-dim: #6DEAAA;
-    --mint-glow: rgba(168, 245, 200, 0.12);
-    --mint-border: rgba(168, 245, 200, 0.18);
-    --mint-border-strong: rgba(168, 245, 200, 0.35);
-    --surface-0: #0A0C0B;
-    --surface-1: #0F1211;
-    --surface-2: #141917;
-    --surface-3: #1C2320;
-    --surface-4: #222A26;
-    --text-primary: #F0F5F2;
-    --text-secondary: #8B9E94;
-    --text-muted: #4D5E56;
-    --red: #FF5F5F;
-    --font-display: 'DM Serif Display', Georgia, serif;
-    --font-body: 'DM Sans', system-ui, sans-serif;
-    --radius-sm: 14px;
-    --radius-md: 22px;
-    --radius-lg: 32px;
-    --radius-xl: 48px;
-  }
-
-  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
-
-  .buy-wrap * { font-family: var(--font-body); box-sizing: border-box; }
-
-  .buy-wrap {
-    background: var(--surface-0);
-    min-height: 100vh;
-    padding: 48px 24px 120px;
-  }
-
-  .buy-inner { max-width: 1400px; margin: 0 auto; }
-
-  /* ── Header ── */
-  .page-header {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 56px;
-    padding-bottom: 40px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-
-  .page-title {
-    font-family: var(--font-display);
-    font-size: clamp(48px, 7vw, 88px);
-    font-weight: 400;
-    color: var(--text-primary);
-    line-height: 0.9;
-    letter-spacing: -0.02em;
-    margin: 0;
-  }
-
-  .page-title em {
-    font-style: italic;
-    color: var(--mint);
-  }
-
-  .page-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 16px;
-  }
-
-  .eyebrow-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--mint);
-    animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.8); }
-  }
-
-  .eyebrow-text {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  .btn-ghost {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    height: 52px;
-    padding: 0 28px;
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: var(--radius-md);
-    background: var(--surface-2);
-    color: var(--text-secondary);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    text-decoration: none;
-    cursor: pointer;
-    transition: border-color 0.2s, color 0.2s, background 0.2s;
-  }
-
-  .btn-ghost:hover { 
-    border-color: var(--mint-border); 
-    color: var(--mint); 
-    background: var(--mint-glow); 
-  }
-
-  /* ── Layout Grid ── */
-  .layout-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 32px;
-    align-items: start;
-  }
-
-  @media (min-width: 1200px) {
-    .layout-grid { grid-template-columns: 1fr 420px; }
-  }
-
-  /* ── Cards ── */
-  .card {
-    background: var(--surface-1);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: var(--radius-xl);
-    overflow: hidden;
-  }
-
-  .card-inner { padding: 32px; }
-
-  .section-label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-
-  .section-num {
-    width: 32px; height: 32px;
-    border-radius: 10px;
-    background: var(--mint-glow);
-    border: 1px solid var(--mint-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: var(--mint);
-    flex-shrink: 0;
-  }
-
-  .section-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin: 0;
-  }
-
-  /* ── Inputs ── */
-  .field {
-    width: 100%;
-    height: 58px;
-    background: var(--surface-2);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: var(--radius-md);
-    padding: 0 22px;
-    color: var(--text-primary);
-    font-size: 15px;
-    font-weight: 500;
-    font-family: var(--font-body);
-    outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-    transition: border-color 0.2s, background 0.2s;
-  }
-
-  .field:focus {
-    border-color: var(--mint-border-strong);
-    background: var(--surface-3);
-  }
-
-  .field option { background: var(--surface-2); }
-
-  .field::placeholder { color: var(--text-muted); }
-
-  /* ── Search bar ── */
-  .search-wrap {
-    position: relative;
-    margin-bottom: 28px;
-  }
-
-  .search-wrap .field {
-    height: 64px;
-    padding-left: 56px;
-    font-size: 16px;
-    border-radius: var(--radius-lg);
-  }
-
-  .search-icon {
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--mint);
-    opacity: 0.5;
-    pointer-events: none;
-  }
-
-  /* ── Product Grid ── */
-  .product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
-  }
-
-  .product-card {
-    background: var(--surface-2);
-    border: 1px solid rgba(255,255,255,0.04);
-    border-radius: var(--radius-lg);
-    padding: 22px;
-    cursor: pointer;
-    transition: border-color 0.18s, background 0.18s, transform 0.12s;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    user-select: none;
-  }
-
-  .product-card:hover {
-    border-color: var(--mint-border);
-    background: var(--surface-3);
-  }
-
-  .product-card:active { transform: scale(0.97); }
-
-  .product-emoji {
-    font-size: 28px;
-    line-height: 1;
-    flex-shrink: 0;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--surface-4);
-    border-radius: 14px;
-  }
-
-  .product-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1.2;
-    margin: 0 0 5px;
-  }
-
-  .product-price {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--mint);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    margin: 0;
-  }
-
-  /* ── Supplier Add Form ── */
-  .supplier-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  @media (max-width: 600px) { .supplier-form-grid { grid-template-columns: 1fr; } }
-
-  /* ── Order Bag ── */
-  .bag-wrap {
-    position: sticky;
-    top: 24px;
-  }
-
-  .bag-card {
-    background: var(--surface-1);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: var(--radius-xl);
-    display: flex;
-    flex-direction: column;
-    max-height: 82vh;
-    overflow: hidden;
-  }
-
-  .bag-header {
-    padding: 28px 32px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-
-  .bag-title {
-    font-family: var(--font-display);
-    font-size: 28px;
-    color: var(--text-primary);
-    margin: 0;
-    font-weight: 400;
-  }
-
-  .bag-count {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    background: var(--surface-3);
-    border-radius: 100px;
-    padding: 4px 14px;
-  }
-
-  .bag-items {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    scrollbar-width: none;
-  }
-
-  .bag-items::-webkit-scrollbar { display: none; }
-
-  .bag-item {
-    background: var(--surface-2);
-    border: 1px solid rgba(255,255,255,0.04);
-    border-radius: var(--radius-md);
-    padding: 18px 20px;
-  }
-
-  .bag-item-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    gap: 12px;
-  }
-
-  .bag-item-name-wrap {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-
-  .bag-item-emoji {
-    font-size: 18px;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-
-  .bag-item-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .btn-remove {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-    font-size: 16px;
-    transition: color 0.15s;
-    flex-shrink: 0;
-  }
-
-  .btn-remove:hover { color: var(--red); }
-
-  .bag-item-controls {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .control-label {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  .cost-input {
-    width: 100px;
-    height: 40px;
-    background: var(--surface-3);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 12px;
-    padding: 0 12px;
-    color: var(--mint);
-    font-size: 14px;
-    font-weight: 700;
-    font-family: var(--font-body);
-    outline: none;
-    transition: border-color 0.15s;
-  }
-
-  .cost-input:focus { border-color: var(--mint-border-strong); }
-
-  .qty-stepper {
-    display: flex;
-    align-items: center;
-    background: var(--surface-3);
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.05);
-  }
-
-  .qty-btn {
-    width: 38px; height: 40px;
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.15s, background 0.15s;
-  }
-
-  .qty-btn:hover { color: var(--mint); background: var(--mint-glow); }
-
-  .qty-input {
-    width: 44px; height: 40px;
-    background: none;
-    border: none;
-    border-left: 1px solid rgba(255,255,255,0.06);
-    border-right: 1px solid rgba(255,255,255,0.06);
-    color: var(--text-primary);
-    font-size: 15px;
-    font-weight: 700;
-    font-family: var(--font-body);
-    text-align: center;
-    outline: none;
-  }
-
-  /* ── Bag Footer ── */
-  .bag-footer {
-    padding: 24px 32px;
-    background: rgba(0,0,0,0.25);
-    border-top: 1px solid rgba(255,255,255,0.04);
-    flex-shrink: 0;
-  }
-
-  .total-row {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-
-  .total-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  .total-amount {
-    font-family: var(--font-display);
-    font-size: 52px;
-    color: var(--mint);
-    line-height: 1;
-  }
-
-  .total-currency {
-    font-family: var(--font-body);
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-right: 6px;
-  }
-
-  .btn-complete {
-    width: 100%;
-    height: 72px;
-    background: var(--mint);
-    border: none;
-    border-radius: var(--radius-lg);
-    color: #0A1A10;
-    font-family: var(--font-body);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s, opacity 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-complete::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  .btn-complete:hover:not(:disabled) { background: var(--mint-dim); }
-  .btn-complete:active:not(:disabled) { transform: scale(0.98); }
-  .btn-complete:disabled { opacity: 0.2; cursor: not-allowed; }
-
-  /* ── Empty State ── */
-  .bag-empty {
-    padding: 60px 0;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-  }
-
-  .bag-empty-icon {
-    display: block;
-    font-size: 40px;
-    margin-bottom: 16px;
-    opacity: 0.3;
-  }
-
-  /* ── Variant Drawer ── */
-  .drawer-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .drawer-scrim {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
-
-  .drawer-panel {
-    position: relative;
-    width: 100%;
-    max-width: 480px;
-    height: 100%;
-    background: var(--surface-1);
-    border-left: 1px solid rgba(255,255,255,0.06);
-    display: flex;
-    flex-direction: column;
-    animation: slideRight 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes slideRight {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-
-  .drawer-header {
-    padding: 40px 36px 28px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    flex-shrink: 0;
-  }
-
-  .drawer-eyebrow {
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.4em;
-    text-transform: uppercase;
-    color: var(--mint);
-    opacity: 0.7;
-    margin: 0 0 10px;
-  }
-
-  .drawer-product-name {
-    font-family: var(--font-display);
-    font-size: 38px;
-    color: var(--text-primary);
-    margin: 0;
-    line-height: 1.05;
-    font-weight: 400;
-  }
-
-  .drawer-items {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    scrollbar-width: none;
-  }
-
-  .drawer-items::-webkit-scrollbar { display: none; }
-
-  .variant-row {
-    background: var(--surface-2);
-    border: 1px solid rgba(255,255,255,0.04);
-    border-radius: var(--radius-md);
-    padding: 18px 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    transition: border-color 0.15s;
-  }
-
-  .variant-row:focus-within { border-color: var(--mint-border); }
-
-  .variant-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 6px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .variant-cost-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .variant-cost-label {
-    font-size: 9px;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-
-  .variant-cost-input {
-    width: 88px;
-    height: 34px;
-    background: var(--surface-3);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 10px;
-    padding: 0 10px;
-    color: var(--mint);
-    font-size: 13px;
-    font-weight: 700;
-    font-family: var(--font-body);
-    outline: none;
-    transition: border-color 0.15s;
-  }
-
-  .variant-cost-input:focus { border-color: var(--mint-border-strong); }
-
-  .variant-qty-input {
-    width: 68px;
-    height: 52px;
-    background: var(--surface-3);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 14px;
-    text-align: center;
-    color: var(--text-primary);
-    font-size: 20px;
-    font-weight: 700;
-    font-family: var(--font-display);
-    outline: none;
-    transition: border-color 0.15s, background 0.15s;
-    -moz-appearance: textfield;
-    flex-shrink: 0;
-  }
-
-  .variant-qty-input:focus {
-    border-color: var(--mint-border-strong);
-    background: var(--surface-4);
-  }
-
-  .variant-qty-input::-webkit-inner-spin-button,
-  .variant-qty-input::-webkit-outer-spin-button { display: none; }
-
-  .drawer-footer {
-    padding: 24px;
-    border-top: 1px solid rgba(255,255,255,0.04);
-    flex-shrink: 0;
-    background: rgba(0,0,0,0.2);
-  }
-
-  .drawer-qty-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px; height: 26px;
-    background: rgba(10,26,16,0.8);
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    color: #0A1A10;
-  }
-
-  /* ── Mobile Bar ── */
-  .mobile-bar {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 100;
-    padding: 16px 20px;
-  }
-
-  .mobile-bar-inner {
-    background: rgba(15,18,17,0.92);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.07);
-    border-radius: var(--radius-lg);
-    padding: 18px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .mobile-bar-total {
-    font-family: var(--font-display);
-    font-size: 32px;
-    color: var(--mint);
-  }
-
-  .btn-mobile-complete {
-    height: 52px;
-    padding: 0 28px;
-    background: var(--mint);
-    border: none;
-    border-radius: var(--radius-md);
-    color: #0A1A10;
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
-  }
-
-  .btn-mobile-complete:disabled { opacity: 0.25; cursor: not-allowed; }
-
-  /* ── Supplier toggle link ── */
-  .link-mint {
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--mint);
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-    opacity: 0.75;
-    transition: opacity 0.15s;
-  }
-
-  .link-mint:hover { opacity: 1; }
-
-  .btn-mint-solid {
-    width: 100%;
-    height: 54px;
-    background: var(--mint);
-    border: none;
-    border-radius: var(--radius-md);
-    color: #0A1A10;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-family: var(--font-body);
-  }
-
-  .btn-mint-solid:hover { background: var(--mint-dim); }
-
-  /* Animate fade in */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-in { animation: fadeUp 0.4s ease both; }
-  .delay-1 { animation-delay: 0.05s; }
-  .delay-2 { animation-delay: 0.1s; }
-  .delay-3 { animation-delay: 0.15s; }
-
-  /* Hide number input spinners */
-  input[type=number]::-webkit-inner-spin-button,
-  input[type=number]::-webkit-outer-spin-button { opacity: 0; }
-</style>
-
-<div class="buy-wrap" x-data="{
+<div class="px-4 py-5 max-w-5xl mx-auto pb-32" x-data="{
     supplierId: '',
     items: [],
     searchQuery: '',
@@ -867,7 +46,7 @@
 
     removeItem(idx) { this.items.splice(idx, 1); },
 
-    get orderTotal() { return this.items.reduce((s, i) => s + parseFloat(i.total_cost), 0).toFixed(2); },
+    get orderTotal() { return this.items.reduce((s, i) => s + parseFloat(i.total_cost), 0).toFixed(0); },
 
     get modalTotalQty() { return this.productVariants.reduce((s, v) => s + (Number(v.qty) || 0), 0); },
 
@@ -877,219 +56,243 @@
         const fd = new FormData();
         fd.append('supplier_id', this.supplierId);
         fd.append('items_json', JSON.stringify(this.items));
-        const resp = await fetch('{% url "procurement:buy_stock" %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+        const resp = await fetch('{% url 'procurement:buy_stock' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
         if (resp.redirected) { window.location.href = resp.url; }
         else { const data = await resp.json(); if (data.error) alert(data.error); }
     }
 }">
 
-  <div class="buy-inner">
-
-    <!-- Page Header -->
-    <div class="page-header animate-in">
-      <div>
-        <h1 class="page-title">Buy <em>Stock</em></h1>
-        <div class="page-eyebrow">
-          <span class="eyebrow-dot"></span>
-          <span class="eyebrow-text">Supply Management</span>
-        </div>
-      </div>
-      <a href="{% url 'procurement:po_list' %}" class="btn-ghost">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        Stock History
-      </a>
-    </div>
-
-    <div class="layout-grid">
-
-      <!-- Left: Browse -->
-      <div style="display: flex; flex-direction: column; gap: 28px;">
-
-        <!-- Supplier Card -->
-        <div class="card animate-in delay-1">
-          <div class="card-inner">
-            <div class="section-label">
-              <div class="section-num">01</div>
-              <p class="section-title">Choose Supplier</p>
-              <button @click="showNewSupplier = !showNewSupplier" class="link-mint" style="margin-left: auto;">
-                <span x-text="showNewSupplier ? '← Back' : '+ New Supplier'"></span>
-              </button>
-            </div>
-
-            <div x-show="!showNewSupplier" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-              <select x-model="supplierId" class="field">
-                <option value="" class="bg-surface2">— Select a supplier —</option>
-                {% for s in suppliers %}
-                <option value="{{ s.id }}">{{ s.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div x-show="showNewSupplier" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-              <div class="supplier-form-grid" style="margin-bottom: 12px;">
-                <input type="text" x-model="newSupplier.name" placeholder="Supplier name" class="field">
-                <input type="text" x-model="newSupplier.phone" placeholder="Phone number" class="field">
-              </div>
-              <button @click="async () => {
-                  if(!newSupplier.name) return;
-                  const fd = new FormData(); fd.append('name', newSupplier.name); fd.append('phone', newSupplier.phone);
-                  await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
-                  window.location.reload();
-              }" class="btn-mint-solid">
-                Create Supplier & Continue
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Product Browser Card -->
-        <div class="card animate-in delay-2">
-          <div class="card-inner" style="padding-bottom: 8px;">
-            <div class="section-label">
-              <div class="section-num">02</div>
-              <p class="section-title">Select Products</p>
-            </div>
-
-            <div class="search-wrap">
-              <input type="text" x-model="searchQuery" placeholder="Search or scan barcode…" class="field">
-              <div class="search-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              </div>
-            </div>
-          </div>
-
-          <div class="product-grid" style="padding: 4px 20px 24px;">
-            {% for p in products %}
-            <template x-if="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase()) || '{{ p.barcode|default:'' }}' === searchQuery">
-              <div class="product-card"
-                   @click="selectProduct({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}', has_variants: {% if p.has_variants %}true{% else %}false{% endif %} })">
-                <div class="product-emoji" x-text="'{{ p.image|escapejs }}'"></div>
-                <div>
-                  <p class="product-name">{{ p.name }}</p>
-                  <p class="product-price">KES {{ p.cost_price|default:0 }}</p>
-                </div>
-              </div>
-            </template>
-            {% endfor %}
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Right: Order Bag -->
-      <div class="bag-wrap animate-in delay-3">
-        <div class="bag-card">
-          <div class="bag-header">
-            <h2 class="bag-title">Order Bag</h2>
-            <span class="bag-count" x-text="items.length + (items.length === 1 ? ' item' : ' items')"></span>
-          </div>
-
-          <div class="bag-items">
-            <template x-for="(item, index) in items" :key="index">
-              <div class="bag-item">
-                <div class="bag-item-top">
-                  <div class="bag-item-name-wrap">
-                    <span class="bag-item-emoji" x-text="item.image"></span>
-                    <span class="bag-item-name" x-text="item.name"></span>
-                  </div>
-                  <button class="btn-remove" @click="removeItem(index)" aria-label="Remove">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                  </button>
-                </div>
-                <div class="bag-item-controls">
-                  <div class="control-group">
-                    <span class="control-label">Unit Cost</span>
-                    <input type="number" x-model.number="item.unit_cost" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="cost-input" min="0">
-                  </div>
-                  <div class="control-group" style="align-items: flex-end;">
-                    <span class="control-label">Quantity</span>
-                    <div class="qty-stepper">
-                      <button class="qty-btn" @click="if(item.qty > 1) { item.qty--; item.total_cost = (item.qty * item.unit_cost).toFixed(2); }">−</button>
-                      <input type="number" x-model.number="item.qty" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)" class="qty-input" min="1">
-                      <button class="qty-btn" @click="item.qty++; item.total_cost = (item.qty * item.unit_cost).toFixed(2);">+</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
-
-            <template x-if="items.length === 0">
-              <div class="bag-empty">
-                <span class="bag-empty-icon">🛍</span>
-                Bag is empty
-              </div>
-            </template>
-          </div>
-
-          <div class="bag-footer">
-            <div class="total-row">
-              <span class="total-label">Total</span>
-              <div>
-                <span class="total-currency">KES</span>
-                <span class="total-amount" x-text="orderTotal"></span>
-              </div>
-            </div>
-            <button class="btn-complete" @click="submitOrder()" :disabled="items.length === 0 || !supplierId">
-              Complete Order
-            </button>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Variant Drawer -->
-  <template x-if="view === 'sku'">
-    <div class="drawer-overlay">
-      <div class="drawer-scrim" @click="view = 'listing'"></div>
-      <div class="drawer-panel">
-        <div class="drawer-header">
-          <p class="drawer-eyebrow">Select Variants</p>
-          <h2 class="drawer-product-name" x-text="selectedProduct.name"></h2>
-        </div>
-
-        <div class="drawer-items">
-          <template x-for="v in productVariants" :key="v.id">
-            <div class="variant-row">
-              <div style="flex: 1; min-width: 0;">
-                <p class="variant-name" x-text="v.name"></p>
-                <div class="variant-cost-wrap">
-                  <span class="variant-cost-label">Cost</span>
-                  <input type="number" x-model.number="v.edit_cost" class="variant-cost-input" min="0">
-                </div>
-              </div>
-              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-                <span class="control-label">Qty</span>
-                <input type="number" x-model.number="v.qty" class="variant-qty-input" placeholder="0" min="0">
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <div class="drawer-footer">
-          <button @click="addVariantsToCart()" :disabled="modalTotalQty === 0" class="btn-complete" style="height: 62px; font-size: 12px;">
-            Add <span x-text="modalTotalQty"></span> to Order Bag
-          </button>
-        </div>
-      </div>
-    </div>
-  </template>
-
-  <!-- Mobile Bottom Bar -->
-  <template x-if="items.length > 0">
-    <div class="mobile-bar" style="display: block;" x-show="true">
-      <div class="mobile-bar-inner">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
         <div>
-          <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">Total</div>
-          <div class="mobile-bar-total" x-text="'KES ' + orderTotal"></div>
+            <h1 class="text-xl font-bold" style="color: #12343b">Buy Stock</h1>
+            <p class="text-sm" style="color: #6B7280">Create a purchase order</p>
         </div>
-        <button class="btn-mobile-complete" @click="submitOrder()" :disabled="!supplierId">
-          Complete
-        </button>
-      </div>
+        <a href="{% url 'procurement:po_list' %}" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center gap-2 no-underline active:scale-95 transition-all"
+           style="background: #F8F9FB; color: #2d545e; border: 1px solid #E5E7EB">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            History
+        </a>
     </div>
-  </template>
 
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <!-- LEFT: Supplier + Products -->
+        <div class="lg:col-span-2 space-y-4">
+
+            <!-- Step 1: Supplier -->
+            <div class="rounded-2xl p-5" style="background: white; border: 1px solid #E5E7EB">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background: #2d545e; color: #e1b382">1</span>
+                        <span class="text-sm font-semibold" style="color: #12343b">Choose Supplier</span>
+                    </div>
+                    <button @click="showNewSupplier = !showNewSupplier" class="text-xs font-semibold" style="color: #c89666; background:none; border:none; cursor:pointer">
+                        <span x-text="showNewSupplier ? '← Back' : '+ New'"></span>
+                    </button>
+                </div>
+
+                <div x-show="!showNewSupplier" x-transition>
+                    <select x-model="supplierId" class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
+                            style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
+                        <option value="">— Select supplier —</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div x-show="showNewSupplier" x-cloak x-transition>
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" x-model="newSupplier.name" placeholder="Supplier name" class="flex-1 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none"
+                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
+                        <input type="text" x-model="newSupplier.phone" placeholder="Phone" class="w-32 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none"
+                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
+                    </div>
+                    <button @click="async () => {
+                        if(!newSupplier.name) return;
+                        const fd = new FormData(); fd.append('name', newSupplier.name); fd.append('phone', newSupplier.phone);
+                        await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
+                        window.location.reload();
+                    }" class="w-full py-3 rounded-xl font-semibold text-sm active:scale-95 transition-all"
+                       style="background: #e1b382; color: #12343b; border:none; cursor:pointer">
+                        Create &amp; Continue
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Products -->
+            <div class="rounded-2xl overflow-hidden" style="background: white; border: 1px solid #E5E7EB">
+                <div class="p-5 pb-3">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background: #2d545e; color: #e1b382">2</span>
+                        <span class="text-sm font-semibold" style="color: #12343b">Select Products</span>
+                    </div>
+                    <div class="flex items-center rounded-xl overflow-hidden" style="background: #F8F9FB; border: 1px solid #E5E7EB">
+                        <span class="pl-3" style="color: #9CA3AF">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                        <input type="text" x-model="searchQuery" placeholder="Search products..."
+                               class="flex-1 px-3 py-3 text-base font-medium bg-transparent border-none outline-none"
+                               style="color: #12343b">
+                    </div>
+                </div>
+
+                <div class="px-4 pb-4 space-y-1">
+                    {% for p in products %}
+                    <template x-if="'{{ p.name|lower }}'.includes(searchQuery.toLowerCase())">
+                        <button @click="selectProduct({ id: '{{ p.id }}', name: '{{ p.name|escapejs }}', cost_price: '{{ p.cost_price|default:0 }}', image: '{{ p.image|escapejs }}', has_variants: {% if p.has_variants %}true{% else %}false{% endif %} })"
+                                class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl transition-all active:scale-[0.98]"
+                                style="background: transparent; border: none; cursor: pointer; color: #12343b"
+                                onmouseover="this.style.background='#F8F9FB'" onmouseout="this.style.background='transparent'">
+                            <div class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl" style="background: #e1b38222">{{ p.image|default:"📦" }}</div>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold text-sm truncate" style="color: #12343b">{{ p.name }}</div>
+                                <div class="text-xs" style="color: #6B7280">Cost: KES {{ p.cost_price|default:0|floatformat:0 }}{% if p.has_variants %} · Has variants{% endif %}</div>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                        </button>
+                    </template>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Order Bag -->
+        <div class="lg:sticky lg:top-20">
+            <div class="rounded-2xl overflow-hidden flex flex-col" style="background: white; border: 1px solid #E5E7EB; max-height: 75vh">
+
+                <!-- Bag Header -->
+                <div class="px-5 py-4 border-b flex items-center justify-between shrink-0" style="background: #2d545e; border-color: rgba(255,255,255,0.1)">
+                    <h2 class="font-bold text-lg" style="color: white">Order Bag</h2>
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background: rgba(255,255,255,0.15); color: #e1b382" x-text="items.length + ' items'"></span>
+                </div>
+
+                <!-- Bag Items -->
+                <div class="flex-1 overflow-auto p-4 space-y-2" style="scrollbar-width: none">
+                    <template x-for="(item, index) in items" :key="index">
+                        <div class="rounded-xl p-3" style="background: #F8F9FB; border: 1px solid #E5E7EB">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="text-lg" x-text="item.image"></span>
+                                    <span class="font-semibold text-sm truncate" style="color: #12343b" x-text="item.name"></span>
+                                </div>
+                                <button @click="removeItem(index)" style="background:none;border:none;cursor:pointer;color:#DC2626;padding:4px">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <span class="text-[10px] font-semibold uppercase" style="color: #6B7280">Cost</span>
+                                    <input type="number" x-model.number="item.unit_cost" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)"
+                                           class="w-24 h-9 rounded-lg px-3 text-sm font-bold font-mono text-right focus:outline-none"
+                                           style="background: white; border: 1px solid #E5E7EB; color: #2d545e" min="0">
+                                </div>
+                                <div>
+                                    <span class="text-[10px] font-semibold uppercase" style="color: #6B7280">Qty</span>
+                                    <div class="flex items-center rounded-lg overflow-hidden" style="border: 1px solid #E5E7EB; background: white">
+                                        <button @click="if(item.qty > 1) { item.qty--; item.total_cost = (item.qty * item.unit_cost).toFixed(2); }"
+                                                class="w-9 h-9 flex items-center justify-center" style="background:none;border:none;cursor:pointer;color:#6B7280">−</button>
+                                        <input type="number" x-model.number="item.qty" @input="item.total_cost = (item.qty * item.unit_cost).toFixed(2)"
+                                               class="w-10 h-9 text-center font-bold text-sm border-l border-r focus:outline-none"
+                                               style="background:none; border-color:#E5E7EB; color:#12343b" min="1">
+                                        <button @click="item.qty++; item.total_cost = (item.qty * item.unit_cost).toFixed(2);"
+                                                class="w-9 h-9 flex items-center justify-center" style="background:none;border:none;cursor:pointer;color:#2d545e">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="items.length === 0">
+                        <div class="flex flex-col items-center justify-center py-12 opacity-40">
+                            <div class="text-4xl mb-3">🛍</div>
+                            <p class="text-xs font-semibold uppercase tracking-wider">Bag is empty</p>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Bag Footer -->
+                <div class="shrink-0 p-5 border-t" style="border-color: #E5E7EB; background: #F8F9FB">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-semibold uppercase tracking-wider" style="color: #6B7280">Total</span>
+                        <div>
+                            <span class="text-xs font-medium mr-1" style="color: #6B7280">KES</span>
+                            <span class="font-bold text-2xl font-mono tabular" style="color: #2d545e" x-text="orderTotal"></span>
+                        </div>
+                    </div>
+                    <button @click="submitOrder()" :disabled="items.length === 0 || !supplierId"
+                            class="w-full h-12 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-30"
+                            style="background: #16A34A; color: white; border: none; cursor: pointer">
+                        Complete Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variant Drawer -->
+    <template x-if="view === 'sku'">
+        <div class="fixed inset-0 z-[300] flex items-end sm:items-center justify-center">
+            <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="view = 'listing'"></div>
+            <div class="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-modal overflow-hidden max-h-[85vh] flex flex-col">
+
+                <!-- Header -->
+                <div class="px-5 py-4 border-b shrink-0" style="background: #2d545e; border-color: rgba(255,255,255,0.1)">
+                    <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color: #e1b382">Select Variants</p>
+                    <h2 class="font-bold text-lg" style="color: white" x-text="selectedProduct.name"></h2>
+                </div>
+
+                <!-- Variants -->
+                <div class="flex-1 overflow-auto p-4 space-y-2" style="scrollbar-width: none">
+                    <template x-for="v in productVariants" :key="v.id">
+                        <div class="rounded-xl p-4 flex items-center justify-between gap-4" style="background: #F8F9FB; border: 1px solid #E5E7EB">
+                            <div class="min-w-0 flex-1">
+                                <p class="font-semibold text-sm truncate" style="color: #12343b" x-text="v.name"></p>
+                                <div class="flex items-center gap-2 mt-1.5">
+                                    <span class="text-[10px] font-semibold uppercase" style="color: #6B7280">Cost</span>
+                                    <input type="number" x-model.number="v.edit_cost" min="0"
+                                           class="w-20 h-8 rounded-lg px-2 text-sm font-bold font-mono text-right focus:outline-none"
+                                           style="background: white; border: 1px solid #E5E7EB; color: #2d545e">
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-center gap-1 shrink-0">
+                                <span class="text-[10px] font-semibold uppercase" style="color: #6B7280">Qty</span>
+                                <input type="number" x-model.number="v.qty" placeholder="0" min="0"
+                                       class="w-16 h-12 rounded-xl text-center font-bold text-lg focus:outline-none"
+                                       style="background: white; border: 1px solid #E5E7EB; color: #12343b">
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Footer -->
+                <div class="shrink-0 p-5 border-t" style="border-color: #E5E7EB">
+                    <button @click="addVariantsToCart()" :disabled="modalTotalQty === 0"
+                            class="w-full h-12 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-30"
+                            style="background: #2d545e; color: #e1b382; border: none; cursor: pointer">
+                        Add <span x-text="modalTotalQty"></span> to Order Bag
+                    </button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Mobile Bottom Bar -->
+    <template x-if="items.length > 0">
+        <div class="fixed bottom-16 left-0 right-0 z-50 px-4 pb-2 lg:hidden">
+            <div class="flex items-center justify-between rounded-2xl px-5 py-3 shadow-lg" style="background: #12343b; border: 1px solid rgba(255,255,255,0.1)">
+                <div>
+                    <div class="text-[10px] font-semibold uppercase tracking-wider" style="color: rgba(255,255,255,0.5)">Total</div>
+                    <div class="font-bold text-xl font-mono tabular" style="color: #e1b382" x-text="'KES ' + orderTotal"></div>
+                </div>
+                <button @click="submitOrder()" :disabled="!supplierId"
+                        class="h-11 px-6 rounded-xl font-semibold text-sm active:scale-95 transition-all disabled:opacity-30"
+                        style="background: #16A34A; color: white; border: none; cursor: pointer">
+                    Complete
+                </button>
+            </div>
+        </div>
+    </template>
 </div>
 {% endblock %}
