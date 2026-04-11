@@ -56,3 +56,20 @@ def delete_expense(request, pk):
         return HttpResponse('')
         
     return redirect('expenses:list')
+
+@login_required
+@require_http_methods(["POST"])
+def edit_expense(request, pk):
+    expense = get_object_or_404(Expense, pk=pk)
+    
+    expense.name = request.POST.get('name')
+    expense.category = request.POST.get('category')
+    expense.amount = request.POST.get('amount')
+    expense.note = request.POST.get('note')
+    date_val = request.POST.get('date')
+    if date_val:
+        expense.date = date_val
+        
+    expense.save()
+    
+    return redirect('expenses:list')

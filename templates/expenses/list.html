@@ -4,120 +4,169 @@
 {% block screen_title %}Expenses{% endblock %}
 
 {% block content %}
-<div class="px-4 py-5" x-data="{ expenseModal: false }">
+<div class="px-4 py-5 max-w-5xl mx-auto" x-data="expenseState()">
     
     <!-- Category Breakdown -->
-    <div class="flex gap-3 overflow-x-auto pb-3 mb-5 -mx-4 px-4 no-scrollbar">
-        <div class="min-w-[150px] bg-surface2 border border-brand-amber/10 rounded-2xl p-4 flex flex-col gap-1 shadow-glow-amber">
-            <span class="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em]">Total Spent</span>
-            <span class="text-xl font-display font-extrabold text-brand-amber">KES {{ total_expenses|floatformat:0 }}</span>
+    <div class="flex gap-3 overflow-x-auto pb-3 mb-5 -mx-4 px-4" style="scrollbar-width: none">
+        <div class="min-w-[150px] rounded-2xl p-4 flex flex-col gap-1 shadow-sm" style="background: white; border: 1px solid #E5E7EB">
+            <span class="text-[10px] font-bold uppercase tracking-wider" style="color: #6B7280">Total Spent</span>
+            <span class="text-xl font-extrabold" style="color: #2d545e">KES {{ total_expenses|floatformat:0 }}</span>
         </div>
         {% for cat in breakdown %}
-        <div class="min-w-[140px] bg-surface2 border border-border rounded-2xl p-4 flex flex-col gap-1">
-            <span class="text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em]">{{ cat.category|title }}</span>
-            <span class="text-lg font-display font-extrabold text-text-primary">KES {{ cat.total|floatformat:0 }}</span>
+        <div class="min-w-[140px] rounded-2xl p-4 flex flex-col gap-1" style="background: #F8F9FB; border: 1px solid #E5E7EB">
+            <span class="text-[10px] font-bold uppercase tracking-wider" style="color: #6B7280">{{ cat.category|title }}</span>
+            <span class="text-lg font-bold" style="color: #12343b">KES {{ cat.total|floatformat:0 }}</span>
         </div>
         {% endfor %}
     </div>
 
     <!-- Expense List -->
-    <div class="space-y-2 stagger">
+    <div class="space-y-3 pb-24">
         {% for expense in expenses %}
-        <div class="bg-surface2 border border-border rounded-2xl p-4 flex items-center gap-4 transition-all hover:border-white/10 hover:shadow-card group">
-            <div class="w-10 h-10 rounded-xl bg-surface3 border border-border flex items-center justify-center text-lg shrink-0">
+        <div class="bg-white border rounded-2xl p-4 flex items-center gap-4 transition-all hover:shadow-md group" style="border-color: #E5E7EB">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0" style="background: #F8F9FB; border: 1px solid #E5E7EB">
                 {% if expense.category == 'stock' %}📦{% elif expense.category == 'utilities' %}💡{% elif expense.category == 'staff' %}👥{% elif expense.category == 'transport' %}🚚{% elif expense.category == 'rent' %}🏠{% else %}💸{% endif %}
             </div>
-            <div class="flex-grow min-w-0">
+            <div class="flex-grow min-w-0" @click='openEdit({id: "{{ expense.id }}", name: "{{ expense.name|escapejs }}", category: "{{ expense.category }}", amount: "{{ expense.amount }}", date: "{{ expense.date|date:"Y-m-d" }}", note: "{{ expense.note|escapejs }}"})' class="cursor-pointer">
                 <div class="flex justify-between items-start mb-0.5">
-                    <h4 class="font-bold text-sm text-text-primary truncate">{{ expense.name }}</h4>
-                    <span class="text-sm font-extrabold text-brand-amber whitespace-nowrap ml-2">- KES {{ expense.amount|floatformat:0 }}</span>
+                    <h4 class="font-bold text-sm truncate" style="color: #12343b">{{ expense.name }}</h4>
+                    <span class="text-sm font-bold whitespace-nowrap ml-2" style="color: #2d545e">- KES {{ expense.amount|floatformat:0 }}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="px-1.5 py-0.5 bg-white/[0.04] rounded-md text-[9px] font-extrabold text-text-muted uppercase tracking-wider">{{ expense.category }}</span>
-                    <span class="text-[10px] text-text-muted/50">•</span>
-                    <span class="text-[10px] text-text-muted font-medium">{{ expense.date|date:"d M Y" }}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" style="background: #E5E7EB; color: #6B7280">{{ expense.category }}</span>
+                    <span class="text-[10px]" style="color: #9CA3AF">•</span>
+                    <span class="text-[10px] font-medium" style="color: #6B7280">{{ expense.date|date:"d M Y" }}</span>
                 </div>
             </div>
             {% if user.role == 'admin' %}
-            <button hx-post="{% url 'expenses:delete_expense' expense.id %}" 
-                    hx-confirm="Delete this expense record?"
-                    hx-target="closest div.bg-surface2"
-                    hx-swap="outerHTML"
-                    class="p-2 text-text-muted hover:text-brand-red active:scale-90 transition-all opacity-0 group-hover:opacity-100">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-            </button>
+            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button @click='openEdit({id: "{{ expense.id }}", name: "{{ expense.name|escapejs }}", category: "{{ expense.category }}", amount: "{{ expense.amount }}", date: "{{ expense.date|date:"Y-m-d" }}", note: "{{ expense.note|escapejs }}"})' 
+                        class="p-2 active:scale-90 transition-all rounded-lg" style="color: #2d545e; background: #e1b38222">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                </button>
+                <button hx-post="{% url 'expenses:delete_expense' expense.id %}" 
+                        hx-confirm="Delete this expense record?"
+                        hx-target="closest div.bg-white"
+                        hx-swap="outerHTML"
+                        class="p-2 active:scale-90 transition-all rounded-lg" style="color: #DC2626; background: rgba(220,38,38,0.1)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+            </div>
             {% endif %}
         </div>
         {% empty %}
-        <div class="flex flex-col items-center justify-center py-20 text-text-muted">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4 opacity-20"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+        <div class="flex flex-col items-center justify-center py-20" style="color: #9CA3AF">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" class="mb-4 opacity-40"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
             <p class="font-bold">No expenses recorded</p>
         </div>
         {% endfor %}
     </div>
 
     <!-- Add FAB -->
-    <button @click="expenseModal = true" class="fixed bottom-24 right-5 w-14 h-14 bg-brand-amber text-surface rounded-2xl shadow-glow-amber flex items-center justify-center active:scale-90 transition-transform z-30">
-        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    <button @click="openAdd()" class="fixed bottom-24 right-5 w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-lg z-30"
+            style="background: #2d545e; color: #e1b382">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
     </button>
 
-    <!-- Add Modal -->
+    <!-- Modal -->
     <div x-show="expenseModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div x-show="expenseModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="expenseModal = false"></div>
+        <div x-show="expenseModal" x-transition.opacity class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="expenseModal = false"></div>
         
-        <div x-show="expenseModal" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full sm:translate-y-0 sm:scale-95" x-transition:enter-end="translate-y-0 sm:scale-100" 
-             class="relative w-full max-w-lg bg-surface2 border-t sm:border border-border rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden p-6">
+        <div x-show="expenseModal" x-transition.duration.300ms 
+             class="relative w-full max-w-lg bg-white border rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden p-6" style="border-color: #E5E7EB">
             
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-display font-extrabold text-xl text-text-primary uppercase tracking-tight">Record Expense</h3>
-                <button @click="expenseModal = false" class="text-text-muted hover:text-text-primary p-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                </button>
+            <div class="flex justify-between items-center mb-5 border-b pb-4" style="border-color: #E5E7EB">
+                <h3 class="font-bold text-lg" style="color: #12343b" x-text="isEdit ? 'Edit Expense' : 'Record Expense'"></h3>
+                <button @click="expenseModal = false" class="p-1 active:scale-90 transition-all font-bold" style="color: #DC2626">✕</button>
             </div>
 
-            <form action="{% url 'expenses:add_expense' %}" method="POST" class="space-y-4">
+            <form :action="isEdit ? `/expenses/edit/${editForm.id}/` : `{% url 'expenses:add_expense' %}`" method="POST" class="space-y-4">
                 {% csrf_token %}
                 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Expense Name</label>
-                    <input type="text" name="name" required placeholder="e.g. Electricity Bill" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary placeholder:text-text-muted/40 focus:border-brand-amber/40 focus:ring-0 transition-all">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color: #6B7280">Expense Name</label>
+                    <input type="text" name="name" x-model="editForm.name" required placeholder="e.g. Electricity Bill" 
+                           class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Category</label>
-                        <select name="category" required class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-amber/40 focus:ring-0 transition-all">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color: #6B7280">Category</label>
+                        <select name="category" x-model="editForm.category" required class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                                style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
                             {% for code, label in categories %}
                                 <option value="{{ code }}">{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Amount (KES)</label>
-                        <input type="number" step="0.01" name="amount" required placeholder="0.00" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-brand-amber font-bold focus:border-brand-amber/40 focus:ring-0 transition-all">
+                        <label class="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color: #6B7280">Amount (KES)</label>
+                        <input type="number" step="0.01" name="amount" x-model="editForm.amount" required placeholder="0.00" 
+                               class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
+                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #2d545e; --tw-ring-color: #2d545e">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Date</label>
-                    <input type="date" name="date" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-amber/40 focus:ring-0 transition-all">
+                    <label class="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color: #6B7280">Date</label>
+                    <input type="date" name="date" x-model="editForm.date" 
+                           class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
                 </div>
 
                 <div>
-                    <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Note (Optional)</label>
-                    <textarea name="note" rows="2" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-amber/40 focus:ring-0 transition-all"></textarea>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color: #6B7280">Note (Optional)</label>
+                    <textarea name="note" x-model="editForm.note" rows="2" 
+                              class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                              style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e"></textarea>
                 </div>
 
-                <div class="pt-3 flex gap-3">
-                    <button type="button" @click="expenseModal = false" class="flex-1 px-4 py-4 bg-white/[0.04] border border-border text-text-primary rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
+                <div class="pt-4 flex gap-3">
+                    <button type="button" @click="expenseModal = false" class="flex-1 py-4 rounded-xl font-bold text-sm active:scale-95 transition-all"
+                            style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
                         Cancel
                     </button>
-                    <button type="submit" class="flex-[2] px-4 py-4 bg-brand-amber text-surface rounded-2xl font-display font-extrabold text-sm shadow-glow-amber active:scale-95 transition-all">
-                        Save Expense
+                    <button type="submit" class="flex-[3] py-4 rounded-xl font-bold text-sm shadow-md active:scale-95 transition-all"
+                            style="background: #2d545e; color: white" x-text="isEdit ? 'Save Changes' : 'Record Expense'">
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    function expenseState() {
+        return {
+            expenseModal: false,
+            isEdit: false,
+            editForm: {
+                id: '',
+                name: '',
+                category: 'staff',
+                amount: '',
+                date: new Date().toISOString().split('T')[0],
+                note: ''
+            },
+            openAdd() {
+                this.isEdit = false;
+                this.editForm = {
+                    id: '',
+                    name: '',
+                    category: 'staff',
+                    amount: '',
+                    date: new Date().toISOString().split('T')[0],
+                    note: ''
+                };
+                this.expenseModal = true;
+            },
+            openEdit(data) {
+                this.isEdit = true;
+                this.editForm = { ...data };
+                this.expenseModal = true;
+            }
+        }
+    }
+</script>
 {% endblock %}
