@@ -155,7 +155,7 @@
             {% endfor %}
             {% for v in low_stock_variants %}
             <div class="flex justify-between items-center text-sm">
-                <span class="font-bold text-text-primary truncate pr-4">{{ v.parent.name }} - <span class="text-text-muted">{{ v.name }}</span></span>
+                <span class="font-bold text-text-primary truncate pr-4">{{ v.name }}</span>
                 <span class="font-black text-brand-amber text-xs whitespace-nowrap">{{ v.stock_qty }} left</span>
             </div>
             {% endfor %}

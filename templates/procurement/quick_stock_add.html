@@ -2,7 +2,21 @@
 {% load static %}
 
 {% block content %}
-<div class="px-4 py-6 max-w-2xl mx-auto">
+<div class="px-4 py-6 max-w-2xl mx-auto" x-data="{
+    productId: '',
+    variants: [],
+    loadingVariants: false,
+    fetchVariants() {
+        if(!this.productId) { this.variants = []; return; }
+        this.loadingVariants = true;
+        fetch(`/procurement/get_product_variants/${this.productId}/`)
+        .then(r => r.json())
+        .then(data => {
+            this.variants = data;
+            this.loadingVariants = false;
+        });
+    }
+}">
 
     <!-- Header -->
     <div class="flex items-center gap-3 mb-6">
@@ -24,7 +38,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Product</label>
-                    <select name="product_id" required class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
+                    <select name="product_id" x-model="productId" @change="fetchVariants()" required class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
                             style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
                         <option value="" disabled selected>Select product...</option>
                         {% for p in products %}
@@ -32,6 +46,18 @@
                         {% endfor %}
                     </select>
                 </div>
+                
+                <div x-show="variants.length > 0" x-cloak>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Variant</label>
+                    <select name="variant_id" class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
+                            style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b" :required="variants.length > 0">
+                        <option value="" disabled selected>Select variant...</option>
+                        <template x-for="v in variants" :key="v.id">
+                            <option :value="v.id" x-text="v.name"></option>
+                        </template>
+                    </select>
+                </div>
+
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Supplier</label>
                     <select name="supplier_id" required class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"

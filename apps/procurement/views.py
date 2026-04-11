@@ -253,12 +253,22 @@ def po_receive(request, pk):
 def quick_stock_add(request):
     if request.method == 'POST':
         product_id = request.POST.get('product_id')
+        variant_id = request.POST.get('variant_id')
         supplier_id = request.POST.get('supplier_id')
         qty = int(request.POST.get('qty', 0))
         unit_cost = float(request.POST.get('unit_cost', 0))
         
         product = get_object_or_404(Product, id=product_id)
         supplier = get_object_or_404(Supplier, id=supplier_id)
+        
+        from catalogue.models import ProductVariant
+        v_name = ""
+        if variant_id:
+            try:
+                v = ProductVariant.objects.get(id=variant_id, product=product)
+                v_name = f" ({v.name})"
+            except ProductVariant.DoesNotExist:
+                pass
         
         is_admin = request.user.is_staff or getattr(request.user, 'role', '') == 'admin'
         
@@ -268,7 +278,8 @@ def quick_stock_add(request):
             submitted_by=request.user,
             items=[{
                 'product_id': str(product.id),
-                'name': product.name,
+                'variant_id': variant_id,
+                'name': f"{product.name}{v_name}",
                 'qty': qty,
                 'unit_cost': unit_cost,
                 'total_cost': round(qty * unit_cost, 2)
@@ -280,12 +291,24 @@ def quick_stock_add(request):
             po.approved_by = request.user
             po.save()
             
-            # Update Stock
-            product.stock_qty += qty
-            product.cost_price = unit_cost
-            product.save()
+            if variant_id:
+                try:
+                    v = ProductVariant.objects.get(id=variant_id)
+                    v.stock_qty += qty
+                    v.cost_price = unit_cost
+                    v.save()
+                    v.product.cost_price = unit_cost
+                    v.product.save()
+                except ProductVariant.DoesNotExist:
+                    product.stock_qty += qty
+                    product.cost_price = unit_cost
+                    product.save()
+            else:
+                product.stock_qty += qty
+                product.cost_price = unit_cost
+                product.save()
             
-            po.log_trail(request.user, "Quick Stock Add (Completed)", f"Added {qty} units of {product.name}. Inventory updated directly.")
+            po.log_trail(request.user, "Quick Stock Add (Completed)", f"Added {qty} units of {product.name}{v_name}. Inventory updated directly.")
             
             # Create GRN
             GoodsReceivingNote.objects.create(
@@ -298,7 +321,7 @@ def quick_stock_add(request):
         else:
             po.status = 'pending'
             po.save()
-            po.log_trail(request.user, "Quick Stock Add (Submitted)", f"Added {qty} units of {product.name}. Pending admin approval.")
+            po.log_trail(request.user, "Quick Stock Add (Submitted)", f"Added {qty} units of {product.name}{v_name}. Pending admin approval.")
             return redirect('procurement:po_list')
 
     products = Product.objects.filter(approved=True).order_by('name')
