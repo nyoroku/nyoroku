@@ -12,26 +12,30 @@
             <button @click="period = 'today'; customOpen = false" 
                     hx-get="{% url 'reports:dashboard' %}?period=today"
                     hx-target="#dashboard-body"
-                    :class="period === 'today' ? 'bg-[#2d545e] text-[#e1b382] border-[#2d545e] shadow-md' : 'bg-white text-[#6B7280] border-[#E5E7EB]'"
+                    :style="period === 'today' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
+                    :class="period === 'today' ? 'shadow-md' : ''"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 Today
             </button>
             <button @click="period = '7days'; customOpen = false" 
                     hx-get="{% url 'reports:dashboard' %}?period=7days"
                     hx-target="#dashboard-body"
-                    :class="period === '7days' ? 'bg-[#2d545e] text-[#e1b382] border-[#2d545e] shadow-md' : 'bg-white text-[#6B7280] border-[#E5E7EB]'"
+                    :style="period === '7days' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
+                    :class="period === '7days' ? 'shadow-md' : ''"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 7 Days
             </button>
             <button @click="period = '30days'; customOpen = false" 
                     hx-get="{% url 'reports:dashboard' %}?period=30days"
                     hx-target="#dashboard-body"
-                    :class="period === '30days' ? 'bg-[#2d545e] text-[#e1b382] border-[#2d545e] shadow-md' : 'bg-white text-[#6B7280] border-[#E5E7EB]'"
+                    :style="period === '30days' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
+                    :class="period === '30days' ? 'shadow-md' : ''"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 30 Days
             </button>
             <button @click="customOpen = !customOpen; if(customOpen) period = 'custom';"
-                    :class="period === 'custom' ? 'bg-[#2d545e] text-[#e1b382] border-[#2d545e] shadow-md' : 'bg-white text-[#6B7280] border-[#E5E7EB]'"
+                    :style="period === 'custom' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
+                    :class="period === 'custom' ? 'shadow-md' : ''"
                     class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
                 Custom Range
             </button>
