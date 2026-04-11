@@ -61,15 +61,58 @@
         </div>
     </div>
 
-    <!-- 7-Day Chart -->
     <div class="bg-surface2 border border-border rounded-3xl p-6">
-        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-8">7-Day Revenue</h4>
-        <div class="flex items-end justify-between h-32 gap-3 px-2">
+        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-8">
+            {% if period == 'today' %}Today's Sales
+            {% elif period == '7days' %}7-Day Revenue
+            {% elif period == '30days' %}30-Day Revenue
+            {% else %}Custom Range Revenue{% endif %}
+        </h4>
+        <div class="flex items-end justify-between h-32 gap-3 px-2 overflow-x-auto no-scrollbar">
             {% for day in chart_days %}
-            <div class="flex-grow flex flex-col items-center gap-3">
-                <div class="w-full rounded-t-lg transition-all duration-500 {% if day.is_today %}bg-brand-green shadow-[0_0_12px_rgba(0,230,118,0.3)]{% else %}bg-brand-green/20{% endif %}" 
-                     style="height: calc({{ day.value }} / {{ revenue|default:1 }} * 100% + 4px);"></div>
-                <span class="text-[10px] font-bold {% if day.is_today %}text-brand-green{% else %}text-text-muted{% endif %} uppercase">{{ day.label }}</span>
+            <div class="flex-grow flex flex-col items-center gap-3 min-w-[24px]">
+                <div class="w-full rounded-t-sm sm:rounded-t-lg transition-all duration-500" 
+                     style="height: calc({{ day.value }} / {{ max_chart_value|default:1 }} * 100% + 4px);
+                            background: {% if day.is_today %}#2d545e{% else %}#e1b382{% endif %};
+                            {% if day.is_today %}box-shadow: 0 0 12px rgba(45,84,94,0.3);{% else %}opacity: 0.6;{% endif %}"></div>
+                <span class="text-[10px] font-bold uppercase whitespace-nowrap"
+                      style="color: {% if day.is_today %}#2d545e{% else %}#6B7280{% endif %};">
+                    {{ day.label }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Day of Week Sales -->
+    <div class="bg-surface2 border border-border rounded-3xl p-6">
+        <h4 class="text-sm font-display font-extrabold text-text-primary uppercase tracking-tight mb-3">
+            Sales by Day of Week
+        </h4>
+        <p class="text-[10px] font-medium text-text-muted mb-6">Which days perform best</p>
+        <div class="flex items-end justify-between h-36 gap-2 px-1">
+            {% for day in dow_chart %}
+            <div class="flex-1 flex flex-col items-center gap-2 min-w-[36px]">
+                <!-- Revenue label -->
+                <span class="text-[9px] font-bold text-text-muted tabular-nums whitespace-nowrap"
+                      {% if day.revenue > 0 %}style="color: #2d545e"{% endif %}>
+                    {% if day.revenue >= 1000 %}{{ day.revenue|floatformat:0 }}{% elif day.revenue > 0 %}{{ day.revenue|floatformat:0 }}{% else %}-{% endif %}
+                </span>
+                <!-- Bar -->
+                <div class="w-full rounded-xl transition-all duration-500 relative group"
+                     style="height: calc({{ day.revenue }} / {{ max_dow_value|default:1 }} * 100% + 6px);
+                            {% if day.revenue == max_dow_value and day.revenue > 0 %}background: linear-gradient(to top, #2d545e, #3d6b75); box-shadow: 0 0 14px rgba(45,84,94,0.25);{% elif day.revenue > 0 %}background: linear-gradient(to top, #e1b382, #ecc89e); opacity: 0.75;{% else %}background: #F0F1F3; min-height: 6px;{% endif %}">
+                    <!-- Tooltip on hover -->
+                    <div class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded-lg text-[9px] font-bold text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                         style="background: #12343b">
+                        {{ day.count }} sale{{ day.count|pluralize }}
+                    </div>
+                </div>
+                <!-- Day label -->
+                <span class="text-[11px] font-extrabold uppercase tracking-tight"
+                      style="{% if day.revenue == max_dow_value and day.revenue > 0 %}color: #2d545e{% else %}color: #9CA3AF{% endif %}">
+                    {{ day.label }}
+                </span>
             </div>
             {% endfor %}
         </div>

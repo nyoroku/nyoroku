@@ -127,6 +127,40 @@ def dashboard(request):
     low_stock_products = Product.objects.filter(approved=True, has_variants=False, stock_qty__lte=F('reorder_level'), stock_qty__gt=0)
     low_stock_variants = ProductVariant.objects.filter(stock_qty__lte=F('reorder_level'), stock_qty__gt=0).select_related('product')
 
+    # Day-of-Week Sales Analysis
+    from django.db.models.functions import ExtractWeekDay
+    dow_qs = Transaction.objects.filter(
+        created_at__range=(start_date, end_date),
+        status='complete'
+    ).annotate(
+        weekday=ExtractWeekDay('created_at')
+    ).values('weekday').annotate(
+        day_revenue=Sum('total'),
+        day_count=Count('id')
+    ).order_by('weekday')
+
+    # Django ExtractWeekDay: Sunday=1, Monday=2, ..., Saturday=7
+    day_names = {2: 'Mon', 3: 'Tue', 4: 'Wed', 5: 'Thu', 6: 'Fri', 7: 'Sat', 1: 'Sun'}
+    day_order = [2, 3, 4, 5, 6, 7, 1]  # Mon to Sun
+
+    dow_data_map = {d['weekday']: d for d in dow_qs}
+    dow_chart = []
+    for wd in day_order:
+        d = dow_data_map.get(wd, {})
+        dow_chart.append({
+            'label': day_names[wd],
+            'revenue': float(d.get('day_revenue', 0) or 0),
+            'count': d.get('day_count', 0),
+        })
+
+    max_dow_value = max([d['revenue'] for d in dow_chart]) if dow_chart else 1
+    if max_dow_value == 0:
+        max_dow_value = 1
+
+    max_chart_value = max([d['value'] for d in chart_days]) if chart_days else 1
+    if max_chart_value == 0:
+        max_chart_value = 1
+
     context = {
         'period': period,
         'start_date_str': request.GET.get('start_date', ''),
@@ -141,9 +175,12 @@ def dashboard(request):
         'tx_count': tx_count,
         'payment_stats': payment_stats,
         'chart_days': chart_days,
+        'max_chart_value': max_chart_value,
         'top_products': top_products,
         'low_stock_products': low_stock_products,
         'low_stock_variants': low_stock_variants,
+        'dow_chart': dow_chart,
+        'max_dow_value': max_dow_value,
     }
     
     if request.headers.get('HX-Request'):

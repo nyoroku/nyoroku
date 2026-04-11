@@ -76,6 +76,10 @@ class Product(models.Model):
 
     @property
     def total_stock(self):
+        if self.has_variants:
+            from django.db.models import Sum
+            total = self.variants.aggregate(Sum('stock_qty'))['stock_qty__sum']
+            return total or 0
         return self.stock_qty
 
     @property

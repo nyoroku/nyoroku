@@ -109,7 +109,7 @@ window.allProducts = [
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background: #e1b38222">📂</div>
           <div class="flex-1">
             <h3 class="text-base font-semibold" style="color: #12343b">{{ cat.name }}</h3>
-            <p class="text-sm" style="color: #6B7280">{{ cat.products.count }} items{% if cat.subcategories.all %} · {{ cat.subcategories.count }} subcategories{% endif %}</p>
+            {% if cat.subcategories.all %}<p class="text-sm" style="color: #6B7280">{{ cat.subcategories.count }} subcategories</p>{% endif %}
           </div>
           {% if cat.subcategories.all %}
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5" class="transition-transform" :class="showSubs ? 'rotate-90' : ''"><path d="m9 18 6-6-6-6"/></svg>
@@ -130,7 +130,6 @@ window.allProducts = [
             <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style="background: #2d545e15">📁</div>
             <div class="flex-1">
               <h3 class="text-sm font-semibold" style="color: #12343b">{{ sub.name }}</h3>
-              <p class="text-xs" style="color: #6B7280">{{ sub.products.count }} items</p>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
           </button>

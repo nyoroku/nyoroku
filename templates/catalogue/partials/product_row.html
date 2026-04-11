@@ -16,12 +16,12 @@
         <div class="flex items-center gap-3">
             <span class="text-xs font-extrabold text-brand-green">KES {{ product.price }}</span>
             <span class="px-2 py-0.5 rounded-md text-[9px] font-bold
-                {% if product.stock_qty == 0 %}bg-brand-red/10 text-brand-red
-                {% elif product.stock_qty <= 5 %}bg-brand-amber/10 text-brand-amber
+                {% if product.total_stock == 0 %}bg-brand-red/10 text-brand-red
+                {% elif product.total_stock <= 5 %}bg-brand-amber/10 text-brand-amber
                 {% else %}bg-white/[0.04] text-text-muted{% endif %}">
-                {% if product.stock_qty == 0 %}Out of stock
-                {% elif product.stock_qty <= 5 %}⚠ {{ product.stock_qty }} left
-                {% else %}{{ product.stock_qty }} in stock{% endif %}
+                {% if product.total_stock == 0 %}Out of stock
+                {% elif product.total_stock <= 5 %}⚠ {{ product.total_stock }} left
+                {% else %}{{ product.total_stock }} in stock{% endif %}
             </span>
         </div>
     </div>
