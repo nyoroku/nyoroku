@@ -243,7 +243,7 @@ def category_list(request):
     if request.user.role != 'admin':
         return redirect('catalogue:inventory')
     
-    categories = Category.objects.all().order_by('name')
+    categories = Category.objects.filter(parent__isnull=True).order_by('name').prefetch_related('subcategories', 'products')
     return render(request, 'catalogue/category_list.html', {'categories': categories})
 
 @login_required
@@ -254,7 +254,20 @@ def add_category(request):
     
     name = request.POST.get('name')
     if name:
-        Category.objects.get_or_create(name=name)
+        Category.objects.get_or_create(name=name, parent=None)
+    return redirect('catalogue:category_list')
+
+@login_required
+@require_http_methods(["POST"])
+def add_subcategory(request):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+    
+    name = request.POST.get('name')
+    parent_id = request.POST.get('parent_id')
+    if name and parent_id:
+        parent = get_object_or_404(Category, id=parent_id, parent__isnull=True)
+        Category.objects.get_or_create(name=name, parent=parent)
     return redirect('catalogue:category_list')
 
 @login_required

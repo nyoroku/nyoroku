@@ -1,74 +1,148 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block screen_title %}Categories{% endblock %}
-
 {% block content %}
-<div class="px-4 py-6 max-w-2xl mx-auto" x-data="{ addModal: false }">
+<div class="px-4 py-6 max-w-2xl mx-auto" x-data="{ addModal: false, addSubModal: false, parentCatId: null, parentCatName: '' }">
     
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-2xl font-display font-extrabold text-text-primary tracking-tight">Categories</h2>
-            <p class="text-sm text-text-muted mt-1">Organize your inventory</p>
+            <h2 class="text-xl font-bold" style="color: #12343b">Categories</h2>
+            <p class="text-sm" style="color: #6B7280">Organize your inventory</p>
         </div>
-        <button @click="addModal = true" class="w-12 h-12 bg-brand-green text-surface rounded-2xl shadow-glow-green-sm flex items-center justify-center active:scale-95 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+        <button @click="addModal = true" class="w-11 h-11 rounded-2xl flex items-center justify-center active:scale-95 transition-transform shadow-md"
+                style="background: #2d545e; color: white">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
         </button>
     </div>
 
     <!-- Category List -->
-    <div class="grid gap-2 stagger">
+    <div class="space-y-2">
         {% for cat in categories %}
-        <div class="bg-surface2 border border-border p-4 rounded-2xl flex items-center justify-between group hover:border-white/10 hover:shadow-card transition-all">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-surface3 border border-border rounded-xl flex items-center justify-center text-lg">
-                    📁
+        {% if not cat.parent %}
+        <div class="rounded-2xl overflow-hidden" style="background: white; border: 1px solid #E5E7EB" x-data="{expanded: false}">
+            <div class="flex items-center justify-between px-4 py-3.5 cursor-pointer" @click="expanded = !expanded">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style="background: #e1b38222">📂</div>
+                    <div>
+                        <h3 class="font-semibold text-base" style="color: #12343b">{{ cat.name }}</h3>
+                        <p class="text-xs" style="color: #6B7280">{{ cat.subcategories.count }} subcategories · {{ cat.products.count }} products</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-bold text-text-primary text-sm">{{ cat.name }}</h3>
-                    <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.12em]">{{ cat.products.count }} Products</p>
+                <div class="flex items-center gap-2">
+                    <!-- Add subcategory -->
+                    <button @click.stop="parentCatId = {{ cat.id }}; parentCatName = '{{ cat.name|escapejs }}'; addSubModal = true"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 transition-all"
+                            style="background: #2d545e15; color: #2d545e" title="Add subcategory">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                    </button>
+                    <!-- Delete -->
+                    <form action="{% url 'catalogue:delete_category' cat.id %}" method="POST" onsubmit="return confirm('Delete {{ cat.name|escapejs }} and all subcategories?')" @click.stop>
+                        {% csrf_token %}
+                        <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 transition-all"
+                                style="color: #DC2626" title="Delete">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                    </form>
+                    <!-- Expand chevron -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5" class="transition-transform" :class="expanded ? 'rotate-90' : ''"><path d="m9 18 6-6-6-6"/></svg>
                 </div>
             </div>
-            
-            <form action="{% url 'catalogue:delete_category' cat.id %}" method="POST" onsubmit="return confirm('Delete this category?')">
-                {% csrf_token %}
-                <button type="submit" class="w-9 h-9 flex items-center justify-center text-text-muted hover:text-brand-red hover:bg-brand-red/10 rounded-xl active:scale-90 transition-all opacity-0 group-hover:opacity-100">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                </button>
-            </form>
+
+            <!-- Subcategories -->
+            <div x-show="expanded" x-cloak x-transition style="background: #F8F9FB; border-top: 1px solid #E5E7EB">
+                {% for sub in cat.subcategories.all %}
+                <div class="flex items-center justify-between pl-12 pr-4 py-3" style="border-bottom: 1px solid #E5E7EB">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background: #2d545e15">📁</div>
+                        <div>
+                            <h4 class="font-medium text-sm" style="color: #12343b">{{ sub.name }}</h4>
+                            <p class="text-xs" style="color: #6B7280">{{ sub.products.count }} products</p>
+                        </div>
+                    </div>
+                    <form action="{% url 'catalogue:delete_category' sub.id %}" method="POST" onsubmit="return confirm('Delete {{ sub.name|escapejs }}?')">
+                        {% csrf_token %}
+                        <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-lg active:scale-90" style="color: #DC2626">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </form>
+                </div>
+                {% empty %}
+                <div class="pl-12 pr-4 py-4 text-sm" style="color: #9CA3AF">
+                    No subcategories yet — tap + to add one
+                </div>
+                {% endfor %}
+            </div>
         </div>
+        {% endif %}
         {% empty %}
-        <div class="text-center py-16 bg-surface2 rounded-[28px] border border-dashed border-border">
+        <div class="text-center py-16 rounded-2xl" style="background: white; border: 2px dashed #E5E7EB">
             <div class="text-4xl mb-4 opacity-30">📂</div>
-            <p class="text-text-muted font-bold">No categories yet</p>
-            <p class="text-text-muted/50 text-xs mt-1">Create one to organize products</p>
+            <p class="font-semibold" style="color: #6B7280">No categories yet</p>
+            <p class="text-xs mt-1" style="color: #9CA3AF">Create one to organize products</p>
         </div>
         {% endfor %}
     </div>
 
     <!-- Add Category Modal -->
-    <div x-show="addModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-6">
-        <div x-show="addModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-md" @click="addModal = false"></div>
+    <div x-show="addModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="addModal = false"></div>
         
-        <div x-show="addModal" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="scale-95 opacity-0" x-transition:enter-end="scale-100 opacity-100" 
-             class="relative w-full max-w-sm bg-surface2 border border-border rounded-[28px] shadow-2xl p-6">
+        <div x-show="addModal" x-transition
+             class="relative w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-modal p-6">
             
-            <h3 class="text-xl font-display font-extrabold text-text-primary mb-6 uppercase tracking-tight">New Category</h3>
+            <h3 class="text-lg font-bold mb-5" style="color: #12343b">New Category</h3>
             
-            <form action="{% url 'catalogue:category_list' %}add/" method="POST" class="space-y-6">
+            <form action="{% url 'catalogue:add_category' %}" method="POST" class="space-y-5">
                 {% csrf_token %}
                 <div>
-                    <label class="block text-[10px] font-extrabold text-text-muted uppercase tracking-[0.15em] mb-2 ml-1">Category Name</label>
-                    <input type="text" name="name" required placeholder="e.g. Beverages, Electronics" 
-                           class="w-full bg-surface3 border border-border rounded-2xl px-5 py-4 text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all font-bold">
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color: #6B7280">Category Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Shoes, Clothing, Accessories" 
+                           class="w-full rounded-xl px-4 py-3.5 text-base font-medium focus:outline-none focus:ring-2"
+                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
                 </div>
                 
                 <div class="flex gap-3">
-                    <button type="button" @click="addModal = false" class="flex-1 py-4 bg-white/[0.04] border border-border text-text-muted rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
+                    <button type="button" @click="addModal = false" class="flex-1 py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all"
+                            style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
                         Cancel
                     </button>
-                    <button type="submit" class="flex-[2] py-4 bg-brand-green text-surface rounded-2xl font-display font-extrabold shadow-glow-green active:scale-95 transition-all btn-shimmer text-sm">
-                        Create
+                    <button type="submit" class="flex-[2] py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all shadow-md"
+                            style="background: #2d545e; color: white">
+                        Create Category
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Subcategory Modal -->
+    <div x-show="addSubModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="addSubModal = false"></div>
+        
+        <div x-show="addSubModal" x-transition
+             class="relative w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-modal p-6">
+            
+            <h3 class="text-lg font-bold mb-1" style="color: #12343b">Add Subcategory</h3>
+            <p class="text-sm mb-5" style="color: #6B7280">Under: <span class="font-semibold" style="color: #c89666" x-text="parentCatName"></span></p>
+            
+            <form action="{% url 'catalogue:add_subcategory' %}" method="POST" class="space-y-5">
+                {% csrf_token %}
+                <input type="hidden" name="parent_id" :value="parentCatId">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color: #6B7280">Subcategory Name</label>
+                    <input type="text" name="name" required placeholder="e.g. Sneakers, T-Shirts, Rings" 
+                           class="w-full rounded-xl px-4 py-3.5 text-base font-medium focus:outline-none focus:ring-2"
+                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" @click="addSubModal = false" class="flex-1 py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all"
+                            style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-[2] py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all shadow-md"
+                            style="background: #e1b382; color: #12343b">
+                        Add Subcategory
                     </button>
                 </div>
             </form>

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block screen_title %}Sales
+{% block extra_head %}
 <script>
 window.allProducts = [
   {% for p in products %}
@@ -24,73 +24,126 @@ window.allProducts = [
 <style>
 .ns::-webkit-scrollbar{display:none}.ns{-ms-overflow-style:none;scrollbar-width:none}
 .product-row { touch-action: manipulation; }
-.product-row:active { background: var(--hover) !important; }
+.product-row:active { background: #e1b38222 !important; }
+.cat-row:active { background: #e1b38222 !important; }
 </style>
 
-<div class="flex flex-col" style="height:calc(100vh - 64px - 64px)">
+<div x-data="{
+  posView: '{{ active_category|default:'categories' }}' === 'all' || '{{ active_category|default:'categories' }}' === 'categories' ? 'categories' : 'items',
+  selectedCategoryName: '',
+  selectedSubCatName: ''
+}" class="flex flex-col" style="height:calc(100vh - 56px - 64px)">
 
-  <!-- SEARCH -->
-  <div class="shrink-0 px-4 py-3 bg-white border-b border-border">
+  <!-- TOP BAR: Search (only shown in items view) -->
+  <div class="shrink-0 px-4 py-3 border-b" style="background: #2d545e; border-color: rgba(255,255,255,0.1)">
     <div class="flex items-center gap-3">
-      <div class="flex-1 flex items-center bg-bg-main border border-border rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all">
-        <span class="pl-3 text-text-secondary">
+      <!-- Back button (when in subcategories or items) -->
+      <button x-show="posView !== 'categories'" x-cloak
+              @click="if(posView === 'items') { posView = 'categories' } else { posView = 'categories' }"
+              class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:scale-90 transition-all"
+              style="background: rgba(255,255,255,0.15); color: white">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+
+      <!-- Search (always visible) -->
+      <div class="flex-1 flex items-center rounded-xl overflow-hidden" style="background: rgba(255,255,255,0.12)">
+        <span class="pl-3" style="color: rgba(255,255,255,0.5)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </span>
         <input id="search-input" type="text" name="q"
                hx-get="{% url 'pos:index' %}" hx-trigger="input changed delay:200ms, search"
                hx-target="#product-list" hx-include="[name='category']"
+               @focus="posView = 'items'"
                placeholder="Search products..."
-               class="flex-1 px-3 py-3 text-base font-medium bg-transparent border-none text-text-primary outline-none"
+               class="flex-1 px-3 py-3 text-base font-medium bg-transparent border-none outline-none"
+               style="color: white"
                autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
+
       <!-- Cart FAB -->
       <button x-show="itemCount>0" x-cloak @click="cart.open=true"
-              class="relative shrink-0 w-12 h-12 flex items-center justify-center bg-primary text-white rounded-xl shadow-md active:scale-95 transition-all">
+              class="relative shrink-0 w-12 h-12 flex items-center justify-center rounded-xl shadow-md active:scale-95 transition-all"
+              style="background: #e1b382; color: #12343b">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        <span class="absolute -top-1 -right-1 w-5 h-5 text-white text-xs font-bold rounded-full flex items-center justify-center" style="background:#c89666" x-text="itemCount"></span>
+        <span class="absolute -top-1 -right-1 w-5 h-5 text-white text-xs font-bold rounded-full flex items-center justify-center" style="background:#DC2626" x-text="itemCount"></span>
       </button>
+    </div>
+
+    <!-- Current path breadcrumb -->
+    <div x-show="posView === 'items' && selectedCategoryName" x-cloak class="mt-2 flex items-center gap-1.5 text-sm" style="color: rgba(255,255,255,0.6)">
+      <span @click="posView='categories'" class="cursor-pointer hover:underline" style="color: #e1b382">All</span>
+      <span>›</span>
+      <span x-show="selectedSubCatName" @click="posView='categories'" class="cursor-pointer hover:underline" style="color: #e1b382" x-text="selectedCategoryName"></span>
+      <span x-show="selectedSubCatName">›</span>
+      <span style="color: white" x-text="selectedSubCatName || selectedCategoryName"></span>
     </div>
   </div>
 
-  <!-- CATEGORY TABS -->
-  <div class="shrink-0 flex items-center gap-2 px-4 py-2.5 overflow-x-auto ns bg-white border-b border-border"
-       x-data="{activeCat:'{{ active_category|default:'all' }}', expandedParent: null}">
-    <input type="hidden" name="category" :value="activeCat">
+  <!-- Hidden category input for HTMX filtering -->
+  <input type="hidden" name="category" value="{{ active_category|default:'all' }}" id="cat-input">
 
-    <button hx-get="{% url 'pos:index' %}" hx-vals='{"category":"all"}' hx-target="#product-list" hx-include="[name='q']"
-            @click="activeCat='all'; expandedParent=null"
-            class="shrink-0 font-semibold text-sm px-4 py-2 cursor-pointer transition-all rounded-full border"
-            :class="activeCat === 'all' ? 'bg-primary text-white border-primary' : 'bg-white text-text-secondary border-border hover:bg-hover'">All</button>
+  <!-- ═══════ VIEW: CATEGORIES LIST ═══════ -->
+  <div x-show="posView === 'categories'" x-transition class="flex-1 overflow-auto ns" style="background: #F8F9FB">
+    <div class="divide-y" style="border-color: #E5E7EB">
+      <!-- All Products -->
+      <button type="button"
+              @click="posView='items'; selectedCategoryName='All Products'; selectedSubCatName='';
+                      document.getElementById('cat-input').value='all';
+                      htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'all',q:''}})"
+              class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background: #2d545e22">🛍️</div>
+        <div class="flex-1">
+          <h3 class="text-base font-semibold" style="color: #12343b">All Products</h3>
+          <p class="text-sm" style="color: #6B7280">Browse everything</p>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
 
-    {% for cat in categories %}
-    <div class="shrink-0 relative">
-      <button hx-get="{% url 'pos:index' %}" hx-vals='{"category":"{{ cat.id }}"}' hx-target="#product-list" hx-include="[name='q']"
-              @click="activeCat='{{ cat.id }}'; expandedParent = expandedParent === '{{ cat.id }}' ? null : '{{ cat.id }}'"
-              class="font-semibold text-sm px-4 py-2 cursor-pointer transition-all rounded-full border whitespace-nowrap"
-              :class="activeCat === '{{ cat.id }}' ? 'bg-primary text-white border-primary' : 'bg-white text-text-secondary border-border hover:bg-hover'">
-        {{ cat.name }}
+      {% for cat in categories %}
+      <div x-data="{showSubs: false}">
+        <button type="button"
+                @click="{% if cat.subcategories.all %}showSubs = !showSubs{% else %}posView='items'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName='';
+                        document.getElementById('cat-input').value='{{ cat.id }}';
+                        htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'{{ cat.id }}',q:''}}){% endif %}"
+                class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background: #e1b38222">📂</div>
+          <div class="flex-1">
+            <h3 class="text-base font-semibold" style="color: #12343b">{{ cat.name }}</h3>
+            <p class="text-sm" style="color: #6B7280">{{ cat.products.count }} items{% if cat.subcategories.all %} · {{ cat.subcategories.count }} subcategories{% endif %}</p>
+          </div>
+          {% if cat.subcategories.all %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5" class="transition-transform" :class="showSubs ? 'rotate-90' : ''"><path d="m9 18 6-6-6-6"/></svg>
+          {% else %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+          {% endif %}
+        </button>
+
+        <!-- Subcategories -->
         {% if cat.subcategories.all %}
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="inline ml-0.5"><path d="m6 9 6 6 6-6"/></svg>
+        <div x-show="showSubs" x-cloak x-transition class="border-t" style="background: #F8F9FB; border-color: #E5E7EB">
+          {% for sub in cat.subcategories.all %}
+          <button type="button"
+                  @click="posView='items'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName='{{ sub.name|escapejs }}';
+                          document.getElementById('cat-input').value='{{ sub.id }}';
+                          htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'{{ sub.id }}',q:''}})"
+                  class="cat-row flex items-center gap-4 w-full text-left pl-12 pr-5 py-3 hover:bg-white transition-colors">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style="background: #2d545e15">📁</div>
+            <div class="flex-1">
+              <h3 class="text-sm font-semibold" style="color: #12343b">{{ sub.name }}</h3>
+              <p class="text-xs" style="color: #6B7280">{{ sub.products.count }} items</p>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          {% endfor %}
+        </div>
         {% endif %}
-      </button>
-      {% if cat.subcategories.all %}
-      <div x-show="expandedParent === '{{ cat.id }}'" x-cloak x-transition
-           class="absolute top-full left-0 mt-1 z-30 bg-white border border-border rounded-xl shadow-card-lg p-1 min-w-[140px]">
-        {% for sub in cat.subcategories.all %}
-        <button hx-get="{% url 'pos:index' %}" hx-vals='{"category":"{{ sub.id }}"}' hx-target="#product-list" hx-include="[name='q']"
-                @click="activeCat='{{ sub.id }}'; expandedParent=null"
-                class="block w-full text-left font-medium text-sm px-3 py-2 rounded-lg hover:bg-hover text-text-primary transition-colors"
-                :class="activeCat === '{{ sub.id }}' ? 'text-primary-dark' : ''"
-                :style="activeCat === '{{ sub.id }}' ? 'background: #e1b38233' : ''">{{ sub.name }}</button>
-        {% endfor %}
       </div>
-      {% endif %}
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 
-  <!-- PRODUCT LIST -->
-  <div class="flex-1 overflow-auto ns">
+  <!-- ═══════ VIEW: PRODUCT LIST ═══════ -->
+  <div x-show="posView === 'items'" x-transition class="flex-1 overflow-auto ns" style="background: #F8F9FB">
     <div id="product-list">
       {% include 'pos/partials/product_list.html' %}
     </div>
@@ -109,25 +162,25 @@ window.allProducts = [
 
     <!-- Handle bar (mobile) -->
     <div class="flex justify-center pt-2 pb-1 sm:hidden">
-      <div class="w-10 h-1 bg-border rounded-full"></div>
+      <div class="w-10 h-1 rounded-full" style="background: #E5E7EB"></div>
     </div>
 
     <!-- Close -->
-    <div class="flex items-center justify-between px-5 py-3 border-b border-border">
-      <button @click="addModalOpen=false" class="text-text-secondary hover:text-text-primary font-semibold text-sm flex items-center gap-1.5">
+    <div class="flex items-center justify-between px-5 py-3 border-b" style="border-color: #E5E7EB">
+      <button @click="addModalOpen=false" class="font-semibold text-sm flex items-center gap-1.5" style="color: #2d545e">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
         Back
       </button>
-      <span class="text-sm font-semibold text-text-secondary" x-text="addModalProduct?.stock_qty + ' in stock'"></span>
+      <span class="text-sm font-semibold" style="color: #6B7280" x-text="addModalProduct?.stock_qty + ' in stock'"></span>
     </div>
 
     <!-- Product Info -->
     <div class="flex-1 overflow-auto px-5 py-4">
       <div class="flex items-start gap-4 mb-5">
-        <div class="w-16 h-16 flex items-center justify-center text-4xl bg-bg-main border border-border rounded-2xl shrink-0" x-text="addModalProduct?.image || '📦'"></div>
+        <div class="w-16 h-16 flex items-center justify-center text-4xl rounded-2xl shrink-0" style="background: #e1b38222; border: 1px solid #e1b38244" x-text="addModalProduct?.image || '📦'"></div>
         <div>
-          <h3 class="font-bold text-lg text-text-primary leading-tight" x-text="addModalProduct?.name"></h3>
-          <div class="font-bold text-xl text-primary font-mono tabular mt-1"
+          <h3 class="font-bold text-lg leading-tight" style="color: #12343b" x-text="addModalProduct?.name"></h3>
+          <div class="font-bold text-xl font-mono tabular mt-1" style="color: #2d545e"
                x-text="'KES ' + (selectedVariant ? selectedVariant.price : addModalProduct?.price)?.toLocaleString()"></div>
         </div>
       </div>
@@ -137,21 +190,20 @@ window.allProducts = [
         <div class="mb-5 space-y-4">
           <template x-for="(ot, stepIdx) in addModalProduct.option_types" :key="ot.name">
             <div x-show="stepIdx <= variantStep">
-              <p class="text-sm font-semibold text-text-secondary mb-2" x-text="'Select ' + ot.name"></p>
+              <p class="text-sm font-semibold mb-2" style="color: #6B7280" x-text="'Select ' + ot.name"></p>
               <div class="flex flex-wrap gap-2">
                 <template x-for="val in (stepIdx === variantStep ? currentStepValues : ot.values)" :key="val">
                   <button @click="if(stepIdx === variantStep) selectVariantOption(val)"
                           class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all border min-h-[44px]"
-                          :class="variantSelections[ot.name] === val
-                            ? 'bg-primary text-white border-primary shadow-sm'
-                            : stepIdx < variantStep ? 'bg-bg-main text-text-secondary border-border opacity-50' : 'bg-white text-text-primary border-border hover:bg-hover'"
+                          :style="variantSelections[ot.name] === val
+                            ? 'background:#2d545e;color:white;border-color:#2d545e'
+                            : stepIdx < variantStep ? 'background:#F8F9FB;color:#9CA3AF;border-color:#E5E7EB' : 'background:white;color:#12343b;border-color:#E5E7EB'"
                           :disabled="stepIdx < variantStep"
                           x-text="val"></button>
                 </template>
               </div>
-              <!-- Reset link -->
               <button x-show="stepIdx < variantStep || selectedVariant" @click="resetVariantSelection()"
-                      class="text-xs text-primary font-medium mt-1.5 hover:underline">Change selection</button>
+                      class="text-xs font-medium mt-1.5 hover:underline" style="color: #c89666">Change selection</button>
             </div>
           </template>
         </div>
@@ -160,12 +212,12 @@ window.allProducts = [
       <!-- SIMPLE VARIANT SELECTION (no option_types defined) -->
       <template x-if="(!addModalProduct?.option_types?.length) && addModalProduct?.variants?.length > 0">
         <div class="mb-5">
-          <p class="text-sm font-semibold text-text-secondary mb-2">Select variant</p>
+          <p class="text-sm font-semibold mb-2" style="color: #6B7280">Select variant</p>
           <div class="flex flex-wrap gap-2">
             <template x-for="v in addModalProduct.variants" :key="v.id">
               <button @click="selectedVariant = v; addQty = 1"
                       class="px-4 py-2.5 text-sm font-semibold rounded-xl transition-all border min-h-[44px]"
-                      :class="selectedVariant?.id === v.id ? 'bg-primary text-white border-primary' : 'bg-white text-text-primary border-border hover:bg-hover'"
+                      :style="selectedVariant?.id === v.id ? 'background:#2d545e;color:white;border-color:#2d545e' : 'background:white;color:#12343b;border-color:#E5E7EB'"
                       x-text="v.name"></button>
             </template>
           </div>
@@ -174,21 +226,21 @@ window.allProducts = [
 
       <!-- QTY STEPPER -->
       <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" x-transition class="mb-4">
-        <div class="flex items-center justify-between gap-4 p-3 bg-bg-main border border-border rounded-2xl">
+        <div class="flex items-center justify-between gap-4 p-3 rounded-2xl" style="background: #F8F9FB; border: 1px solid #E5E7EB">
           <button @click="if(addQty > 1) addQty--"
-                  class="w-12 h-12 flex items-center justify-center bg-white border border-border rounded-xl text-text-secondary active:scale-90 transition-all">
+                  class="w-12 h-12 flex items-center justify-center rounded-xl active:scale-90 transition-all" style="background:white;border:1px solid #E5E7EB;color:#6B7280">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
           <div class="text-center flex-1">
-            <div class="font-bold text-3xl text-text-primary tabular leading-none" x-text="addQty"></div>
-            <div class="text-sm font-medium text-text-secondary mt-1">Quantity</div>
+            <div class="font-bold text-3xl tabular leading-none" style="color: #12343b" x-text="addQty"></div>
+            <div class="text-sm font-medium mt-1" style="color: #6B7280">Quantity</div>
           </div>
           <button @click="
                     let mx = selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty;
                     let cid = selectedVariant ? selectedVariant.id : addModalProduct?.id;
                     let inCart = cart.items.find(i => i.id === cid)?.qty || 0;
                     if (addQty < (mx - inCart)) { addQty++ } else { alert('No more stock') }"
-                  class="w-12 h-12 flex items-center justify-center bg-white border border-border rounded-xl text-primary active:scale-90 transition-all">
+                  class="w-12 h-12 flex items-center justify-center rounded-xl active:scale-90 transition-all" style="background:white;border:1px solid #E5E7EB;color:#2d545e">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           </button>
         </div>
@@ -196,7 +248,7 @@ window.allProducts = [
     </div>
 
     <!-- ADD BUTTON -->
-    <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" class="shrink-0 p-5 bg-white border-t border-border">
+    <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" class="shrink-0 p-5 bg-white border-t" style="border-color:#E5E7EB">
       <button @click="
                 let p = selectedVariant
                   ? { id: selectedVariant.id, is_variant: true, parent_id: addModalProduct.id,
@@ -207,10 +259,11 @@ window.allProducts = [
                       price: addModalProduct.price, stock_qty: addModalProduct.stock_qty,
                       image: addModalProduct.image };
                 if (addToCart(p, addQty)) { addModalOpen = false }"
-              class="btn btn-primary w-full h-14 text-base font-semibold rounded-2xl">
+              class="btn w-full h-14 text-base font-semibold rounded-2xl"
+              style="background: #2d545e; color: white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         Add to Basket
-        <span class="text-white/60">·</span>
+        <span style="color:rgba(255,255,255,0.4)">·</span>
         <span class="font-mono tabular" x-text="'KES ' + ((selectedVariant ? selectedVariant.price : addModalProduct?.price) * addQty).toLocaleString()"></span>
       </button>
     </div>
@@ -230,57 +283,57 @@ window.allProducts = [
 
     <!-- Handle (mobile) -->
     <div class="flex justify-center pt-2 pb-1 sm:hidden">
-      <div class="w-10 h-1 bg-border rounded-full"></div>
+      <div class="w-10 h-1 rounded-full" style="background:#E5E7EB"></div>
     </div>
 
     <!-- Header -->
-    <div class="flex items-center justify-between px-5 py-3 border-b border-border">
-      <button @click="cart.open=false" class="text-text-secondary hover:text-text-primary font-semibold text-sm flex items-center gap-1.5">
+    <div class="flex items-center justify-between px-5 py-3 border-b" style="border-color:#E5E7EB">
+      <button @click="cart.open=false" class="font-semibold text-sm flex items-center gap-1.5" style="color:#2d545e">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
         Back
       </button>
-      <span class="font-bold text-lg text-text-primary">Basket</span>
-      <button @click="clearCart()" class="font-semibold text-sm text-danger">Clear</button>
+      <span class="font-bold text-lg" style="color:#12343b">Basket</span>
+      <button @click="clearCart()" class="font-semibold text-sm" style="color:#DC2626">Clear</button>
     </div>
 
     <!-- Tab nav -->
-    <div class="flex gap-1 mx-4 mt-3 p-1 bg-bg-main rounded-xl shrink-0">
+    <div class="flex gap-1 mx-4 mt-3 p-1 rounded-xl shrink-0" style="background:#F8F9FB">
       <button @click="cartView='items'"
               class="flex-1 py-2.5 font-semibold text-sm rounded-lg transition-all text-center"
-              :class="cartView === 'items' ? 'bg-white text-primary shadow-sm' : 'text-text-secondary'">
-        Items <span x-show="itemCount>0" x-text="itemCount" class="bg-primary text-white text-xs px-1.5 py-0.5 rounded-full ml-1 tabular"></span>
+              :style="cartView === 'items' ? 'background:#2d545e;color:white' : 'color:#6B7280'">
+        Items <span x-show="itemCount>0" x-text="itemCount" class="text-xs px-1.5 py-0.5 rounded-full ml-1 tabular" :style="cartView === 'items' ? 'background:rgba(255,255,255,0.2)' : 'background:#2d545e;color:white'"></span>
       </button>
       <button @click="cartView='payment'"
               class="flex-1 py-2.5 font-semibold text-sm rounded-lg transition-all text-center"
-              :class="cartView === 'payment' ? 'bg-white text-primary shadow-sm' : 'text-text-secondary'">Payment</button>
+              :style="cartView === 'payment' ? 'background:#2d545e;color:white' : 'color:#6B7280'">Payment</button>
     </div>
 
     <!-- ITEMS -->
     <div x-show="cartView==='items'" x-transition class="flex-1 overflow-auto ns px-4 py-3">
       <template x-for="(item, idx) in cart.items" :key="item.id">
-        <div class="flex items-start gap-3 py-3 border-b border-border last:border-0">
-          <div class="w-11 h-11 shrink-0 flex items-center justify-center text-xl bg-bg-main border border-border rounded-xl" x-text="item.image || '📦'"></div>
+        <div class="flex items-start gap-3 py-3 border-b last:border-0" style="border-color:#E5E7EB">
+          <div class="w-11 h-11 shrink-0 flex items-center justify-center text-xl rounded-xl" style="background:#e1b38222;border:1px solid #e1b38244" x-text="item.image || '📦'"></div>
           <div class="flex-1 min-w-0">
-            <div class="text-sm font-semibold text-text-primary truncate" x-text="item.name"></div>
-            <!-- Editable price -->
+            <div class="text-sm font-semibold truncate" style="color:#12343b" x-text="item.name"></div>
             <div class="flex items-center gap-2 mt-1">
-              <span class="text-xs text-text-secondary">Price:</span>
+              <span class="text-xs" style="color:#6B7280">Price:</span>
               <input type="number" :value="item.sale_price || item.price" 
                      @change="setLinePrice(item.id, $event.target.value)"
-                     class="w-20 text-sm font-bold text-primary font-mono tabular bg-bg-main border border-border rounded-lg px-2 py-1 text-right focus:outline-none focus:border-primary">
+                     class="w-20 text-sm font-bold font-mono tabular rounded-lg px-2 py-1 text-right focus:outline-none"
+                     style="color:#2d545e;background:#F8F9FB;border:1px solid #E5E7EB">
             </div>
           </div>
           <div class="flex flex-col items-end gap-2 shrink-0">
-            <div class="flex items-center bg-bg-main border border-border rounded-xl">
-              <button @click="updateQty(item.id,-1)" class="w-9 h-9 flex items-center justify-center text-text-secondary active:scale-90">
+            <div class="flex items-center rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">
+              <button @click="updateQty(item.id,-1)" class="w-9 h-9 flex items-center justify-center active:scale-90" style="color:#6B7280">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
-              <span class="w-7 text-center font-bold text-sm text-text-primary tabular" x-text="item.qty"></span>
-              <button @click="updateQty(item.id,1)" class="w-9 h-9 flex items-center justify-center text-primary active:scale-90">
+              <span class="w-7 text-center font-bold text-sm tabular" style="color:#12343b" x-text="item.qty"></span>
+              <button @click="updateQty(item.id,1)" class="w-9 h-9 flex items-center justify-center active:scale-90" style="color:#2d545e">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               </button>
             </div>
-            <span class="font-bold text-sm text-text-primary font-mono tabular" x-text="'KES ' + (((item.sale_price || item.price) - (item.discount||0)) * item.qty).toLocaleString()"></span>
+            <span class="font-bold text-sm font-mono tabular" style="color:#12343b" x-text="'KES ' + (((item.sale_price || item.price) - (item.discount||0)) * item.qty).toLocaleString()"></span>
           </div>
         </div>
       </template>
@@ -294,12 +347,12 @@ window.allProducts = [
 
     <!-- PAYMENT -->
     <div x-show="cartView==='payment'" x-transition class="flex-1 overflow-auto ns px-4 py-4">
-      <p class="text-sm font-semibold text-text-secondary mb-3">Payment Method</p>
+      <p class="text-sm font-semibold mb-3" style="color:#6B7280">Payment Method</p>
       <div class="grid grid-cols-2 gap-3 mb-5">
         <template x-for="m in [{key:'cash',icon:'💵',label:'Cash'},{key:'mpesa',icon:'📱',label:'M-Pesa'},{key:'card',icon:'💳',label:'Card'},{key:'split',icon:'✂️',label:'Split'}]" :key="m.key">
           <button @click="payment=m.key; if(m.key==='split' && splitPayments.length===0) splitPayments.push({method:'cash',amount:0})"
                   class="flex flex-col items-center gap-2 p-4 border rounded-2xl transition-all min-h-[80px]"
-                  :class="payment === m.key ? 'bg-selected-item border-primary text-primary' : 'bg-white border-border text-text-secondary hover:bg-hover'">
+                  :style="payment === m.key ? 'background:#2d545e15;border-color:#2d545e;color:#12343b' : 'background:white;border-color:#E5E7EB;color:#6B7280'">
             <span class="text-2xl" x-text="m.icon"></span>
             <span class="font-semibold text-sm" x-text="m.label"></span>
           </button>
@@ -309,33 +362,32 @@ window.allProducts = [
       <template x-if="payment==='split'">
         <div>
           <div class="flex items-center justify-between mb-3">
-            <p class="text-sm font-semibold text-text-secondary">Split Details</p>
-            <button @click="splitPayments.push({method:'cash',amount:0})" class="btn btn-primary px-3 py-1.5 text-xs">+ Add</button>
+            <p class="text-sm font-semibold" style="color:#6B7280">Split Details</p>
+            <button @click="splitPayments.push({method:'cash',amount:0})" class="btn px-3 py-1.5 text-xs" style="background:#2d545e;color:white">+ Add</button>
           </div>
           <div class="space-y-2 mb-4">
             <template x-for="(sp, idx) in splitPayments" :key="idx">
-              <div class="flex items-center gap-2 p-2 bg-bg-main border border-border rounded-xl">
-                <select x-model="sp.method" class="text-sm font-semibold bg-white border border-border rounded-lg px-2 py-1.5">
+              <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">
+                <select x-model="sp.method" class="text-sm font-semibold rounded-lg px-2 py-1.5" style="background:white;border:1px solid #E5E7EB;color:#12343b">
                   <option value="cash">Cash</option>
                   <option value="mpesa">M-Pesa</option>
                   <option value="card">Card</option>
                 </select>
-                <input type="number" x-model.number="sp.amount" placeholder="0" class="flex-1 text-right font-bold text-sm font-mono bg-white border border-border rounded-lg px-2 py-1.5 text-primary">
-                <button @click="splitPayments.splice(idx,1)" class="text-danger p-1">
+                <input type="number" x-model.number="sp.amount" placeholder="0" class="flex-1 text-right font-bold text-sm font-mono rounded-lg px-2 py-1.5" style="background:white;border:1px solid #E5E7EB;color:#2d545e">
+                <button @click="splitPayments.splice(idx,1)" style="color:#DC2626" class="p-1">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               </div>
             </template>
           </div>
-          <div class="p-3 bg-bg-main border border-border rounded-xl">
+          <div class="p-3 rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">
             <div class="flex justify-between text-sm font-semibold mb-2">
-              <span class="text-text-secondary">Collected</span>
-              <span :class="totalPaid >= cartTotal ? 'text-success' : 'text-danger'" x-text="'KES ' + totalPaid.toLocaleString()"></span>
+              <span style="color:#6B7280">Collected</span>
+              <span :style="totalPaid >= cartTotal ? 'color:#16A34A' : 'color:#DC2626'" x-text="'KES ' + totalPaid.toLocaleString()"></span>
             </div>
-            <div class="w-full h-2 bg-border rounded-full overflow-hidden">
+            <div class="w-full h-2 rounded-full overflow-hidden" style="background:#E5E7EB">
               <div class="h-full transition-all duration-300 rounded-full"
-                   :class="totalPaid >= cartTotal ? 'bg-success' : 'bg-warning'"
-                   :style="`width:${Math.min(100,cartTotal>0?(totalPaid/cartTotal)*100:0)}%`"></div>
+                   :style="`width:${Math.min(100,cartTotal>0?(totalPaid/cartTotal)*100:0)}%;background:${totalPaid >= cartTotal ? '#16A34A' : '#F59E0B'}`"></div>
             </div>
           </div>
         </div>
@@ -343,11 +395,11 @@ window.allProducts = [
     </div>
 
     <!-- FOOTER -->
-    <div class="shrink-0 p-5 bg-white border-t border-border">
+    <div class="shrink-0 p-5 bg-white border-t" style="border-color:#E5E7EB">
       <div class="flex items-center justify-between mb-4">
         <div>
-          <div class="text-xs font-semibold text-text-secondary uppercase tracking-wider">Grand Total</div>
-          <div class="font-bold text-3xl text-text-primary font-mono tabular leading-none mt-1">KES <span x-text="cartTotal.toLocaleString()"></span></div>
+          <div class="text-xs font-semibold uppercase tracking-wider" style="color:#6B7280">Grand Total</div>
+          <div class="font-bold text-3xl font-mono tabular leading-none mt-1" style="color:#12343b">KES <span x-text="cartTotal.toLocaleString()"></span></div>
         </div>
       </div>
       <button @click="if(cartView === 'items') { cartView = 'payment'; return; }
@@ -367,7 +419,7 @@ window.allProducts = [
                 .catch(() => { checkoutLoading = false })"
               :disabled="checkoutLoading || itemCount===0 || (payment==='split' && totalPaid<cartTotal)"
               class="btn w-full h-14 text-base font-semibold rounded-2xl transition-all disabled:opacity-40"
-              :class="cartView === 'payment' ? 'btn-success' : 'btn-primary'">
+              :style="cartView === 'payment' ? 'background:#16A34A;color:white' : 'background:#2d545e;color:white'">
         <span x-show="!checkoutLoading" class="flex items-center gap-3">
           <span x-text="cartView === 'payment' ? 'Complete Sale' : 'Proceed to Payment'"></span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -380,10 +432,4 @@ window.allProducts = [
 
 <!-- Receipt modal container -->
 <div id="modal-container"></div>
-
-<script>
-document.getElementById('search-input')?.addEventListener('input', function(){
-  // Pure visual feedback — no barcode logic
-});
-</script>
 {% endblock %}
