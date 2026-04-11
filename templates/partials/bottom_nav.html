@@ -2,40 +2,52 @@
 <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border safe-bottom">
   <div class="flex items-center justify-around h-16">
     
-    <a href="{% url 'pos:index' %}" class="flex items-center justify-center w-full h-full relative">
+    <!-- Sales -->
+    <a href="{% url 'pos:index' %}" class="flex flex-col items-center justify-center gap-0.5 w-full h-full relative">
       {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full" style="background:#e1b382"></div>
       {% endif %}
-      <div class="p-2 rounded-xl {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}text-primary{% else %}text-text-secondary{% endif %} active:scale-90 transition-all">
+      <div class="p-1.5 rounded-lg {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}{% else %}{% endif %} active:scale-90 transition-all"
+           style="color: {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}#2d545e{% else %}#9CA3AF{% endif %}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
       </div>
+      <span class="text-[10px] font-semibold" style="color: {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}#2d545e{% else %}#9CA3AF{% endif %}">Sales</span>
     </a>
 
-    <a href="{% url 'catalogue:inventory' %}" class="flex items-center justify-center w-full h-full relative">
+    <!-- Inventory -->
+    <a href="{% url 'catalogue:inventory' %}" class="flex flex-col items-center justify-center gap-0.5 w-full h-full relative">
       {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full" style="background:#e1b382"></div>
       {% endif %}
-      <div class="p-2 rounded-xl {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}text-primary{% else %}text-text-secondary{% endif %} active:scale-90 transition-all">
+      <div class="p-1.5 rounded-lg active:scale-90 transition-all"
+           style="color: {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}#2d545e{% else %}#9CA3AF{% endif %}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
       </div>
+      <span class="text-[10px] font-semibold" style="color: {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}#2d545e{% else %}#9CA3AF{% endif %}">Inventory</span>
     </a>
 
-    <a href="{% url 'expenses:list' %}" class="flex items-center justify-center w-full h-full relative">
+    <!-- Expenses -->
+    <a href="{% url 'expenses:list' %}" class="flex flex-col items-center justify-center gap-0.5 w-full h-full relative">
       {% if request.resolver_match.app_name == 'expenses' %}
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full" style="background:#e1b382"></div>
       {% endif %}
-      <div class="p-2 rounded-xl {% if request.resolver_match.app_name == 'expenses' %}text-primary{% else %}text-text-secondary{% endif %} active:scale-90 transition-all">
+      <div class="p-1.5 rounded-lg active:scale-90 transition-all"
+           style="color: {% if request.resolver_match.app_name == 'expenses' %}#2d545e{% else %}#9CA3AF{% endif %}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
       </div>
+      <span class="text-[10px] font-semibold" style="color: {% if request.resolver_match.app_name == 'expenses' %}#2d545e{% else %}#9CA3AF{% endif %}">Expenses</span>
     </a>
 
-    <a href="{% url 'catalogue:category_list' %}" class="flex items-center justify-center w-full h-full relative">
+    <!-- More -->
+    <a href="{% url 'catalogue:category_list' %}" class="flex flex-col items-center justify-center gap-0.5 w-full h-full relative">
       {% if request.resolver_match.url_name == 'category_list' %}
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full" style="background:#e1b382"></div>
       {% endif %}
-      <div class="p-2 rounded-xl {% if request.resolver_match.url_name == 'category_list' %}text-primary{% else %}text-text-secondary{% endif %} active:scale-90 transition-all">
+      <div class="p-1.5 rounded-lg active:scale-90 transition-all"
+           style="color: {% if request.resolver_match.url_name == 'category_list' %}#2d545e{% else %}#9CA3AF{% endif %}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
       </div>
+      <span class="text-[10px] font-semibold" style="color: {% if request.resolver_match.url_name == 'category_list' %}#2d545e{% else %}#9CA3AF{% endif %}">More</span>
     </a>
 
   </div>

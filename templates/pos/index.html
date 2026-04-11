@@ -47,7 +47,7 @@ window.allProducts = [
       <button x-show="itemCount>0" x-cloak @click="cart.open=true"
               class="relative shrink-0 w-12 h-12 flex items-center justify-center bg-primary text-white rounded-xl shadow-md active:scale-95 transition-all">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        <span class="absolute -top-1 -right-1 w-5 h-5 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center" x-text="itemCount"></span>
+        <span class="absolute -top-1 -right-1 w-5 h-5 text-white text-xs font-bold rounded-full flex items-center justify-center" style="background:#c89666" x-text="itemCount"></span>
       </button>
     </div>
   </div>
@@ -80,7 +80,8 @@ window.allProducts = [
         <button hx-get="{% url 'pos:index' %}" hx-vals='{"category":"{{ sub.id }}"}' hx-target="#product-list" hx-include="[name='q']"
                 @click="activeCat='{{ sub.id }}'; expandedParent=null"
                 class="block w-full text-left font-medium text-sm px-3 py-2 rounded-lg hover:bg-hover text-text-primary transition-colors"
-                :class="activeCat === '{{ sub.id }}' ? 'bg-primary/10 text-primary' : ''">{{ sub.name }}</button>
+                :class="activeCat === '{{ sub.id }}' ? 'text-primary-dark' : ''"
+                :style="activeCat === '{{ sub.id }}' ? 'background: #e1b38233' : ''">{{ sub.name }}</button>
         {% endfor %}
       </div>
       {% endif %}

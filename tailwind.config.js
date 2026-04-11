@@ -8,17 +8,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary:   '#2563EB',
+        primary:   '#2d545e',   /* Night Blue */
+        'primary-dark': '#12343b', /* Night Blue Shadow */
+        accent:    '#e1b382',   /* Sand Tan */
+        'accent-dark': '#c89666', /* Sand Tan Shadow */
         success:   '#16A34A',
         warning:   '#F59E0B',
         danger:    '#DC2626',
         'bg-main':    '#F8F9FB',
         'bg-surface': '#FFFFFF',
         border:    '#E5E7EB',
-        'text-primary':   '#111827',
+        'text-primary':   '#12343b',
         'text-secondary': '#6B7280',
         'cart-bg':    '#F1F5F9',
-        'selected-item': '#DBEAFE',
+        'selected-item': '#e1b38233',
         hover:     '#F3F4F6',
         disabled:  '#D1D5DB',
       },
