@@ -19,43 +19,73 @@ def index(request):
     if query:
         qs = qs.filter(name__icontains=query)
     if cat_id and cat_id != 'all':
-        qs = qs.filter(category_id=cat_id)
+        # Support both parent and subcategory filtering
+        try:
+            cat = Category.objects.get(id=cat_id)
+            if cat.subcategories.exists():
+                # Parent category — include all subcategory products too
+                sub_ids = list(cat.subcategories.values_list('id', flat=True))
+                sub_ids.append(cat.id)
+                qs = qs.filter(category_id__in=sub_ids)
+            else:
+                qs = qs.filter(category_id=cat_id)
+        except (Category.DoesNotExist, ValueError):
+            qs = qs.filter(category_id=cat_id)
 
     qs = qs.prefetch_related(
-        Prefetch('variants', queryset=ProductVariant.objects.all())
+        Prefetch('variants', queryset=ProductVariant.objects.all()),
+        'option_types',
     )
+
+    is_admin = request.user.role == 'admin'
 
     products_with_data = []
     for product in qs:
-        # 1. Build a clean list of variants
         variants_list = []
         for v in product.variants.all():
-            variants_list.append({
-    "id":       str(v.id),
-    "name":     str(v.name),
-    "price":    float(v.price if v.price is not None else product.price or 0),
-    "stock_qty": int(v.stock_qty or 0),
-    "options":  [str(v.name)]  # or split "Red / L" → ["Red", "L"] if your names are composite
-})
-        # 2. Add properties to the product object for the template
+            vdata = {
+                "id":        str(v.id),
+                "name":      str(v.name),
+                "price":     float(v.price if v.price is not None else product.price or 0),
+                "stock_qty": int(v.stock_qty or 0),
+                "options":   v.options if isinstance(v.options, dict) else {},
+            }
+            if is_admin:
+                vdata["cost_price"] = float(v.get_cost_price or 0)
+            variants_list.append(vdata)
+
         product.safe_variants_json = json.dumps(variants_list)
         product.safe_price = float(product.price or 0)
         product.has_variants = len(variants_list) > 0
+
+        # Build option_types data for guided variant selection
+        option_types_data = []
+        for ot in product.option_types.all():
+            option_types_data.append({
+                'name': ot.name,
+                'values': ot.values,
+            })
+        product.safe_option_types_json = json.dumps(option_types_data)
+
         products_with_data.append(product)
 
     from django.core.paginator import Paginator
     paginator = Paginator(products_with_data, 24)
     products = paginator.get_page(page_num)
 
+    # Build category hierarchy for nav
+    parent_categories = Category.objects.filter(parent__isnull=True).order_by('name').prefetch_related('subcategories')
+
     context = {
         'products': products,
-        'categories': Category.objects.all().order_by('name'),
+        'categories': parent_categories,
         'active_category': cat_id or 'all',
         'query': query,
+        'is_admin': is_admin,
     }
 
     if request.headers.get('HX-Request'):
-        return render(request, 'pos/partials/product_grid.html', context)
+        return render(request, 'pos/partials/product_list.html', context)
 
     return render(request, 'pos/index.html', context)
 
@@ -71,14 +101,14 @@ def validate_coupon(request):
 
     if not code:
         return HttpResponse(
-            '<div id="coupon-feedback" class="text-text-muted text-xs">Enter a coupon code</div>'
+            '<div id="coupon-feedback" class="text-text-secondary text-sm">Enter a coupon code</div>'
         )
 
     try:
         coupon = Coupon.objects.get(code=code)
     except Coupon.DoesNotExist:
         return HttpResponse(
-            '<div id="coupon-feedback" class="text-brand-red text-xs font-bold animate-shake">'
+            '<div id="coupon-feedback" class="text-danger text-sm font-semibold">'
             '❌ Invalid coupon code</div>'
         )
 
@@ -90,13 +120,13 @@ def validate_coupon(request):
             reason = 'Coupon is inactive'
 
         return HttpResponse(
-            f'<div id="coupon-feedback" class="text-brand-red text-xs font-bold animate-shake">'
+            f'<div id="coupon-feedback" class="text-danger text-sm font-semibold">'
             f'❌ {reason}</div>'
         )
 
     if coupon.min_order and subtotal < coupon.min_order:
         return HttpResponse(
-            f'<div id="coupon-feedback" class="text-brand-amber text-xs font-bold">'
+            f'<div id="coupon-feedback" class="text-warning text-sm font-semibold">'
             f'⚠️ Minimum order KES {coupon.min_order} required</div>'
         )
 
@@ -109,8 +139,8 @@ def validate_coupon(request):
 
     return HttpResponse(
         f'<div id="coupon-feedback" class="space-y-1">'
-        f'<div class="text-brand-green text-xs font-bold flex items-center gap-1">'
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+        f'<div class="text-success text-sm font-semibold flex items-center gap-1">'
+        f'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>'
         f'{label} — Save KES {discount}</div>'
         f'<input type="hidden" id="coupon-discount-value" value="{coupon.discount_value}" />'
         f'<input type="hidden" id="coupon-discount-type" value="{coupon.discount_type}" />'
@@ -140,28 +170,33 @@ def checkout(request):
         for item in items:
             item_id = item.get('id')
 
-            # ✅ Variant-first logic
+            # Variant-first logic
             try:
                 variant = ProductVariant.objects.get(id=item_id)
                 item['cost_price'] = float(
                     variant.cost_price or variant.product.cost_price or 0
                 )
                 item['is_variant'] = True
+                item['original_price'] = float(variant.price)
             except ProductVariant.DoesNotExist:
                 try:
                     product = Product.objects.get(id=item_id)
                     item['cost_price'] = float(product.cost_price or 0)
                     item['is_variant'] = False
+                    item['original_price'] = float(product.price)
                 except Product.DoesNotExist:
                     item['cost_price'] = 0.0
                     item['is_variant'] = False
+                    item['original_price'] = float(item.get('price', 0))
 
             qty           = int(item.get('qty', 1))
-            line_price    = Decimal(str(item['price']))
+            # Use sale_price if provided (POS price override), else use price
+            sale_price    = Decimal(str(item.get('sale_price', item['price'])))
+            item['price'] = float(sale_price)
             line_discount = Decimal(str(item.get('discount', 0)))
 
             line_discounts_total += line_discount * qty
-            subtotal += (line_price - line_discount) * qty
+            subtotal += (sale_price - line_discount) * qty
 
         coupon_obj      = None
         coupon_discount = Decimal('0')
@@ -207,7 +242,7 @@ def checkout(request):
             status          = 'complete'
         )
 
-        # ✅ Stock handling
+        # Stock handling
         for item in items:
             item_id = item.get('id')
             qty     = int(item.get('qty', 0))

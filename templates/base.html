@@ -5,38 +5,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Eli Collection POS</title>
-  <meta name="description" content="Eli Collection — Premium Point of Sale System">
+  <title>Eli Collection</title>
+  <meta name="description" content="Eli Collection — Sales & Inventory Management">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   {% tailwind_css %}
   
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
   <script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   
   {% block screen_title %}{% endblock %}
   
   <style>
     [x-cloak] { display: none !important; }
     
-    /* === DESIGN SYSTEM === */
     :root {
-      --bg-main:        #F8F9FB;
-      --bg-surface:     #FFFFFF;
-      --border:         #E5E7EB;
+      --primary:    #2563EB;
+      --success:    #16A34A;
+      --warning:    #F59E0B;
+      --danger:     #DC2626;
+      --bg-main:    #F8F9FB;
+      --bg-surface: #FFFFFF;
+      --border:     #E5E7EB;
       --text-primary:   #111827;
       --text-secondary: #6B7280;
-      --primary:        #2563EB;
-      --success:        #16A34A;
-      --warning:        #F59E0B;
-      --danger:         #DC2626;
-      --cart-bg:        #F1F5F9;
-      --selected-item:  #DBEAFE;
-      --hover:          #F3F4F6;
-      --disabled:       #D1D5DB;
+      --nav-h: 64px;
     }
     
     body { 
@@ -46,57 +41,34 @@
       -webkit-font-smoothing: antialiased;
     }
     
-    /* Clean Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-    
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
     .font-mono { font-family: 'JetBrains Mono', monospace; }
     .tabular { font-variant-numeric: tabular-nums; }
     
-    .glass {
-      background: rgba(255,255,255,0.8);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border);
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
     }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger  { background: var(--danger); color: white; }
+    .btn-outline { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border); }
+    .btn-outline:hover { background: var(--bg-main); }
     
-    /* Stagger animation helper */
-    .stagger > * { animation: fadeIn 0.3s ease-out both; }
-    .stagger > *:nth-child(1) { animation-delay: 0.02s; }
-    .stagger > *:nth-child(2) { animation-delay: 0.04s; }
-    .stagger > *:nth-child(3) { animation-delay: 0.06s; }
-    .stagger > *:nth-child(4) { animation-delay: 0.08s; }
-    .stagger > *:nth-child(5) { animation-delay: 0.10s; }
-    .stagger > *:nth-child(6) { animation-delay: 0.12s; }
-    .stagger > *:nth-child(7) { animation-delay: 0.14s; }
-    .stagger > *:nth-child(8) { animation-delay: 0.16s; }
-    .stagger > *:nth-child(9) { animation-delay: 0.18s; }
-    .stagger > *:nth-child(10) { animation-delay: 0.20s; }
-    .stagger > *:nth-child(11) { animation-delay: 0.22s; }
-    .stagger > *:nth-child(12) { animation-delay: 0.24s; }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Safe areas for mobile */
-    .safe-top { padding-top: env(safe-area-inset-top); }
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
-    
-    /* Shimmer button effect */
-    .btn-shimmer { position: relative; overflow: hidden; }
-    .btn-shimmer::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-      animation: shimmer 2.5s ease-in-out infinite;
-    }
   </style>
 
   <script>
@@ -105,10 +77,6 @@
         sidebarOpen: false,
         cart: { items: [], open: false },
         checkoutLoading: false,
-        
-        /* ── Barcode scanner ── */
-        scanOpen:        false,
-        manualBarcode:   '',
         
         payment: 'cash',
         couponCode: '',
@@ -124,6 +92,9 @@
         addModalProduct: null,
         selectedVariant: null,
         addQty:          1,
+        /* Multi-step variant selection */
+        variantStep:     0,
+        variantSelections: {},
 
         openProduct(productId) {
           if (!window.allProducts) return;
@@ -132,38 +103,71 @@
           this.addModalProduct  = prod;
           this.selectedVariant  = null;
           this.addQty           = 1;
+          this.variantStep      = 0;
+          this.variantSelections = {};
           this.addModalOpen     = true;
         },
-        
-        handleBarcode(code) {
-            if (!code) return;
-            const product = this.findProductByBarcode(code);
-            if (product) {
-                // Correcting variable names to match index.html
-                if (product.has_variants) {
-                    this.addModalProduct = product;
-                    this.selectedVariant = null;
-                    this.addQty = 1;
-                    this.addModalOpen = true;
-                } else {
-                    this.addModalProduct = product;
-                    this.addQty = 1;
-                    this.addModalOpen = true;
-                }
-                return true;
-            }
-            return false;
+
+        /* Get option type names for guided variant flow */
+        get optionTypeNames() {
+          if (!this.addModalProduct?.option_types) return [];
+          return this.addModalProduct.option_types.map(ot => ot.name);
         },
 
-        findProductByBarcode(code) {
-           // This will be implemented in index.html to have access to the product list data from Django
-           // Or we can try to find it in the DOM or global windows object if we inject it there.
-           // For now, let's assume index.html will provide the find logic or we find it in the grid.
-           const grid = document.getElementById('product-grid');
-           if (!grid) return null;
-           // We might need a better way to store product data for searching.
-           // For now, let's trigger a search input change in index.html or use a global products array.
-           return window.allProducts ? window.allProducts.find(p => p.barcode === code) : null;
+        /* Get available values for current variant step */
+        get currentStepValues() {
+          if (!this.addModalProduct?.option_types) return [];
+          const ot = this.addModalProduct.option_types[this.variantStep];
+          if (!ot) return [];
+          
+          // Filter values based on previous selections
+          if (this.variantStep === 0) return ot.values;
+          
+          // Check which values have matching variants
+          const available = new Set();
+          for (const v of this.addModalProduct.variants || []) {
+            const opts = v.options || {};
+            let match = true;
+            for (let i = 0; i < this.variantStep; i++) {
+              const prevName = this.addModalProduct.option_types[i].name;
+              if (opts[prevName] !== this.variantSelections[prevName]) {
+                match = false;
+                break;
+              }
+            }
+            if (match && opts[ot.name]) {
+              available.add(opts[ot.name]);
+            }
+          }
+          return ot.values.filter(v => available.has(v));
+        },
+
+        selectVariantOption(value) {
+          const ot = this.addModalProduct.option_types[this.variantStep];
+          this.variantSelections[ot.name] = value;
+          
+          if (this.variantStep < this.addModalProduct.option_types.length - 1) {
+            this.variantStep++;
+          } else {
+            // All options selected — find matching variant
+            const match = (this.addModalProduct.variants || []).find(v => {
+              const opts = v.options || {};
+              for (const [key, val] of Object.entries(this.variantSelections)) {
+                if (opts[key] !== val) return false;
+              }
+              return true;
+            });
+            if (match) {
+              this.selectedVariant = match;
+              this.addQty = 1;
+            }
+          }
+        },
+
+        resetVariantSelection() {
+          this.variantStep = 0;
+          this.variantSelections = {};
+          this.selectedVariant = null;
         },
         
         get totalPaid() {
@@ -171,7 +175,7 @@
         },
 
         get itemCount() { return this.cart.items.reduce((s, i) => s + i.qty, 0); },
-        get cartSubtotal() { return this.cart.items.reduce((s, i) => s + ((i.price - (i.discount || 0)) * i.qty), 0); },
+        get cartSubtotal() { return this.cart.items.reduce((s, i) => s + ((i.sale_price || i.price) - (i.discount || 0)) * i.qty, 0); },
         get discountAmount() {
           if (!this.couponApplied) return 0;
           if (this.couponType === 'percent') {
@@ -194,7 +198,7 @@
           if (ex) {
             ex.qty += qty;
           } else {
-            this.cart.items.push({ ...product, qty: qty, discount: 0 });
+            this.cart.items.push({ ...product, qty: qty, discount: 0, sale_price: product.price });
           }
           this.cart.open = true;
           return true;
@@ -233,6 +237,15 @@
             const item = this.cart.items.find(i => i.id === id);
             if (item) {
                 item.discount = Math.max(0, Math.min(item.price, parseFloat(amount) || 0));
+            }
+        },
+        setLinePrice(id, newPrice) {
+            const item = this.cart.items.find(i => i.id === id);
+            if (item) {
+                const p = parseFloat(newPrice);
+                if (p > 0) {
+                    item.sale_price = p;
+                }
             }
         },
         clearCart() { 
@@ -282,101 +295,92 @@
         },
       };
     }
+    
+    // Make openProduct globally accessible for HTMX-loaded content
+    window.openProduct = function(productId) {
+      const el = document.querySelector('[x-data]');
+      if (el && el.__x) {
+        Alpine.$data(el).openProduct(productId);
+      } else if (typeof Alpine !== 'undefined') {
+        Alpine.$data(el).openProduct(productId);
+      }
+    };
   </script>
 </head>
-<body class="font-sans text-text-primary antialiased min-h-screen flex flex-col" :class="{ 'overflow-hidden': sidebarOpen }">
-  
-  <!-- Ambient Glow Orbs -->
-  <div class="ambient-orb w-[600px] h-[600px] bg-brand-green/[0.03] -top-[200px] -left-[200px] animate-pulse-glow"></div>
-  <div class="ambient-orb w-[400px] h-[400px] bg-brand-green/[0.02] bottom-[100px] -right-[100px] animate-pulse-glow" style="animation-delay: 1.5s;"></div>
+<body class="min-h-screen flex flex-col" :class="{ 'overflow-hidden': sidebarOpen || cart.open || addModalOpen }">
 
-  <!-- Global Sidebar -->
+  <!-- Sidebar Overlay -->
   <div x-show="sidebarOpen" x-cloak class="fixed inset-0 z-[100] overflow-hidden">
     <div x-show="sidebarOpen" 
-         x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" 
          @click="sidebarOpen = false"
-         class="absolute inset-0 bg-black/70 backdrop-blur-md"></div>
+         class="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
     
     <div x-show="sidebarOpen" 
          x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
          x-transition:leave="transition ease-in duration-200 transform" x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full"
-         class="absolute inset-y-0 left-0 w-[280px] bg-surface2 border-r border-white/[0.04] shadow-2xl flex flex-col">
+         class="absolute inset-y-0 left-0 w-[280px] bg-white border-r border-border shadow-2xl flex flex-col">
       
-      <div class="p-6 border-b border-white/[0.04]">
-        <h2 class="font-display font-extrabold text-2xl text-gradient-green tracking-tight">Eli Collection</h2>
-        <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.2em] mt-1">Management Portal</p>
+      <div class="p-5 border-b border-border">
+        <h2 class="font-bold text-xl text-text-primary tracking-tight">Eli Collection</h2>
+        <p class="text-xs text-text-secondary font-medium mt-0.5">Management Portal</p>
       </div>
 
-      <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
-        <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4 mt-2">Operations</p>
-        <a href="{% url 'pos:index' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'pos' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'pos' %}bg-black/20{% else %}bg-brand-whatsapp/10 group-hover:bg-brand-whatsapp/15{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'pos' %}text-white{% else %}text-brand-whatsapp{% endif %}"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-          </div>
-          <span class="font-bold text-sm">Point of Sale</span>
+      <nav class="flex-grow p-3 space-y-0.5 overflow-y-auto">
+        <p class="px-3 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3 mt-2">Operations</p>
+        
+        <a href="{% url 'pos:index' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}bg-primary/10 text-primary{% else %}text-text-primary hover:bg-hover{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <span class="font-semibold text-base">Sales</span>
         </a>
-        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name != 'category_list' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name != 'category_list' %}bg-black/20{% else %}bg-brand-whatsapp/10 group-hover:bg-brand-whatsapp/15{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name != 'category_list' %}text-white{% else %}text-brand-whatsapp{% endif %}"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-          </div>
-          <span class="font-bold text-sm">Stock Inventory</span>
+        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}bg-primary/10 text-primary{% else %}text-text-primary hover:bg-hover{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          <span class="font-semibold text-base">Inventory</span>
         </a>
-        <a href="{% url 'expenses:list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'expenses' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'expenses' %}bg-black/20{% else %}bg-brand-whatsapp/10 group-hover:bg-brand-whatsapp/15{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'expenses' %}text-white{% else %}text-brand-whatsapp{% endif %}"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
-          </div>
-          <span class="font-bold text-sm">Expenses</span>
+        <a href="{% url 'expenses:list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'expenses' %}bg-primary/10 text-primary{% else %}text-text-primary hover:bg-hover{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+          <span class="font-semibold text-base">Expenses</span>
         </a>
-        <a href="{% url 'procurement:po_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'procurement' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'procurement' %}bg-black/20{% else %}bg-brand-whatsapp/10 group-hover:bg-brand-whatsapp/15{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'procurement' %}text-white{% else %}text-brand-whatsapp{% endif %}"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-          </div>
-          <span class="font-bold text-sm">Buy Stock</span>
+        <a href="{% url 'procurement:po_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'procurement' %}bg-primary/10 text-primary{% else %}text-text-primary hover:bg-hover{% endif %}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+          <span class="font-semibold text-base">Buy Stock</span>
         </a>
 
-        <div class="pt-6">
-           <p class="px-4 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-4">Administration</p>
-           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'reports' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
-             <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'reports' %}bg-black/20{% else %}bg-white/[0.04] group-hover:bg-white/[0.06]{% endif %}">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'reports' %}text-white{% else %}text-text-muted{% endif %}"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-             </div>
-             <span class="font-bold text-sm">Analytics</span>
+        <div class="pt-4">
+           <p class="px-3 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Administration</p>
+           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'reports' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+             <span class="font-semibold text-base">Analytics</span>
            </a>
-           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
-             <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}bg-black/20{% else %}bg-white/[0.04] group-hover:bg-white/[0.06]{% endif %}">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}text-white{% else %}text-text-muted{% endif %}"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-             </div>
-             <span class="font-bold text-sm">Staff</span>
+           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+             <span class="font-semibold text-base">Staff</span>
            </a>
            {% if user.role == 'admin' %}
-           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group {% if request.resolver_match.url_name == 'coupon_list' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-primary hover:bg-white/[0.03]{% endif %}">
-             <div class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors {% if request.resolver_match.url_name == 'coupon_list' %}bg-black/20{% else %}bg-white/[0.04] group-hover:bg-white/[0.06]{% endif %}">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="{% if request.resolver_match.url_name == 'coupon_list' %}text-white{% else %}text-text-muted{% endif %}"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
-             </div>
-             <span class="font-bold text-sm">Coupons</span>
+           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.url_name == 'coupon_list' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+             <span class="font-semibold text-base">Coupons</span>
+           </a>
+           <a href="{% url 'catalogue:category_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.url_name == 'category_list' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+             <span class="font-semibold text-base">Categories</span>
            </a>
            {% endif %}
-           <a href="/admin/" target="_blank" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl text-text-muted hover:bg-white/[0.03] transition-all group">
-             <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-white/[0.06] transition-colors">
-               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-             </div>
-             <span class="font-bold text-sm">System Admin</span>
-           </a>
         </div>
       </nav>
 
-      <div class="p-6 border-t border-white/[0.04] bg-white/[0.01]">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-brand-green/10 border border-brand-green/20 flex items-center justify-center text-xl shadow-glow-green-sm">
+      <div class="p-4 border-t border-border">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
             {{ user.avatar|default:"👤" }}
           </div>
           <div class="min-w-0">
-            <p class="text-sm font-bold text-text-primary truncate">{{ user.name }}</p>
-            <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.15em]">{{ user.role }}</p>
+            <p class="text-sm font-semibold text-text-primary truncate">{{ user.name }}</p>
+            <p class="text-xs text-text-secondary capitalize">{{ user.role }}</p>
           </div>
         </div>
-        <a href="{% url 'accounts:logout' %}" class="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-brand-red/10 text-brand-red font-bold text-xs uppercase tracking-widest hover:bg-brand-red/15 transition-all">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <a href="{% url 'accounts:logout' %}" class="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-danger/10 text-danger font-semibold text-sm hover:bg-danger/15 transition-all">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           Sign Out
         </a>
       </div>
@@ -387,7 +391,7 @@
     {% include 'partials/topbar.html' %}
   {% endif %}
 
-  <main class="flex-grow pb-24">
+  <main class="flex-grow pb-20">
     {% block content %}{% endblock %}
   </main>
 
@@ -395,8 +399,6 @@
     {% include 'partials/bottom_nav.html' %}
   {% endif %}
 
-  <div id="modal-container"></div>
-  
   {% csrf_token %}
   <script>
     document.body.addEventListener('htmx:configRequest', (event) => {

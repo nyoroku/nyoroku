@@ -2,35 +2,63 @@ import uuid
 from django.db import models
 from django.conf import settings
 
-class Category(models.Model):
+
+class Tag(models.Model):
+    """Admin-managed product tags for filtering and organization."""
     name = models.CharField(max_length=50, unique=True)
-    
+
     class Meta:
-        verbose_name_plural = "Categories"
+        ordering = ['name']
 
     def __str__(self):
         return self.name
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=50)
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='subcategories'
+    )
+
+    class Meta:
+        verbose_name_plural = "Categories"
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['name', 'parent'], name='unique_category_per_parent')
+        ]
+
+    @property
+    def is_subcategory(self):
+        return self.parent is not None
+
+    def __str__(self):
+        if self.parent:
+            return f"{self.parent.name} → {self.name}"
+        return self.name
+
 
 class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
+    tags = models.ManyToManyField(Tag, blank=True, related_name='products')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     stock_qty = models.IntegerField(default=0)
     reorder_level = models.IntegerField(default=5)
     has_variants = models.BooleanField(default=False)
     barcode = models.CharField(max_length=100, blank=True, unique=True, null=True)
-    image = models.CharField(max_length=10, default='📦') # Emoji string
-    
+    image = models.CharField(max_length=10, default='📦')  # Emoji string
+
     approved = models.BooleanField(default=False)
     pending_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name='pending_products'
     )
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -43,13 +71,11 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.barcode:
-            # Generate a simple barcode if empty
             self.barcode = str(uuid.uuid4().int)[:12]
         super().save(*args, **kwargs)
 
     @property
     def total_stock(self):
-        # We now keep stock_qty synced, but keep property as double-check
         return self.stock_qty
 
     @property
@@ -62,43 +88,43 @@ class Product(models.Model):
             vs.append({
                 'id': str(v.id),
                 'name': v.name,
-                'options': v.options, # Full dict: {"Size": "M", "Color": "Red"}
+                'options': v.options,
                 'price': float(v.price),
                 'cost_price': float(v.get_cost_price or 0),
                 'stock_qty': v.stock_qty,
-                'barcode': v.barcode or '',
             })
         return json.dumps(vs)
 
     def __str__(self):
         return self.name
 
+
 class ProductVariantOptionType(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='option_types')
-    name = models.CharField(max_length=50) # e.g. "Size", "Colour"
-    values = models.JSONField(default=list) # e.g. ["S", "M", "L"]
+    name = models.CharField(max_length=50)  # e.g. "Size", "Colour"
+    values = models.JSONField(default=list)  # e.g. ["S", "M", "L"]
 
     def __str__(self):
         return f"{self.product.name} - {self.name}"
 
+
 class ProductVariant(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    options = models.JSONField(default=dict) # e.g. {"Size": "M", "Colour": "Red"}
-    
+    options = models.JSONField(default=dict)  # e.g. {"Size": "M", "Colour": "Red"}
+
     price_override = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     stock_qty = models.IntegerField(default=0)
     reorder_level = models.IntegerField(default=5)
     barcode = models.CharField(max_length=100, blank=True, unique=True, null=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.barcode:
             self.barcode = str(uuid.uuid4().int)[:12]
         super().save(*args, **kwargs)
-        # Always sync parent stock after variant change
         self.product.sync_stock()
 
     @property
@@ -119,6 +145,7 @@ class ProductVariant(models.Model):
     def __str__(self):
         return self.name
 
+
 class PendingAction(models.Model):
     ACTION_CHOICES = (
         ('stock_adjustment', 'Stock Adjustment'),
@@ -132,19 +159,19 @@ class PendingAction(models.Model):
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     )
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     action_type = models.CharField(max_length=20, choices=ACTION_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    
+
     submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='submitted_actions')
     submitted_at = models.DateTimeField(auto_now_add=True)
-    
+
     approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_actions')
     approved_at = models.DateTimeField(null=True, blank=True)
-    
+
     rejection_reason = models.TextField(blank=True, null=True)
-    details = models.JSONField(default=dict) # {"product_id": x, "variant_id": y, "qty": z, "notes": "..."}
-    
+    details = models.JSONField(default=dict)
+
     def __str__(self):
         return f"{self.get_action_type_display()} - {self.get_status_display()}"
