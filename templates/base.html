@@ -333,40 +333,79 @@
       <nav class="flex-grow p-3 space-y-0.5 overflow-y-auto">
         <p class="px-3 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3 mt-2">Operations</p>
         
-        <a href="{% url 'pos:index' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}bg-accent/20 text-primary-dark{% else %}text-text-primary hover:bg-hover{% endif %}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        <a href="{% url 'pos:index' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+           style="{% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+          {% if request.resolver_match.app_name == 'pos' and request.resolver_match.url_name == 'index' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+          {% endif %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <span class="font-semibold text-base">Sales</span>
         </a>
-        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}bg-accent/20 text-primary-dark{% else %}text-text-primary hover:bg-hover{% endif %}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        
+        <a href="{% url 'catalogue:inventory' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+           style="{% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+          {% if request.resolver_match.app_name == 'catalogue' and request.resolver_match.url_name == 'inventory' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+          {% endif %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
           <span class="font-semibold text-base">Inventory</span>
         </a>
-        <a href="{% url 'expenses:list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'expenses' %}bg-accent/20 text-primary-dark{% else %}text-text-primary hover:bg-hover{% endif %}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+        
+        <a href="{% url 'expenses:list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+           style="{% if request.resolver_match.app_name == 'expenses' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+          {% if request.resolver_match.app_name == 'expenses' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+          {% endif %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
           <span class="font-semibold text-base">Expenses</span>
         </a>
-        <a href="{% url 'procurement:po_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'procurement' %}bg-accent/20 text-primary-dark{% else %}text-text-primary hover:bg-hover{% endif %}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        
+        <a href="{% url 'procurement:po_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+           style="{% if request.resolver_match.app_name == 'procurement' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+          {% if request.resolver_match.app_name == 'procurement' %}
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+          {% endif %}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
           <span class="font-semibold text-base">Buy Stock</span>
         </a>
 
         <div class="pt-4">
            <p class="px-3 text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Administration</p>
-           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'reports' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+           
+           <a href="{% url 'reports:dashboard' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+              style="{% if request.resolver_match.app_name == 'reports' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+             {% if request.resolver_match.app_name == 'reports' %}
+               <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+             {% endif %}
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
              <span class="font-semibold text-base">Analytics</span>
            </a>
-           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+           
+           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+              style="{% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+             {% if request.resolver_match.app_name == 'accounts' and request.resolver_match.url_name != 'login' %}
+               <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+             {% endif %}
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
              <span class="font-semibold text-base">Staff</span>
            </a>
+           
            {% if user.role == 'admin' %}
-           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.url_name == 'coupon_list' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+              style="{% if request.resolver_match.url_name == 'coupon_list' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+             {% if request.resolver_match.url_name == 'coupon_list' %}
+               <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+             {% endif %}
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
              <span class="font-semibold text-base">Coupons</span>
            </a>
-           <a href="{% url 'catalogue:category_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all {% if request.resolver_match.url_name == 'category_list' %}bg-primary/10 text-primary{% else %}text-text-secondary hover:bg-hover hover:text-text-primary{% endif %}">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+           
+           <a href="{% url 'catalogue:category_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
+              style="{% if request.resolver_match.url_name == 'category_list' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
+             {% if request.resolver_match.url_name == 'category_list' %}
+               <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
+             {% endif %}
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
              <span class="font-semibold text-base">Categories</span>
            </a>
            {% endif %}
