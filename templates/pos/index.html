@@ -259,10 +259,11 @@ window.allProducts = [
                       price: addModalProduct.price, stock_qty: addModalProduct.stock_qty,
                       image: addModalProduct.image };
                 if (addToCart(p, addQty)) { addModalOpen = false }"
-              class="btn w-full h-14 text-base font-semibold rounded-2xl"
+              :disabled="selectedVariant ? selectedVariant.stock_qty < addQty : addModalProduct?.stock_qty < addQty"
+              class="btn w-full h-14 text-base font-semibold rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
               style="background: #2d545e; color: white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-        Add to Basket
+        <span x-text="(selectedVariant ? selectedVariant.stock_qty : addModalProduct?.stock_qty) < addQty ? 'Out of Stock' : 'Add to Basket'"></span>
         <span style="color:rgba(255,255,255,0.4)">·</span>
         <span class="font-mono tabular" x-text="'KES ' + ((selectedVariant ? selectedVariant.price : addModalProduct?.price) * addQty).toLocaleString()"></span>
       </button>

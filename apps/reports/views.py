@@ -50,8 +50,9 @@ def dashboard(request):
             if isinstance(item, dict) and 'id' in item:
                 product_ids.add(item['id'])
     
-    # 2. Fetch all products in bulk to avoid N+1 queries
+    # 2. Fetch all products and variants in bulk to avoid N+1 queries
     products_map = Product.objects.in_bulk(list(product_ids))
+    variants_map = ProductVariant.objects.in_bulk(list(product_ids))
     
     cogs = 0.0
     product_totals = collections.defaultdict(lambda: {'name': 'Unknown', 'qty': 0, 'revenue': 0})
@@ -77,9 +78,10 @@ def dashboard(request):
             if 'cost_price' in item and item['cost_price'] is not None:
                 cogs += float(item['cost_price']) * qty
             else:
-                p_obj = products_map.get(pid)
+                p_obj = products_map.get(pid) or variants_map.get(pid)
                 if p_obj:
-                    cogs += float(p_obj.cost_price or 0) * qty
+                    cost = float(p_obj.get_cost_price) if hasattr(p_obj, 'get_cost_price') else float(p_obj.cost_price or 0)
+                    cogs += cost * qty
 
     top_products = sorted(product_totals.values(), key=lambda x: x['revenue'], reverse=True)[:5]
     
@@ -93,24 +95,32 @@ def dashboard(request):
     payments = txs.values('payment_method').annotate(total=Sum('total'))
     payment_stats = { p['payment_method']: p['total'] for p in payments }
     
-    # 7-day chart data
+    # Dynamic Chart Data (Days in Period)
     chart_days = []
-    # Optimization: One query for all 7 days might be better, but let's keep it simple for now or fetch in bulk.
-    # Actually, let's group by date in one query.
+    
+    from django.db.models.functions import TruncDate
     chart_qs = Transaction.objects.filter(
-        created_at__gte=end_date - timedelta(days=7),
+        created_at__range=(start_date, end_date),
         status='complete'
-    ).extra({'day': 'date(created_at)'}).values('day').annotate(daily_rev=Sum('total')).order_by('day')
+    ).annotate(day=TruncDate('created_at')).values('day').annotate(daily_rev=Sum('total')).order_by('day')
     
     rev_by_day = {str(d['day']): d['daily_rev'] for d in chart_qs}
     
-    for i in range(6, -1, -1):
-        day = end_date - timedelta(days=i)
+    # Determine how many days to plot based on the period
+    delta = (end_date.date() - start_date.date()).days
+    if delta == 0:
+        delta = 6 # Default to 7 bars (last 7 days including today) if only today is selected
+        plot_start = end_date.date() - timedelta(days=6)
+    else:
+        plot_start = start_date.date()
+
+    for i in range(delta + 1):
+        day = plot_start + timedelta(days=i)
         day_str = day.strftime('%Y-%m-%d')
         chart_days.append({
-            'label': day.strftime('%a'),
+            'label': day.strftime('%a') if delta <= 14 else day.strftime('%d %b'),
             'value': float(rev_by_day.get(day_str, 0)),
-            'is_today': i == 0
+            'is_today': day == end_date.date()
         })
 
     # Low Stock Alerts
