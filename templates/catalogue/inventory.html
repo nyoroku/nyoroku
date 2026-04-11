@@ -14,11 +14,11 @@
         {% if user.role == 'admin' %}
         <div class="flex gap-1 p-1 rounded-xl" style="background: #F8F9FB; border: 1px solid #E5E7EB">
             <a href="?status=all" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center"
-               style="{% if active_status == 'all' %}background: #2d545e; color: white{% else %}color: #6B7280{% endif %}">
+               style="{% if active_status == 'all' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
                 All Products
             </a>
             <a href="?status=pending" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all relative no-underline text-center"
-               style="{% if active_status == 'pending' %}background: #2d545e; color: white{% else %}color: #6B7280{% endif %}">
+               style="{% if active_status == 'pending' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
                 Review Required
                 {% if pending_count > 0 %}
                 <span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold" style="background: #DC2626; color: white">{{ pending_count }}</span>

@@ -336,3 +336,20 @@ class CouponTests(POSViewTestBase):
         self.client.force_login(self.admin)
         resp = self.client.get(reverse('pos:coupon_list'))
         self.assertEqual(resp.status_code, 200)
+
+
+class UITests(POSViewTestBase):
+    """Test UI active tab styling requirements."""
+
+    def test_active_topbar_styles(self):
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('pos:index'))
+        content = resp.content.decode()
+        self.assertIn('background:#2d545e;color:#e1b382', content)
+
+    def test_active_bottom_nav_styles(self):
+        self.client.force_login(self.admin)
+        resp = self.client.get(reverse('pos:index'))
+        content = resp.content.decode()
+        self.assertIn('background: #2d545e', content)
+        self.assertIn('color: #e1b382', content)

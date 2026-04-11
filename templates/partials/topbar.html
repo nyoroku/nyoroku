@@ -8,9 +8,9 @@
 
     <!-- Desktop Navigation -->
     <nav class="hidden md:flex items-center gap-1 p-1 rounded-xl" style="background: #12343b">
-      <a href="{% url 'pos:index' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline {% if request.resolver_match.app_name == 'pos' %}" style="background:#e1b382;color:#12343b"{% else %}" style="color:rgba(255,255,255,0.7)"{% endif %}>Sales</a>
-      <a href="{% url 'catalogue:inventory' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline {% if request.resolver_match.app_name == 'catalogue' %}" style="background:#e1b382;color:#12343b"{% else %}" style="color:rgba(255,255,255,0.7)"{% endif %}>Inventory</a>
-      <a href="{% url 'expenses:list' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline {% if request.resolver_match.app_name == 'expenses' %}" style="background:#e1b382;color:#12343b"{% else %}" style="color:rgba(255,255,255,0.7)"{% endif %}>Expenses</a>
+      <a href="{% url 'pos:index' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline {% if request.resolver_match.app_name == 'pos' %}" style="background:#2d545e;color:#e1b382"{% else %}" style="color:rgba(255,255,255,0.7)"{% endif %}>Sales</a>
+      <a href="{% url 'catalogue:inventory' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline {% if request.resolver_match.app_name == 'catalogue' %}" style="background:#2d545e;color:#e1b382"{% else %}" style="color:rgba(255,255,255,0.7)"{% endif %}>Inventory</a>
+      <a href="{% url 'expenses:list' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline {% if request.resolver_match.app_name == 'expenses' %}" style="background:#2d545e;color:#e1b382"{% else %}" style="color:rgba(255,255,255,0.7)"{% endif %}>Expenses</a>
     </nav>
 
     <div class="flex items-center gap-2">
