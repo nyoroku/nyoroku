@@ -1,129 +1,145 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block screen_title %}Inventory{% endblock %}
-
 {% block content %}
-<div class="px-4 py-5" x-data="inventoryState()">
+<div class="px-4 py-5 max-w-5xl mx-auto" x-data="inventoryState()">
     
-    <!-- Status Tabs -->
-    {% if user.role == 'admin' %}
-    <div class="flex gap-2 mb-6 p-1 bg-surface2 border border-border rounded-2xl max-w-xs">
-        <a href="?status=all" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 {% if active_status == 'all' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
-            <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Active</span>
-            <span class="text-[11px] font-bold mt-0.5">All Products</span>
-        </a>
-        <a href="?status=pending" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative {% if active_status == 'pending' %}bg-white/[0.04] text-[#6EE7B7] border border-[#6EE7B7]/30 shadow-[0_0_15px_rgba(110,231,183,0.15)]{% else %}text-text-muted hover:text-text-primary hover:bg-white/[0.03]{% endif %}">
-            <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Review</span>
-            <span class="text-[11px] font-bold mt-0.5">Products</span>
-            {% if pending_count > 0 %}
-            <span class="absolute -top-1 -right-1 w-5 h-5 bg-brand-red text-white text-[9px] font-extrabold rounded-full flex items-center justify-center border-2 border-surface2 animate-pulse">{{ pending_count }}</span>
-            {% endif %}
-        </a>
-        <a href="{% url 'catalogue:pending_actions' %}" 
-           class="flex-1 flex flex-col items-center py-3 rounded-xl transition-all duration-300 relative text-text-muted hover:text-text-primary hover:bg-white/[0.03]">
-            <span class="text-[9px] font-extrabold uppercase tracking-[0.15em]">Queue</span>
-            <span class="text-[11px] font-bold mt-0.5">Actions</span>
-        </a>
+    <!-- Header & Status Tabs -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-xl font-bold" style="color: #12343b">Inventory</h1>
+            <p class="text-sm" style="color: #6B7280">Manage products, variants &amp; stock</p>
+        </div>
+
+        {% if user.role == 'admin' %}
+        <div class="flex gap-1 p-1 rounded-xl" style="background: #F8F9FB; border: 1px solid #E5E7EB">
+            <a href="?status=all" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center"
+               style="{% if active_status == 'all' %}background: #2d545e; color: white{% else %}color: #6B7280{% endif %}">
+                All Products
+            </a>
+            <a href="?status=pending" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all relative no-underline text-center"
+               style="{% if active_status == 'pending' %}background: #2d545e; color: white{% else %}color: #6B7280{% endif %}">
+                Review Required
+                {% if pending_count > 0 %}
+                <span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold" style="background: #DC2626; color: white">{{ pending_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'catalogue:pending_actions' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center" style="color: #6B7280">
+                Action Queue
+            </a>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 
     <!-- Search bar -->
-    <div class="relative mb-5">
-        <input type="text" 
-               name="q" 
-               hx-get="{% url 'catalogue:inventory' %}"
-               hx-trigger="input changed delay:300ms"
-               hx-target="#product-list"
-               hx-push-url="true"
-               placeholder="Search products..."
-               class="w-full bg-surface2 border border-border rounded-2xl px-12 py-4 text-sm text-text-primary placeholder:text-text-muted/60 focus:border-brand-green/40 focus:ring-0 focus:shadow-glow-green-sm transition-all">
-        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </div>
+    <div class="mb-5 flex items-center rounded-xl overflow-hidden" style="background: white; border: 1px solid #E5E7EB">
+        <span class="pl-4 pr-2" style="color: #9CA3AF">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <input type="text" name="q" hx-get="{% url 'catalogue:inventory' %}" hx-trigger="input changed delay:300ms"
+               hx-target="#product-list" hx-push-url="true" placeholder="Search products..."
+               class="flex-1 py-3.5 text-sm font-medium border-none outline-none focus:ring-0" style="color: #12343b">
     </div>
 
     <!-- Product List -->
-    <div id="product-list" class="space-y-2 stagger">
+    <div id="product-list" class="space-y-3 pb-24">
         {% include 'catalogue/partials/product_list.html' %}
     </div>
 
     <!-- Add FAB -->
-    <button @click="openAdd()" class="fixed bottom-24 right-5 w-14 h-14 bg-brand-green text-surface rounded-2xl shadow-glow-green flex items-center justify-center active:scale-90 transition-transform z-30">
-        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    <button @click="openAdd()" class="fixed bottom-24 right-5 w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-lg z-30"
+            style="background: #2d545e; color: #e1b382">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
     </button>
 
     <!-- Add Modal -->
     <div x-show="addModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div x-show="addModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="addModal = false"></div>
+        <div x-show="addModal" x-transition.opacity class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="addModal = false"></div>
         
-        <div x-show="addModal" x-transition:enter="transition ease-out duration-300 transform" x-transition:enter-start="translate-y-full sm:translate-y-0 sm:scale-95" x-transition:enter-end="translate-y-0 sm:scale-100" 
-             class="relative w-full max-w-lg bg-surface2 border-t sm:border border-border rounded-t-[28px] sm:rounded-[28px] shadow-2xl overflow-hidden p-6">
+        <div x-show="addModal" x-transition.duration.300ms 
+             class="relative w-full max-w-xl bg-white rounded-t-3xl sm:rounded-3xl shadow-modal overflow-hidden p-6 max-h-[90vh] flex flex-col">
             
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-display font-extrabold text-xl text-text-primary uppercase tracking-tight" x-text="isEdit ? 'Edit Product' : 'New Product'"></h3>
-                <button @click="addModal = false" class="text-text-muted hover:text-text-primary p-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                </button>
+            <div class="flex justify-between items-center mb-5 shrink-0">
+                <h3 class="font-bold text-lg" style="color: #12343b" x-text="isEdit ? 'Edit Product' : 'New Product'"></h3>
+                <button @click="addModal = false" class="p-1 active:scale-90 transition-all font-bold" style="color: #DC2626">✕</button>
             </div>
 
-            <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'" method="POST" @submit="submitForm" class="space-y-4">
-                {% csrf_token %}
-                <template x-if="isEdit"><input type="hidden" name="id" :value="editForm.id"></template>
-                
-                <div class="flex items-center gap-4 bg-surface3 border border-border p-4 rounded-2xl">
-                    <div class="w-14 h-14 bg-surface border border-border rounded-xl flex items-center justify-center text-3xl cursor-pointer hover:border-brand-green/30 transition-colors shrink-0" id="emoji-display" title="Click to change">📦</div>
-                    <input type="hidden" name="image" id="emoji-input" value="📦">
-                    <div class="flex-grow">
-                        <label class="block text-[10px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1">Product Name</label>
-                        <input type="text" name="name" x-model="editForm.name" required placeholder="Milk, Bread, etc." class="w-full bg-transparent border-none p-0 text-text-primary focus:ring-0 font-bold text-lg placeholder:text-text-muted/30">
+            <div class="flex-1 overflow-auto pr-2" style="scrollbar-width: none">
+                <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'" method="POST" @submit="submitForm" class="space-y-5">
+                    {% csrf_token %}
+                    <template x-if="isEdit"><input type="hidden" name="id" :value="editForm.id"></template>
+                    
+                    <div class="flex items-center gap-4 bg-white border rounded-2xl p-4" style="border-color: #E5E7EB">
+                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-3xl shrink-0 cursor-pointer shadow-sm border select-none"
+                             style="background: #F8F9FB; border-color: #E5E7EB" id="emoji-display" title="Click to change">📦</div>
+                        <input type="hidden" name="image" id="emoji-input" value="📦">
+                        <div class="flex-grow min-w-0">
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: #6B7280">Product Name</label>
+                            <input type="text" name="name" x-model="editForm.name" required placeholder="Milk, Bread, etc." 
+                                   class="w-full bg-transparent border-none p-0 text-base font-bold focus:ring-0 outline-none placeholder:opacity-40" style="color: #12343b">
+                        </div>
                     </div>
-                </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Category</label>
+                            <select name="category" x-model="editForm.category" required class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                                    style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                                <option value="" disabled>Select category...</option>
+                                {% for cat in categories %}
+                                <optgroup label="{{ cat.name }}">
+                                    <option value="{{ cat.id }}">{{ cat.name }} (Main)</option>
+                                    {% for sub in cat.subcategories.all %}
+                                    <option value="{{ sub.id }}">{{ sub.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Price (KES)</label>
+                            <input type="number" step="0.01" name="price" x-model="editForm.price" required placeholder="0.00" 
+                                   class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
+                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #2d545e; --tw-ring-color: #2d545e">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Cost (KES)</label>
+                            <input type="number" step="0.01" name="cost_price" x-model="editForm.cost_price" placeholder="0.00" 
+                                   class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Initial Stock</label>
+                            <input type="number" name="stock_qty" x-model="editForm.stock_qty" required
+                                   class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                        </div>
+                    </div>
+
                     <div>
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Category</label>
-                        <select name="category" x-model="editForm.category" required class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
-                            {% for cat in categories %}
-                                <option value="{{ cat.id }}">{{ cat.name }}</option>
-                            {% endfor %}
-                        </select>
+                        <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Barcode / SKU</label>
+                        <input type="text" name="barcode" x-model="editForm.barcode" placeholder="Optional — auto-generated if blank" 
+                               class="w-full rounded-xl px-4 py-3 text-sm font-mono medium focus:outline-none focus:ring-2"
+                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
                     </div>
-                    <div>
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Price (KES)</label>
-                        <input type="number" step="0.01" name="price" x-model="editForm.price" required placeholder="0.00" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-brand-green font-bold focus:border-brand-green/40 focus:ring-0 transition-all">
+
+                    <!-- Modern Variant Manager -->
+                    {% include 'catalogue/partials/manage_variants.html' %}
+
+                    <div class="pt-4 flex gap-3 shrink-0">
+                        <button type="button" @click="addModal = false" class="flex-1 py-4 rounded-xl font-semibold text-sm active:scale-95 transition-all"
+                                style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
+                            Cancel
+                        </button>
+                        <button type="submit" class="flex-[3] py-4 rounded-xl font-semibold text-sm shadow-md active:scale-95 transition-all"
+                                style="background: #2d545e; color: white" x-text="isEdit ? 'Save Changes' : 'Create Product'">
+                        </button>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Cost (Optional)</label>
-                        <input type="number" step="0.01" name="cost_price" x-model="editForm.cost_price" placeholder="0.00" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Initial Stock</label>
-                        <input type="number" name="stock_qty" x-model="editForm.stock_qty" required class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Barcode / SKU</label>
-                    <input type="text" name="barcode" x-model="editForm.barcode" placeholder="Optional — auto-generated if blank" class="w-full bg-surface3 border border-border rounded-xl px-4 py-3 text-sm dm-mono text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
-                </div>
-
-                <!-- Modern Variant Manager -->
-                {% include 'catalogue/partials/manage_variants.html' %}
-
-                <div class="pt-3 flex gap-3">
-                    <button type="button" @click="addModal = false" class="flex-1 px-4 py-4 bg-white/[0.04] border border-border text-text-primary rounded-2xl font-display font-extrabold text-sm active:scale-95 transition-all">
-                        Cancel
-                    </button>
-                    <button type="submit" class="flex-[2] px-4 py-4 bg-brand-whatsapp text-white rounded-2xl font-display font-extrabold text-sm shadow-glow-green active:scale-95 transition-all btn-shimmer" x-text="isEdit ? 'Save Changes' : 'Create Product'">
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
@@ -223,8 +239,6 @@
         const nextIndex = (emojis.indexOf(current) + 1) % emojis.length;
         this.innerText = emojis[nextIndex];
         document.getElementById('emoji-input').value = emojis[nextIndex];
-        // update Alpine state if needed, though hidden input is naturally submitted
-        Alpine.store('emoji', emojis[nextIndex]); // Or let HTML handle it
     });
 </script>
 {% endblock %}

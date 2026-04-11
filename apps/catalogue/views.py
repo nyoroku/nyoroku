@@ -19,7 +19,7 @@ def inventory_list(request):
         products = products.filter(approved=False)
     
     pending_count = Product.objects.filter(approved=False).count()
-    categories = Category.objects.all()
+    categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories')
     
     context = {
         'products': products,
