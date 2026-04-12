@@ -46,6 +46,11 @@ def add_product(request):
 
     # Assign default ProductType since Categories are removed from UI
     type_name = request.POST.get('type_name') or 'General'
+    
+    # Case insensitive unique constraint on name
+    if Product.objects.filter(name__iexact=name).exists():
+        return HttpResponse('A product with this name already exists', status=400)
+        
     product_type, _ = ProductType.objects.get_or_create(name=type_name)
     
     # Logic: Admin auto-approves, Cashier pending
@@ -130,7 +135,11 @@ def edit_product(request):
     product_id = request.POST.get('id')
     product = get_object_or_404(Product, id=product_id)
     
-    product.name = request.POST.get('name')
+    name = request.POST.get('name', '').strip()
+    if Product.objects.filter(name__iexact=name).exclude(id=product.id).exists():
+        return HttpResponse('A product with this name already exists', status=400)
+    
+    product.name = name
     
     type_name = request.POST.get('type_name') or 'General'
     product_type, _ = ProductType.objects.get_or_create(name=type_name)
@@ -335,3 +344,16 @@ def resolve_action(request, pk):
     action.save()
     
     return redirect('catalogue:pending_actions')
+
+@login_required
+@require_http_methods(["POST"])
+def bulk_delete_products(request):
+    import json
+    try:
+        data = json.loads(request.body)
+        product_ids = data.get('product_ids', [])
+        if product_ids:
+            Product.objects.filter(id__in=product_ids).delete()
+        return HttpResponse('Deleted gracefully', status=200)
+    except Exception as e:
+        return HttpResponse(str(e), status=400)

@@ -9,6 +9,7 @@ urlpatterns = [
     path('edit/', views.edit_product, name='edit_product'),
     path('approve/<uuid:pk>/', views.approve_product, name='approve_product'),
     path('delete/<uuid:pk>/', views.delete_product, name='delete_product'),
+    path('bulk-delete/', views.bulk_delete_products, name='bulk_delete_products'),
     
     path('pending-actions/', views.pending_actions, name='pending_actions'),
     path('pending-actions/<uuid:pk>/resolve/', views.resolve_action, name='resolve_action'),

@@ -60,6 +60,14 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                models.functions.Lower('name'),
+                name='unique_product_name_case_insensitive'
+            )
+        ]
+
     @property
     def total_stock(self):
         if self.has_variants:
