@@ -97,16 +97,14 @@ window.allProducts = [
       {% for cat in categories %}
       <div>
         <button type="button"
-                @click="{% if cat.subcategories.all %}
-                        posView='subcategories'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName='';
+                @click="posView='items'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName='All';
                         activeSubCats = [
                           {% for sub in cat.subcategories.all %}
                             { id: '{{ sub.id }}', name: '{{ sub.name|escapejs }}', count: '{{ sub.products.count|default:0 }}' }{% if not forloop.last %},{% endif %}
                           {% endfor %}
                         ];
-                        {% else %}posView='items'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName=''; activeSubCats=[];
                         document.getElementById('cat-input').value='{{ cat.id }}';
-                        htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'{{ cat.id }}',q:''}}){% endif %}"
+                        htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'{{ cat.id }}',q:''}})"
                 class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background: #e1b38222">📂</div>
           <div class="flex-1">
@@ -119,49 +117,36 @@ window.allProducts = [
     </div>
   </div>
 
-  <!-- ═══════ VIEW: SUBCATEGORIES LIST ═══════ -->
-  <div x-show="posView === 'subcategories'" x-transition class="flex-1 overflow-auto ns" style="background: #F8F9FB">
-    <div class="px-5 py-4 border-b bg-white" style="border-color: #E5E7EB">
-      <h2 class="font-bold text-xl" style="color: #12343b" x-text="selectedCategoryName"></h2>
-      <p class="text-sm" style="color: #6B7280">Select a subcategory</p>
-    </div>
-    <div class="divide-y" style="border-color: #E5E7EB">
-      <!-- "All in Category" option -->
-      <button type="button"
-              @click="posView='items'; selectedSubCatName='All';
+
+
+  <!-- ═══════ VIEW: PRODUCT LIST ═══════ -->
+  <div x-show="posView === 'items'" x-transition class="flex-1 flex flex-col overflow-hidden ns" style="background: #F8F9FB">
+    <!-- Inline Subcategory Filters -->
+    <div x-show="activeSubCats.length > 0" x-cloak class="shrink-0 overflow-x-auto no-scrollbar border-b px-4 py-3 flex items-center gap-2" style="background: white; border-color: #E5E7EB">
+      <button @click="selectedSubCatName='All';
                       let catId = '{{ categories.0.id }}'; // fallback
                       {% for cat in categories %}if(selectedCategoryName === '{{ cat.name|escapejs }}') { catId = '{{ cat.id }}'; }{% endfor %}
                       document.getElementById('cat-input').value = catId;
                       htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:catId,q:''}})"
-              class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background: #2d545e22">🛍️</div>
-        <div class="flex-1">
-          <h3 class="text-base font-semibold" style="color: #12343b">All in <span x-text="selectedCategoryName"></span></h3>
-        </div>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+              class="px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border active:scale-95"
+              :style="selectedSubCatName === 'All' ? 'background: #2d545e; color: white; border-color: #2d545e' : 'background: #F8F9FB; color: #6B7280; border-color: #E5E7EB'">
+        All
       </button>
-
       <template x-for="sub in activeSubCats" :key="sub.id">
-        <button type="button"
-                @click="posView='items'; selectedSubCatName=sub.name;
+        <button @click="selectedSubCatName=sub.name;
                         document.getElementById('cat-input').value=sub.id;
                         htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:sub.id,q:''}})"
-                class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style="background: #2d545e15">📁</div>
-          <div class="flex-1">
-            <h3 class="text-base font-semibold" style="color: #12343b" x-text="sub.name"></h3>
-            <p class="text-sm" style="color: #6B7280" x-text="sub.count + ' items'"></p>
-          </div>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
+                class="px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border active:scale-95"
+                :style="selectedSubCatName === sub.name ? 'background: #2d545e; color: white; border-color: #2d545e' : 'background: #F8F9FB; color: #6B7280; border-color: #E5E7EB'"
+                x-text="sub.name"></button>
       </template>
     </div>
-  </div>
 
-  <!-- ═══════ VIEW: PRODUCT LIST ═══════ -->
-  <div x-show="posView === 'items'" x-transition class="flex-1 overflow-auto ns" style="background: #F8F9FB">
-    <div id="product-list">
-      {% include 'pos/partials/product_list.html' %}
+    <!-- Grid -->
+    <div class="flex-1 overflow-auto ns pb-24">
+      <div id="product-list">
+        {% include 'pos/partials/product_list.html' %}
+      </div>
     </div>
   </div>
 </div>
@@ -261,6 +246,27 @@ window.allProducts = [
           </button>
         </div>
       </div>
+
+      <!-- PRICE ADJUSTMENT -->
+      <div x-show="(!addModalProduct?.variants?.length) || selectedVariant" x-transition class="mb-4">
+        <label class="text-[10px] font-semibold uppercase tracking-wider block mb-1" style="color: #6B7280">Price Configuration</label>
+        <div class="flex items-center gap-3 p-3 rounded-2xl" style="background: #white; border: 1px solid #E5E7EB">
+            <div class="flex-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider block mb-1" style="color: #9CA3AF">Fixed</span>
+                <span class="text-lg font-bold font-mono tabular" style="color: #12343b" 
+                      x-text="(selectedVariant ? selectedVariant.price : addModalProduct?.price)?.toLocaleString()"></span>
+            </div>
+            <div class="flex items-center gap-2 flex-1">
+                <div class="w-full">
+                    <span class="text-[10px] font-bold uppercase tracking-wider block mb-1" style="color: #c89666">Adjusted</span>
+                    <input type="number" step="1" x-model.number="addCustomPrice" 
+                           class="w-full text-lg font-bold font-mono tabular rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-[#2d545e]/20 transition-all border"
+                           style="color: #2d545e; background: #F8F9FB; border-color: #E5E7EB"
+                           :placeholder="(selectedVariant ? selectedVariant.price : addModalProduct?.price)">
+                </div>
+            </div>
+        </div>
+      </div>
     </div>
 
     <!-- ADD BUTTON -->
@@ -274,6 +280,7 @@ window.allProducts = [
                   : { id: addModalProduct.id, is_variant: false, name: addModalProduct.name,
                       price: addModalProduct.price, stock_qty: addModalProduct.stock_qty,
                       image: addModalProduct.image };
+                if (addCustomPrice) p.sale_price = addCustomPrice;
                 if (addToCart(p, addQty)) { addModalOpen = false }"
               :disabled="selectedVariant ? selectedVariant.stock_qty < addQty : addModalProduct?.stock_qty < addQty"
               class="btn w-full h-14 text-base font-semibold rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
