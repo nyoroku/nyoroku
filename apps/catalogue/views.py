@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from .models import Product, Category, PendingAction, ProductVariant
+from .models import Product, ProductType, PendingAction, ProductVariant
 
 @login_required
 def inventory_list(request):
@@ -19,11 +19,11 @@ def inventory_list(request):
         products = products.filter(approved=False)
     
     pending_count = Product.objects.filter(approved=False).count()
-    categories = Category.objects.filter(parent__isnull=True).prefetch_related('subcategories')
+    product_types = ProductType.objects.all().order_by('name')
     
     context = {
         'products': products,
-        'categories': categories,
+        'product_types': product_types,
         'pending_count': pending_count,
         'active_status': status,
         'query': query,
@@ -38,20 +38,24 @@ def inventory_list(request):
 @require_http_methods(["POST"])
 def add_product(request):
     name = request.POST.get('name')
-    category_id = request.POST.get('category')
+    type_name = request.POST.get('type_name', '').strip()
     price = request.POST.get('price')
     cost_price = request.POST.get('cost_price')
     stock_qty = request.POST.get('stock_qty')
     image = request.POST.get('image', '📦')
 
-    category = get_object_or_404(Category, id=category_id)
+    # Create-or-get ProductType by name
+    if type_name:
+        product_type, _ = ProductType.objects.get_or_create(name=type_name)
+    else:
+        return HttpResponse('Type name is required', status=400)
     
     # Logic: Admin auto-approves, Cashier pending
     is_approved = (request.user.role == 'admin')
     
     product = Product.objects.create(
         name=name,
-        category=category,
+        product_type=product_type,
         price=price,
         cost_price=cost_price or None,
         stock_qty=stock_qty or 0,
@@ -124,7 +128,12 @@ def edit_product(request):
     product = get_object_or_404(Product, id=product_id)
     
     product.name = request.POST.get('name')
-    product.category_id = request.POST.get('category')
+    
+    type_name = request.POST.get('type_name', '').strip()
+    if type_name:
+        product_type, _ = ProductType.objects.get_or_create(name=type_name)
+        product.product_type = product_type
+    
     product.price = request.POST.get('price')
     cost_price = request.POST.get('cost_price')
     product.cost_price = cost_price if cost_price else None
@@ -233,59 +242,46 @@ def delete_product(request, pk):
     return redirect('catalogue:inventory')
 
 @login_required
-def category_list(request):
+def type_list(request):
     if request.user.role != 'admin':
         return redirect('catalogue:inventory')
     
-    categories = Category.objects.filter(parent__isnull=True).order_by('name').prefetch_related('subcategories', 'products')
-    return render(request, 'catalogue/category_list.html', {'categories': categories})
+    product_types = ProductType.objects.all().order_by('name').prefetch_related('products')
+    return render(request, 'catalogue/type_list.html', {'product_types': product_types})
 
 @login_required
 @require_http_methods(["POST"])
-def add_category(request):
+def add_type(request):
     if request.user.role != 'admin':
         return HttpResponse('Unauthorized', status=403)
     
-    name = request.POST.get('name')
+    name = request.POST.get('name', '').strip()
     if name:
-        Category.objects.get_or_create(name=name, parent=None)
-    return redirect('catalogue:category_list')
-
-@login_required
-@require_http_methods(["POST"])
-def add_subcategory(request):
-    if request.user.role != 'admin':
-        return HttpResponse('Unauthorized', status=403)
-    
-    name = request.POST.get('name')
-    parent_id = request.POST.get('parent_id')
-    if name and parent_id:
-        parent = get_object_or_404(Category, id=parent_id, parent__isnull=True)
-        Category.objects.get_or_create(name=name, parent=parent)
-    return redirect('catalogue:category_list')
+        ProductType.objects.get_or_create(name=name)
+    return redirect('catalogue:type_list')
 
 @login_required
 @require_http_methods(["POST", "DELETE"])
-def delete_category(request, pk):
+def delete_type(request, pk):
     if request.user.role != 'admin':
         return HttpResponse('Unauthorized', status=403)
         
-    category = get_object_or_404(Category, pk=pk)
-    category.delete()
-    return redirect('catalogue:category_list')
+    product_type = get_object_or_404(ProductType, pk=pk)
+    product_type.delete()
+    return redirect('catalogue:type_list')
 
 @login_required
 @require_http_methods(["POST"])
-def edit_category(request, pk):
+def edit_type(request, pk):
     if request.user.role != 'admin':
         return HttpResponse('Unauthorized', status=403)
     
-    category = get_object_or_404(Category, pk=pk)
+    product_type = get_object_or_404(ProductType, pk=pk)
     name = request.POST.get('name', '').strip()
     if name:
-        category.name = name
-        category.save()
-    return redirect('catalogue:category_list')
+        product_type.name = name
+        product_type.save()
+    return redirect('catalogue:type_list')
 
 @login_required
 def pending_actions(request):

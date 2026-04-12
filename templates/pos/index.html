@@ -29,7 +29,7 @@ window.allProducts = [
 
 <div x-data="{
   posView: 'shop',
-  selectedCatId: '',
+  selectedTypeId: '',
   expandedProductId: null,
   inlineQty: 1
 }" class="flex flex-col" style="height:calc(100vh - 56px - 64px)">
@@ -52,7 +52,7 @@ window.allProducts = [
         </span>
         <input id="search-input" type="text" name="q"
                hx-get="{% url 'pos:index' %}" hx-trigger="input changed delay:200ms, search"
-               hx-target="#product-list" hx-include="[name='category']"
+               hx-target="#product-list" hx-include="[name='type']"
                placeholder="Search products..."
                class="flex-1 px-3 py-3 text-base font-medium bg-transparent border-none outline-none"
                style="color: white"
@@ -61,32 +61,31 @@ window.allProducts = [
     </div>
   </div>
 
-  <!-- Hidden category input for HTMX filtering -->
-  <input type="hidden" name="category" value="{{ active_category|default:'all' }}" id="cat-input">
+  <!-- Hidden type input for HTMX filtering -->
+  <input type="hidden" name="type" value="{{ active_type|default:'all' }}" id="type-input">
 
   <!-- ═══════ VIEW: SHOP (single page) ═══════ -->
   <div x-show="posView === 'shop'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background: #F8F9FB">
 
     <div class="flex-1 overflow-auto ns" :style="itemCount > 0 ? 'padding-bottom: 180px' : ''">
 
-      <!-- Category Filters (vertical radio list) -->
+      <!-- Type Filters (vertical radio list) -->
       <div class="px-4 py-4 bg-white border-b" style="border-color: #E5E7EB">
-        <h3 class="font-bold text-[10px] uppercase tracking-wider mb-3" style="color: #6B7280">Categories</h3>
+        <h3 class="font-bold text-[10px] uppercase tracking-wider mb-3" style="color: #6B7280">Types</h3>
         <div class="flex flex-col gap-2">
-          {% for cat in categories %}
+          {% for t in product_types %}
           <label class="flex items-center gap-3 cursor-pointer p-2.5 rounded-xl border transition-all active:scale-[0.98]"
-                 :style="selectedCatId === '{{ cat.id }}' ? 'background: #2d545e12; border-color: #2d545e' : 'background: white; border-color: #E5E7EB'">
-            <input type="radio" name="cat_filter" value="{{ cat.id }}"
-                   @change="selectedCatId = '{{ cat.id }}';
-                            document.getElementById('cat-input').value = '{{ cat.id }}';
-                            htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'{{ cat.id }}',q:''}})"
-                   :checked="selectedCatId === '{{ cat.id }}'"
+                 :style="selectedTypeId === '{{ t.id }}' ? 'background: #2d545e12; border-color: #2d545e' : 'background: white; border-color: #E5E7EB'">
+            <input type="radio" name="type_filter" value="{{ t.id }}"
+                   @change="selectedTypeId = '{{ t.id }}';
+                            document.getElementById('type-input').value = '{{ t.id }}';
+                            htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{type:'{{ t.id }}',q:''}})"
+                   :checked="selectedTypeId === '{{ t.id }}'"
                    class="w-4 h-4 text-[#2d545e] border-gray-300 focus:ring-[#2d545e]">
             <div class="flex items-center gap-2 flex-1">
-              <span class="text-xl">{{ cat.image|default:"📂" }}</span>
-              <span class="font-semibold text-sm" style="color: #12343b">{{ cat.name }}</span>
+              <span class="font-semibold text-sm" style="color: #12343b">{{ t.name }}</span>
             </div>
-            <span class="text-xs font-mono font-medium px-2 py-0.5 rounded-lg" style="background: #F8F9FB; color: #6B7280">{{ cat.products.count }}</span>
+            <span class="text-xs font-mono font-medium px-2 py-0.5 rounded-lg" style="background: #F8F9FB; color: #6B7280">{{ t.products.count }}</span>
           </label>
           {% endfor %}
         </div>
@@ -105,23 +104,26 @@ window.allProducts = [
          style="border-color: #E5E7EB; box-shadow: 0 -4px 20px rgba(0,0,0,0.08)">
 
       <!-- Cart items (compact, scrollable) -->
-      <div class="max-h-[140px] overflow-auto ns px-4 py-2">
+      <div class="max-h-[180px] overflow-auto ns px-4 py-2">
         <template x-for="(item, idx) in cart.items" :key="item.id">
-          <div class="flex items-center gap-3 py-2 border-b last:border-0" style="border-color:#F3F4F6">
-            <!-- Name + variant info -->
+          <div class="flex items-center gap-2 py-2.5 border-b last:border-0" style="border-color:#F3F4F6">
+            <!-- Name -->
             <div class="flex-1 min-w-0">
               <div class="text-sm font-semibold truncate" style="color:#12343b" x-text="item.name"></div>
-              <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-[10px] font-mono" style="color:#9CA3AF" x-text="'Fixed: KES ' + Number(item.price).toLocaleString()"></span>
-              </div>
+            </div>
+
+            <!-- Fixed Price (read-only) -->
+            <div class="flex flex-col items-center shrink-0">
+              <span class="text-[8px] font-bold uppercase" style="color:#9CA3AF">Fixed</span>
+              <span class="text-xs font-mono font-medium" style="color:#9CA3AF" x-text="'KES ' + Number(item.price).toLocaleString()"></span>
             </div>
 
             <!-- Adjustable price -->
-            <div class="flex items-center gap-1">
-              <span class="text-[10px] font-bold uppercase" style="color:#e1b382">Sell@</span>
+            <div class="flex flex-col items-center shrink-0">
+              <span class="text-[8px] font-bold uppercase" style="color:#e1b382">Sell@</span>
               <input type="number" :value="item.sale_price || item.price"
                      @change="setLinePrice(item.id, $event.target.value)"
-                     class="w-16 text-xs font-bold font-mono tabular rounded-lg px-1.5 py-1 text-right focus:outline-none"
+                     class="w-20 text-xs font-bold font-mono tabular rounded-lg px-1.5 py-1 text-center focus:outline-none"
                      style="color:#2d545e;background:#F8F9FB;border:1px solid #E5E7EB">
             </div>
 
@@ -136,8 +138,8 @@ window.allProducts = [
               </button>
             </div>
 
-            <!-- Line total -->
-            <span class="font-bold text-xs font-mono tabular shrink-0" style="color:#2d545e" x-text="'KES ' + (((item.sale_price || item.price)) * item.qty).toLocaleString()"></span>
+            <!-- Line total (dynamic) -->
+            <span class="font-bold text-xs font-mono tabular shrink-0 min-w-[60px] text-right" style="color:#2d545e" x-text="'KES ' + (((item.sale_price || item.price)) * item.qty).toLocaleString()"></span>
           </div>
         </template>
       </div>

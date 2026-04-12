@@ -41,17 +41,17 @@
       <span class="text-[10px] font-semibold" style="color: {% if request.resolver_match.app_name == 'expenses' %}#e1b382{% else %}rgba(255,255,255,0.4){% endif %}">Expenses</span>
     </a>
 
-    <!-- More -->
-    <a href="{% url 'catalogue:category_list' %}" class="flex flex-col items-center justify-center gap-0.5 w-full h-full relative no-underline transition-all"
-       style="{% if request.resolver_match.url_name == 'category_list' %}background: #2d545e{% endif %}">
-      {% if request.resolver_match.url_name == 'category_list' %}
+    <!-- More (Types) -->
+    <a href="{% url 'catalogue:type_list' %}" class="flex flex-col items-center justify-center gap-0.5 w-full h-full relative no-underline transition-all"
+       style="{% if request.resolver_match.url_name == 'type_list' %}background: #2d545e{% endif %}">
+      {% if request.resolver_match.url_name == 'type_list' %}
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] rounded-full" style="background:#e1b382"></div>
       {% endif %}
       <div class="p-1 active:scale-95 transition-all"
-           style="color: {% if request.resolver_match.url_name == 'category_list' %}#e1b382{% else %}rgba(255,255,255,0.4){% endif %}">
+           style="color: {% if request.resolver_match.url_name == 'type_list' %}#e1b382{% else %}rgba(255,255,255,0.4){% endif %}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
       </div>
-      <span class="text-[10px] font-semibold" style="color: {% if request.resolver_match.url_name == 'category_list' %}#e1b382{% else %}rgba(255,255,255,0.4){% endif %}">More</span>
+      <span class="text-[10px] font-semibold" style="color: {% if request.resolver_match.url_name == 'type_list' %}#e1b382{% else %}rgba(255,255,255,0.4){% endif %}">More</span>
     </a>
 
   </div>

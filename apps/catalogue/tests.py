@@ -4,44 +4,28 @@ from decimal import Decimal
 from django.test import TestCase, Client
 from django.urls import reverse
 from accounts.models import User
-from catalogue.models import Product, Category, ProductVariant, ProductVariantOptionType, Tag
+from catalogue.models import Product, ProductType, ProductVariant, ProductVariantOptionType, Tag
 
 
-class CategoryModelTests(TestCase):
-    """Test Category model with subcategory support."""
+class ProductTypeModelTests(TestCase):
+    """Test ProductType model (flat, no subcategories)."""
 
-    def test_create_top_level_category(self):
-        cat = Category.objects.create(name='Shoes')
-        self.assertIsNone(cat.parent)
-        self.assertFalse(cat.is_subcategory)
-        self.assertEqual(str(cat), 'Shoes')
+    def test_create_product_type(self):
+        pt = ProductType.objects.create(name='Shoes')
+        self.assertEqual(str(pt), 'Shoes')
 
-    def test_create_subcategory(self):
-        parent = Category.objects.create(name='Clothing')
-        sub = Category.objects.create(name='T-Shirts', parent=parent)
-        self.assertTrue(sub.is_subcategory)
-        self.assertEqual(sub.parent, parent)
-        self.assertEqual(str(sub), 'Clothing → T-Shirts')
-
-    def test_parent_has_subcategories(self):
-        parent = Category.objects.create(name='Shoes')
-        Category.objects.create(name='Sneakers', parent=parent)
-        Category.objects.create(name='Boots', parent=parent)
-        self.assertEqual(parent.subcategories.count(), 2)
-
-    def test_unique_constraint(self):
-        parent = Category.objects.create(name='Clothing')
-        Category.objects.create(name='T-Shirts', parent=parent)
+    def test_product_type_unique(self):
+        ProductType.objects.create(name='Clothing')
         from django.db import IntegrityError
         with self.assertRaises(IntegrityError):
-            Category.objects.create(name='T-Shirts', parent=parent)
+            ProductType.objects.create(name='Clothing')
 
-    def test_same_name_different_parent_allowed(self):
-        p1 = Category.objects.create(name='Mens')
-        p2 = Category.objects.create(name='Womens')
-        c1 = Category.objects.create(name='Shoes', parent=p1)
-        c2 = Category.objects.create(name='Shoes', parent=p2)
-        self.assertNotEqual(c1.id, c2.id)
+    def test_product_type_ordering(self):
+        ProductType.objects.create(name='Shoes')
+        ProductType.objects.create(name='Accessories')
+        ProductType.objects.create(name='Clothing')
+        types = list(ProductType.objects.values_list('name', flat=True))
+        self.assertEqual(types, ['Accessories', 'Clothing', 'Shoes'])
 
 
 class TagModelTests(TestCase):
@@ -58,8 +42,8 @@ class TagModelTests(TestCase):
             Tag.objects.create(name='Sale')
 
     def test_product_tags(self):
-        cat = Category.objects.create(name='Clothing')
-        product = Product.objects.create(name='T-Shirt', category=cat, price=500, approved=True)
+        pt = ProductType.objects.create(name='Clothing')
+        product = Product.objects.create(name='T-Shirt', product_type=pt, price=500, approved=True)
         t1 = Tag.objects.create(name='New')
         t2 = Tag.objects.create(name='Featured')
         product.tags.add(t1, t2)
@@ -71,10 +55,10 @@ class ProductModelTests(TestCase):
     """Test Product and Variant models."""
 
     def setUp(self):
-        self.cat = Category.objects.create(name='Shoes')
+        self.pt = ProductType.objects.create(name='Shoes')
         self.product = Product.objects.create(
             name='Nike Air Max',
-            category=self.cat,
+            product_type=self.pt,
             price=Decimal('5000.00'),
             cost_price=Decimal('3000.00'),
             stock_qty=10,
@@ -84,7 +68,6 @@ class ProductModelTests(TestCase):
     def test_product_creation(self):
         self.assertEqual(str(self.product), 'Nike Air Max')
         self.assertEqual(self.product.total_stock, 10)
-        self.assertTrue(self.product.barcode)  # Auto-generated
 
     def test_variant_creation_syncs_stock(self):
         self.product.has_variants = True

@@ -14,34 +14,22 @@ class Tag(models.Model):
         return self.name
 
 
-class Category(models.Model):
-    name = models.CharField(max_length=50)
-    parent = models.ForeignKey(
-        'self', on_delete=models.CASCADE, null=True, blank=True,
-        related_name='subcategories'
-    )
+class ProductType(models.Model):
+    """Flat product type for organizing products (replaces Category)."""
+    name = models.CharField(max_length=50, unique=True)
 
     class Meta:
-        verbose_name_plural = "Categories"
+        verbose_name_plural = "Product Types"
         ordering = ['name']
-        constraints = [
-            models.UniqueConstraint(fields=['name', 'parent'], name='unique_category_per_parent')
-        ]
-
-    @property
-    def is_subcategory(self):
-        return self.parent is not None
 
     def __str__(self):
-        if self.parent:
-            return f"{self.parent.name} → {self.name}"
         return self.name
 
 
 class Product(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
+    product_type = models.ForeignKey(ProductType, on_delete=models.CASCADE, related_name='products')
     tags = models.ManyToManyField(Tag, blank=True, related_name='products')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)

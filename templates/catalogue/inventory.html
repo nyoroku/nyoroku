@@ -1,4 +1,4 @@
-ZCX{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block content %}
@@ -102,17 +102,20 @@ ZCX{% extends 'base.html' %}
                         </div>
                     </div>
 
+                    <!-- Type (text input with datalist for existing types) -->
                     <div>
-                        <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Category</label>
-                        <div class="flex flex-col gap-2 max-h-48 overflow-y-auto p-3 rounded-xl border" style="background: #F8F9FB; border-color: #E5E7EB">
-                            {% for cat in categories %}
-                            <label class="flex items-center gap-3 cursor-pointer p-2 rounded-xl border transition-all"
-                                   :style="editForm.category == '{{ cat.id }}' ? 'background: #2d545e12; border-color: #2d545e' : 'background: white; border-color: transparent'">
-                                <input type="radio" name="category" value="{{ cat.id }}" x-model="editForm.category" required class="w-4 h-4 text-[#2d545e] bg-white border-gray-300 focus:ring-2 focus:ring-[#2d545e]">
-                                <span class="font-semibold text-sm" style="color: #12343b">{{ cat.name }}</span>
-                            </label>
+                        <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Type</label>
+                        <input type="text" name="type_name" x-model="editForm.type_name" required
+                               list="type-options"
+                               placeholder="e.g. Shoes, Clothing, Accessories"
+                               class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
+                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                        <datalist id="type-options">
+                            {% for t in product_types %}
+                            <option value="{{ t.name }}">
                             {% endfor %}
-                        </div>
+                        </datalist>
+                        <p class="text-[10px] mt-1" style="color:#9CA3AF">Type a new name to create a new type, or pick an existing one</p>
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
@@ -164,7 +167,7 @@ ZCX{% extends 'base.html' %}
         return {
             addModal: false,
             isEdit: false,
-            editForm: { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
+            editForm: { id: '', name: '', type_name: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
 
             addOption() {
                 if (this.editForm.options.length >= 3) return;
@@ -220,9 +223,7 @@ ZCX{% extends 'base.html' %}
 
             openAdd() {
                 this.isEdit = false;
-                this.editForm = { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] };
-                const catEl = document.querySelector('[name=category]');
-                if (catEl && catEl.options.length > 0) this.editForm.category = catEl.options[0].value;
+                this.editForm = { id: '', name: '', type_name: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] };
                 document.getElementById('emoji-input').value = '👕';
                 document.getElementById('emoji-display').innerText = '👕';
                 this.addModal = true;

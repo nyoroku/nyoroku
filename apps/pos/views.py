@@ -6,31 +6,23 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.db.models import Prefetch
 from django.utils import timezone
-from catalogue.models import Product, Category, ProductVariant
+from catalogue.models import Product, ProductType, ProductVariant
 from .models import Transaction, Coupon, ParkedSale
 
 @login_required
 def index(request):
     query = request.GET.get('q', '')
-    cat_id = request.GET.get('category', '')
+    type_id = request.GET.get('type', '')
     page_num = request.GET.get('page', 1)
 
     qs = Product.objects.filter(approved=True).order_by('name')
     if query:
         qs = qs.filter(name__icontains=query)
-    if cat_id and cat_id != 'all':
-        # Support both parent and subcategory filtering
+    if type_id and type_id != 'all':
         try:
-            cat = Category.objects.get(id=cat_id)
-            if cat.subcategories.exists():
-                # Parent category — include all subcategory products too
-                sub_ids = list(cat.subcategories.values_list('id', flat=True))
-                sub_ids.append(cat.id)
-                qs = qs.filter(category_id__in=sub_ids)
-            else:
-                qs = qs.filter(category_id=cat_id)
-        except (Category.DoesNotExist, ValueError):
-            qs = qs.filter(category_id=cat_id)
+            qs = qs.filter(product_type_id=type_id)
+        except (ValueError,):
+            pass
 
     qs = qs.prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.all()),
@@ -73,13 +65,13 @@ def index(request):
     paginator = Paginator(products_with_data, 24)
     products = paginator.get_page(page_num)
 
-    # Build category hierarchy for nav
-    parent_categories = Category.objects.filter(parent__isnull=True).order_by('name').prefetch_related('subcategories')
+    # Build type list for nav
+    product_types = ProductType.objects.all().order_by('name')
 
     context = {
         'products': products,
-        'categories': parent_categories,
-        'active_category': cat_id or 'all',
+        'product_types': product_types,
+        'active_type': type_id or 'all',
         'query': query,
         'is_admin': is_admin,
     }

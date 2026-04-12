@@ -12,10 +12,9 @@ urlpatterns = [
     
     path('pending-actions/', views.pending_actions, name='pending_actions'),
     path('pending-actions/<uuid:pk>/resolve/', views.resolve_action, name='resolve_action'),
-    # Categories
-    path('categories/', views.category_list, name='category_list'),
-    path('categories/add/', views.add_category, name='add_category'),
-    path('categories/add-sub/', views.add_subcategory, name='add_subcategory'),
-    path('categories/delete/<int:pk>/', views.delete_category, name='delete_category'),
-    path('categories/edit/<int:pk>/', views.edit_category, name='edit_category'),
+    # Types (replaces Categories)
+    path('types/', views.type_list, name='type_list'),
+    path('types/add/', views.add_type, name='add_type'),
+    path('types/delete/<int:pk>/', views.delete_type, name='delete_type'),
+    path('types/edit/<int:pk>/', views.edit_type, name='edit_type'),
 ]
