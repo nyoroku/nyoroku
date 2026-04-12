@@ -166,6 +166,7 @@ def checkout(request):
 
         subtotal = Decimal('0')
         line_discounts_total = Decimal('0')
+        tip_total = Decimal('0')
 
         for item in items:
             item_id = item.get('id')
@@ -192,8 +193,18 @@ def checkout(request):
             qty           = int(item.get('qty', 1))
             # Use sale_price if provided (POS price override), else use price
             sale_price    = Decimal(str(item.get('sale_price', item['price'])))
+            original_price = Decimal(str(item.get('original_price', item['price'])))
             item['price'] = float(sale_price)
             line_discount = Decimal(str(item.get('discount', 0)))
+
+            # Track price adjustments
+            price_diff = sale_price - original_price
+            if price_diff < 0:
+                # Price was lowered → discount
+                line_discounts_total += abs(price_diff) * qty
+            elif price_diff > 0:
+                # Price was raised → tip
+                tip_total += price_diff * qty
 
             line_discounts_total += line_discount * qty
             subtotal += (sale_price - line_discount) * qty
@@ -234,6 +245,7 @@ def checkout(request):
             items           = items,
             subtotal        = subtotal + line_discounts_total,
             discount        = line_discounts_total,
+            tip_total       = tip_total,
             coupon          = coupon_obj,
             coupon_discount = coupon_discount,
             total           = total,

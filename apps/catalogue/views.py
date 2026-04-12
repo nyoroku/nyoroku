@@ -281,6 +281,19 @@ def delete_category(request, pk):
     return redirect('catalogue:category_list')
 
 @login_required
+@require_http_methods(["POST"])
+def edit_category(request, pk):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+    
+    category = get_object_or_404(Category, pk=pk)
+    name = request.POST.get('name', '').strip()
+    if name:
+        category.name = name
+        category.save()
+    return redirect('catalogue:category_list')
+
+@login_required
 def pending_actions(request):
     if request.user.role != 'admin':
         return HttpResponse('Unauthorized', status=403)

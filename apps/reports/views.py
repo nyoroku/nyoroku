@@ -94,6 +94,10 @@ def dashboard(request):
     # Payment breakdown
     payments = txs.values('payment_method').annotate(total=Sum('total'))
     payment_stats = { p['payment_method']: p['total'] for p in payments }
+
+    # Discount and Tip totals
+    total_discounts = float(txs.aggregate(Sum('discount'))['discount__sum'] or 0)
+    total_tips = float(txs.aggregate(Sum('tip_total'))['tip_total__sum'] or 0)
     
     # Dynamic Chart Data (Days in Period)
     chart_days = []
@@ -181,6 +185,8 @@ def dashboard(request):
         'low_stock_variants': low_stock_variants,
         'dow_chart': dow_chart,
         'max_dow_value': max_dow_value,
+        'total_discounts': total_discounts,
+        'total_tips': total_tips,
     }
     
     if request.headers.get('HX-Request'):

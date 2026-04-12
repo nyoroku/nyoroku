@@ -5,8 +5,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Eli Collection</title>
-  <meta name="description" content="Eli Collection — Sales & Inventory Management">
+  <title>Eli Classics</title>
+  <meta name="description" content="Eli Classics — Sales & Inventory Management">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -326,7 +326,7 @@
          class="absolute inset-y-0 left-0 w-[280px] bg-white border-r border-border shadow-2xl flex flex-col">
       
       <div class="p-5 border-b border-border" style="background: linear-gradient(135deg, #2d545e, #12343b)">
-        <h2 class="font-bold text-xl text-white tracking-tight">Eli Collection</h2>
+        <h2 class="font-bold text-xl text-white tracking-tight">Eli Classics</h2>
         <p class="text-xs font-medium mt-0.5" style="color: #e1b382">Management Portal</p>
       </div>
 
@@ -391,15 +391,6 @@
            </a>
            
            {% if user.role == 'admin' %}
-           <a href="{% url 'pos:coupon_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
-              style="{% if request.resolver_match.url_name == 'coupon_list' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
-             {% if request.resolver_match.url_name == 'coupon_list' %}
-               <div class="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full" style="background:#e1b382"></div>
-             {% endif %}
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
-             <span class="font-semibold text-base">Coupons</span>
-           </a>
-           
            <a href="{% url 'catalogue:category_list' %}" class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all relative overflow-hidden" 
               style="{% if request.resolver_match.url_name == 'category_list' %}background: #2d545e; color: #e1b382{% else %}color: var(--text-primary){% endif %}">
              {% if request.resolver_match.url_name == 'category_list' %}

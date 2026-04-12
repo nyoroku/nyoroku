@@ -3,11 +3,8 @@
 
 {% block content %}
 <div class="px-4 py-5 max-w-5xl mx-auto pb-32" x-data="{
-    supplierId: '',
     items: [],
     searchQuery: '',
-    showNewSupplier: false,
-    newSupplier: { name: '', phone: '' },
     view: 'listing',
     selectedProduct: null,
     productVariants: [],
@@ -51,10 +48,8 @@
     get modalTotalQty() { return this.productVariants.reduce((s, v) => s + (Number(v.qty) || 0), 0); },
 
     async submitOrder() {
-        if (!this.supplierId) { alert('Please select a supplier first.'); return; }
         if (this.items.length === 0) { alert('Order bag is empty.'); return; }
         const fd = new FormData();
-        fd.append('supplier_id', this.supplierId);
         fd.append('items_json', JSON.stringify(this.items));
         const resp = await fetch('{% url 'procurement:buy_stock' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
         if (resp.redirected) { window.location.href = resp.url; }
@@ -66,7 +61,7 @@
     <div class="flex items-center justify-between mb-5">
         <div>
             <h1 class="text-xl font-bold" style="color: #12343b">Buy Stock</h1>
-            <p class="text-sm" style="color: #6B7280">Create a purchase order</p>
+            <p class="text-sm" style="color: #6B7280">Add items to your inventory</p>
         </div>
         <a href="{% url 'procurement:po_list' %}" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center gap-2 no-underline active:scale-95 transition-all"
            style="background: #F8F9FB; color: #2d545e; border: 1px solid #E5E7EB">
@@ -77,55 +72,14 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        <!-- LEFT: Supplier + Products -->
+        <!-- LEFT: Products -->
         <div class="lg:col-span-2 space-y-4">
 
-            <!-- Step 1: Supplier -->
-            <div class="rounded-2xl p-5" style="background: white; border: 1px solid #E5E7EB">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-2">
-                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background: #2d545e; color: #e1b382">1</span>
-                        <span class="text-sm font-semibold" style="color: #12343b">Choose Supplier</span>
-                    </div>
-                    <button @click="showNewSupplier = !showNewSupplier" class="text-xs font-semibold" style="color: #c89666; background:none; border:none; cursor:pointer">
-                        <span x-text="showNewSupplier ? '← Back' : '+ New'"></span>
-                    </button>
-                </div>
-
-                <div x-show="!showNewSupplier" x-transition>
-                    <select x-model="supplierId" class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
-                            style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                        <option value="">— Select supplier —</option>
-                        {% for s in suppliers %}
-                        <option value="{{ s.id }}">{{ s.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div x-show="showNewSupplier" x-cloak x-transition>
-                    <div class="flex gap-2 mb-3">
-                        <input type="text" x-model="newSupplier.name" placeholder="Supplier name" class="flex-1 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none"
-                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                        <input type="text" x-model="newSupplier.phone" placeholder="Phone" class="w-32 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none"
-                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                    </div>
-                    <button @click="async () => {
-                        if(!newSupplier.name) return;
-                        const fd = new FormData(); fd.append('name', newSupplier.name); fd.append('phone', newSupplier.phone);
-                        await fetch('{% url 'procurement:supplier_create' %}', { method: 'POST', body: fd, headers: { 'X-CSRFToken': '{{ csrf_token }}' } });
-                        window.location.reload();
-                    }" class="w-full py-3 rounded-xl font-semibold text-sm active:scale-95 transition-all"
-                       style="background: #e1b382; color: #12343b; border:none; cursor:pointer">
-                        Create &amp; Continue
-                    </button>
-                </div>
-            </div>
-
-            <!-- Step 2: Products -->
+            <!-- Select Products -->
             <div class="rounded-2xl overflow-hidden" style="background: white; border: 1px solid #E5E7EB">
                 <div class="p-5 pb-3">
                     <div class="flex items-center gap-2 mb-3">
-                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background: #2d545e; color: #e1b382">2</span>
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background: #2d545e; color: #e1b382">1</span>
                         <span class="text-sm font-semibold" style="color: #12343b">Select Products</span>
                     </div>
                     <div class="flex items-center rounded-xl overflow-hidden" style="background: #F8F9FB; border: 1px solid #E5E7EB">
@@ -221,7 +175,7 @@
                             <span class="font-bold text-2xl font-mono tabular" style="color: #2d545e" x-text="orderTotal"></span>
                         </div>
                     </div>
-                    <button @click="submitOrder()" :disabled="items.length === 0 || !supplierId"
+                    <button @click="submitOrder()" :disabled="items.length === 0"
                             class="w-full h-12 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-30"
                             style="background: #16A34A; color: white; border: none; cursor: pointer">
                         Complete Order
@@ -286,8 +240,8 @@
                     <div class="text-[10px] font-semibold uppercase tracking-wider" style="color: rgba(255,255,255,0.5)">Total</div>
                     <div class="font-bold text-xl font-mono tabular" style="color: #e1b382" x-text="'KES ' + orderTotal"></div>
                 </div>
-                <button @click="submitOrder()" :disabled="!supplierId"
-                        class="h-11 px-6 rounded-xl font-semibold text-sm active:scale-95 transition-all disabled:opacity-30"
+                <button @click="submitOrder()"
+                        class="h-11 px-6 rounded-xl font-semibold text-sm active:scale-95 transition-all"
                         style="background: #16A34A; color: white; border: none; cursor: pointer">
                     Complete
                 </button>

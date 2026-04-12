@@ -254,12 +254,10 @@ def quick_stock_add(request):
     if request.method == 'POST':
         product_id = request.POST.get('product_id')
         variant_id = request.POST.get('variant_id')
-        supplier_id = request.POST.get('supplier_id')
         qty = int(request.POST.get('qty', 0))
         unit_cost = float(request.POST.get('unit_cost', 0))
         
         product = get_object_or_404(Product, id=product_id)
-        supplier = get_object_or_404(Supplier, id=supplier_id)
         
         from catalogue.models import ProductVariant
         v_name = ""
@@ -274,7 +272,7 @@ def quick_stock_add(request):
         
         # Create PO
         po = PurchaseOrder.objects.create(
-            supplier=supplier,
+            supplier=None,
             submitted_by=request.user,
             items=[{
                 'product_id': str(product.id),
@@ -325,24 +323,19 @@ def quick_stock_add(request):
             return redirect('procurement:po_list')
 
     products = Product.objects.filter(approved=True).order_by('name')
-    suppliers = Supplier.objects.all().order_by('name')
     return render(request, 'procurement/quick_stock_add.html', {
         'products': products,
-        'suppliers': suppliers
     })
 
 @login_required
 @transaction.atomic
 def buy_stock(request):
     if request.method == 'POST':
-        supplier_id = request.POST.get('supplier_id')
         items_json = request.POST.get('items_json')
-        
-        supplier = get_object_or_404(Supplier, id=supplier_id)
         items = json.loads(items_json) if items_json else []
         
         po = PurchaseOrder.objects.create(
-            supplier=supplier,
+            supplier=None,
             submitted_by=request.user,
             status='draft',
             items=items
@@ -362,10 +355,8 @@ def buy_stock(request):
             po.log_trail(request.user, "Order Submitted for Approval")
             return redirect('procurement:po_list')
 
-    suppliers = Supplier.objects.all().order_by('name')
     products = Product.objects.filter(approved=True).order_by('name')
     return render(request, 'procurement/buy_stock.html', {
-        'suppliers': suppliers,
         'products': products
     })
 

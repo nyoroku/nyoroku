@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-<div class="px-4 py-6 max-w-2xl mx-auto" x-data="{ addModal: false, addSubModal: false, parentCatId: null, parentCatName: '' }">
+<div class="px-4 py-6 max-w-2xl mx-auto" x-data="{ addModal: false, addSubModal: false, editModal: false, parentCatId: null, parentCatName: '', editCatId: null, editCatName: '' }">
     
     <div class="flex items-center justify-between mb-6">
         <div>
@@ -29,6 +29,12 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <!-- Edit -->
+                    <button @click.stop="editCatId = {{ cat.id }}; editCatName = '{{ cat.name|escapejs }}'; editModal = true"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 transition-all"
+                            style="background: #e1b38222; color: #c89666" title="Rename">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                    </button>
                     <!-- Add subcategory -->
                     <button @click.stop="parentCatId = {{ cat.id }}; parentCatName = '{{ cat.name|escapejs }}'; addSubModal = true"
                             class="w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 transition-all"
@@ -59,12 +65,20 @@
                             <p class="text-xs" style="color: #6B7280">{{ sub.products.count }} products</p>
                         </div>
                     </div>
-                    <form action="{% url 'catalogue:delete_category' sub.id %}" method="POST" onsubmit="return confirm('Delete {{ sub.name|escapejs }}?')">
-                        {% csrf_token %}
-                        <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-lg active:scale-90" style="color: #DC2626">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <div class="flex items-center gap-1.5">
+                        <!-- Edit subcategory -->
+                        <button @click="editCatId = {{ sub.id }}; editCatName = '{{ sub.name|escapejs }}'; editModal = true"
+                                class="w-7 h-7 flex items-center justify-center rounded-lg active:scale-90" style="color: #c89666" title="Rename">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                         </button>
-                    </form>
+                        <!-- Delete subcategory -->
+                        <form action="{% url 'catalogue:delete_category' sub.id %}" method="POST" onsubmit="return confirm('Delete {{ sub.name|escapejs }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="w-7 h-7 flex items-center justify-center rounded-lg active:scale-90" style="color: #DC2626">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 {% empty %}
                 <div class="pl-12 pr-4 py-4 text-sm" style="color: #9CA3AF">
@@ -143,6 +157,38 @@
                     <button type="submit" class="flex-[2] py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all shadow-md"
                             style="background: #e1b382; color: #12343b">
                         Add Subcategory
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Category/Subcategory Modal -->
+    <div x-show="editModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
+        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="editModal = false"></div>
+        
+        <div x-show="editModal" x-transition
+             class="relative w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-modal p-6">
+            
+            <h3 class="text-lg font-bold mb-5" style="color: #12343b">Rename Category</h3>
+            
+            <form :action="'{% url 'catalogue:edit_category' 0 %}'.replace('/0/', '/' + editCatId + '/')" method="POST" class="space-y-5">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color: #6B7280">New Name</label>
+                    <input type="text" name="name" required x-model="editCatName"
+                           class="w-full rounded-xl px-4 py-3.5 text-base font-medium focus:outline-none focus:ring-2"
+                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" @click="editModal = false" class="flex-1 py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all"
+                            style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
+                        Cancel
+                    </button>
+                    <button type="submit" class="flex-[2] py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all shadow-md"
+                            style="background: #2d545e; color: white">
+                        Save Changes
                     </button>
                 </div>
             </form>

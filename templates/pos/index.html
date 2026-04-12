@@ -315,13 +315,34 @@ window.allProducts = [
           <div class="w-11 h-11 shrink-0 flex items-center justify-center text-xl rounded-xl" style="background:#e1b38222;border:1px solid #e1b38244" x-text="item.image || '📦'"></div>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-semibold truncate" style="color:#12343b" x-text="item.name"></div>
-            <div class="flex items-center gap-2 mt-1">
-              <span class="text-xs" style="color:#6B7280">Price:</span>
+            <!-- Fixed price (original) -->
+            <div class="flex items-center gap-1.5 mt-1">
+              <span class="text-[10px] font-semibold uppercase tracking-wider" style="color:#9CA3AF">Fixed:</span>
+              <span class="text-xs font-bold font-mono tabular" 
+                    :style="(item.sale_price && item.sale_price != item.price) ? 'color:#9CA3AF;text-decoration:line-through' : 'color:#2d545e'"
+                    x-text="'KES ' + Number(item.price).toLocaleString()"></span>
+            </div>
+            <!-- Adjustable sale price -->
+            <div class="flex items-center gap-2 mt-1.5">
+              <span class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Sell @</span>
               <input type="number" :value="item.sale_price || item.price" 
                      @change="setLinePrice(item.id, $event.target.value)"
                      class="w-20 text-sm font-bold font-mono tabular rounded-lg px-2 py-1 text-right focus:outline-none"
                      style="color:#2d545e;background:#F8F9FB;border:1px solid #E5E7EB">
             </div>
+            <!-- Discount/Tip indicator -->
+            <template x-if="item.sale_price && item.sale_price < item.price">
+              <div class="mt-1">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#16A34A15;color:#16A34A"
+                      x-text="'↓ Discount KES ' + ((item.price - item.sale_price) * item.qty).toLocaleString()"></span>
+              </div>
+            </template>
+            <template x-if="item.sale_price && item.sale_price > item.price">
+              <div class="mt-1">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#F59E0B15;color:#F59E0B"
+                      x-text="'↑ Tip KES ' + ((item.sale_price - item.price) * item.qty).toLocaleString()"></span>
+              </div>
+            </template>
           </div>
           <div class="flex flex-col items-end gap-2 shrink-0">
             <div class="flex items-center rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">

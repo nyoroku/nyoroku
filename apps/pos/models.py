@@ -87,6 +87,7 @@ class Transaction(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
     coupon_discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tip_total = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text='Total tips from price increases')
     total = models.DecimalField(max_digits=10, decimal_places=2)
     
     payment_method = models.CharField(max_length=10, choices=PAYMENT_CHOICES, default='cash')
