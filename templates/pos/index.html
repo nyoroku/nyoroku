@@ -14,6 +14,7 @@ window.allProducts = [
     has_variants: {{ p.has_variants|yesno:"true,false" }},
     variants:    {{ p.safe_variants_json|default:"[]"|safe }},
     option_types: {{ p.safe_option_types_json|default:"[]"|safe }},
+    types:       {{ p.safe_types_json|default:"[]"|safe }},
     type_name:   "{{ p.product_type.name|escapejs }}"
   }{% if not forloop.last %},{% endif %}
   {% endfor %}

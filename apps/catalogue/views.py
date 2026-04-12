@@ -44,11 +44,9 @@ def add_product(request):
     stock_qty = request.POST.get('stock_qty')
     image = request.POST.get('image', '📦')
 
-    # Create-or-get ProductType by name
-    if type_name:
-        product_type, _ = ProductType.objects.get_or_create(name=type_name)
-    else:
-        return HttpResponse('Type name is required', status=400)
+    # Assign default ProductType since Categories are removed from UI
+    type_name = request.POST.get('type_name') or 'General'
+    product_type, _ = ProductType.objects.get_or_create(name=type_name)
     
     # Logic: Admin auto-approves, Cashier pending
     is_approved = (request.user.role == 'admin')
@@ -134,10 +132,9 @@ def edit_product(request):
     
     product.name = request.POST.get('name')
     
-    type_name = request.POST.get('type_name', '').strip()
-    if type_name:
-        product_type, _ = ProductType.objects.get_or_create(name=type_name)
-        product.product_type = product_type
+    type_name = request.POST.get('type_name') or 'General'
+    product_type, _ = ProductType.objects.get_or_create(name=type_name)
+    product.product_type = product_type
     
     product.price = request.POST.get('price')
     cost_price = request.POST.get('cost_price')
