@@ -40,10 +40,12 @@ window.allProducts = [
   activeTab: 0,
   searchQuery: '',
   chosenType: '',
-  allTypes: [{% for t in product_types %}'{{ t.name|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}],
 
   /* ── variant tab helpers ── */
-  get typeChosen() { return this.chosenType !== ''; },
+  get typeChosen() {
+    if (!this.activeProduct?.types || this.activeProduct.types.length === 0) return true;
+    return this.chosenType !== '';
+  },
   get allTabsFilled() {
     if (!this.activeProduct?.option_types?.length) return true;
     return this.activeProduct.option_types.every(ot => this.variantSelections[ot.name]);
@@ -137,9 +139,7 @@ window.allProducts = [
               </template>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-semibold leading-tight truncate" style="color:#12343b" x-text="prod.name"></h3>
               <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style="background:#2d545e12;color:#2d545e" x-text="prod.type_name"></span>
                 <span class="text-xs" style="color:#9CA3AF" x-text="prod.stock_qty+' in stock'"></span>
               </div>
             </div>
@@ -181,33 +181,33 @@ window.allProducts = [
         </div>
       </div>
 
-          <!-- STEP 1: Choose Type (vertical radio) -->
-          <div class="bg-white px-4 py-4 border-b" style="border-color:#E5E7EB">
-            <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" :style="chosenType?'background:#16A34A;color:white':'background:#2d545e;color:white'">1</span>
-              Choose Type
-              <template x-if="chosenType">
-                <span class="ml-auto font-bold text-xs px-2 py-0.5 rounded-lg" style="background:#e1b38222;color:#c89666" x-text="chosenType"></span>
-              </template>
-            </p>
-            <div class="flex flex-col gap-2">
-              <template x-for="t in allTypes" :key="t">
-                <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-all active:scale-[0.98]"
-                       :style="chosenType===t ? 'background:#2d545e12;border-color:#2d545e' : 'background:white;border-color:#E5E7EB'">
-                  <input type="radio" name="choose_type" :value="t" @change="chosenType=t" :checked="chosenType===t"
-                         class="w-4 h-4 border-gray-300 focus:ring-[#2d545e]" style="color:#2d545e">
-                  <span class="font-semibold text-sm" style="color:#12343b" x-text="t"></span>
-                </label>
-              </template>
+          <!-- Choose Type (vertical radio) -->
+          <template x-if="activeProduct?.types && activeProduct.types.length > 0">
+            <div class="bg-white px-4 py-4 border-b" style="border-color:#E5E7EB">
+              <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
+                Choose Type
+                <template x-if="chosenType">
+                  <span class="ml-auto font-bold text-xs px-2 py-0.5 rounded-lg" style="background:#e1b38222;color:#c89666" x-text="chosenType"></span>
+                </template>
+              </p>
+              <div class="flex flex-col gap-2">
+                <template x-for="t in activeProduct.types" :key="t">
+                  <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-all active:scale-[0.98]"
+                         :style="chosenType===t ? 'background:#2d545e12;border-color:#2d545e' : 'background:white;border-color:#E5E7EB'">
+                    <input type="radio" name="choose_type" :value="t" @change="chosenType=t" :checked="chosenType===t"
+                           class="w-4 h-4 border-gray-300 focus:ring-[#2d545e]" style="color:#2d545e">
+                    <span class="font-semibold text-sm" style="color:#12343b" x-text="t"></span>
+                  </label>
+                </template>
+              </div>
             </div>
-          </div>
+          </template>
 
-          <!-- STEP 2: Choose Variants (tabs) — always visible for variant products -->
+          <!-- Choose Variants (tabs) — always visible for variant products -->
       <template x-if="activeProduct?.has_variants && activeProduct?.option_types?.length>0">
         <div>
           <div class="bg-white px-4 pt-4 pb-1 border-b" style="border-color:#E5E7EB">
             <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" :style="allTabsFilled?'background:#16A34A;color:white':'background:#2d545e;color:white'">2</span>
                   Choose Variant
                 </p>
               </div>
@@ -242,10 +242,9 @@ window.allProducts = [
             </div>
           </template>
 
-          <!-- STEP 3: Price + Qty (always visible) -->
+          <!-- Price + Qty (always visible) -->
           <div class="bg-white px-4 py-4 border-b" style="border-color:#E5E7EB">
             <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style="background:#2d545e;color:white">3</span>
               Price & Quantity
             </p>
             <!-- Fixed + Adjustable side by side -->

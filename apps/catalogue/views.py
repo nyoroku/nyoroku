@@ -53,9 +53,14 @@ def add_product(request):
     # Logic: Admin auto-approves, Cashier pending
     is_approved = (request.user.role == 'admin')
     
+    # Parse Types
+    types_str = request.POST.get('types', '')
+    types_list = [t.strip() for t in types_str.split(',') if t.strip()]
+
     product = Product.objects.create(
         name=name,
         product_type=product_type,
+        types=types_list,
         price=price,
         cost_price=cost_price or None,
         stock_qty=stock_qty or 0,
@@ -138,6 +143,9 @@ def edit_product(request):
     cost_price = request.POST.get('cost_price')
     product.cost_price = cost_price if cost_price else None
     product.image = request.POST.get('image', '📦')
+    
+    types_str = request.POST.get('types', '')
+    product.types = [t.strip() for t in types_str.split(',') if t.strip()]
     
     # If edited by a non-admin, force it to pending mode again
     if request.user.role != 'admin':

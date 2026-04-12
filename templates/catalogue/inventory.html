@@ -102,20 +102,30 @@
                         </div>
                     </div>
 
-                    <!-- Type (text input with datalist for existing types) -->
-                    <div>
-                        <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Type</label>
-                        <input type="text" name="type_name" x-model="editForm.type_name" required
-                               list="type-options"
-                               placeholder="e.g. Shoes, Clothing, Accessories"
-                               class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
-                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
-                        <datalist id="type-options">
-                            {% for t in product_types %}
-                            <option value="{{ t.name }}">
-                            {% endfor %}
-                        </datalist>
-                        <p class="text-[10px] mt-1" style="color:#9CA3AF">Type a new name to create a new type, or pick an existing one</p>
+                    <!-- Category / Type Group -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Category Input -->
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Category</label>
+                            <input type="text" name="type_name" x-model="editForm.type_name" required
+                                   list="type-options"
+                                   placeholder="Shoes, Clothing..."
+                                   class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
+                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                            <datalist id="type-options">
+                                {% for t in product_types %}
+                                <option value="{{ t.name }}">
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                        <!-- Specific Types -->
+                        <div>
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Types (Comma separated)</label>
+                            <input type="text" name="types" x-model="editForm.types"
+                                   placeholder="Ragged, Straight, Skinny"
+                                   class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
+                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-3 gap-4">
@@ -167,7 +177,7 @@
         return {
             addModal: false,
             isEdit: false,
-            editForm: { id: '', name: '', type_name: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
+            editForm: { id: '', name: '', type_name: '', types: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
 
             addOption() {
                 if (this.editForm.options.length >= 3) return;
@@ -223,7 +233,7 @@
 
             openAdd() {
                 this.isEdit = false;
-                this.editForm = { id: '', name: '', type_name: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] };
+                this.editForm = { id: '', name: '', type_name: '', types: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] };
                 document.getElementById('emoji-input').value = '👕';
                 document.getElementById('emoji-display').innerText = '👕';
                 this.addModal = true;

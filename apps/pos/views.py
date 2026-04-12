@@ -58,6 +58,7 @@ def index(request):
                 'values': ot.values,
             })
         product.safe_option_types_json = json.dumps(option_types_data)
+        product.safe_types_json = json.dumps(product.types or [])
 
         products_with_data.append(product)
 

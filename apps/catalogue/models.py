@@ -36,6 +36,7 @@ class Product(models.Model):
     stock_qty = models.IntegerField(default=0)
     reorder_level = models.IntegerField(default=5)
     has_variants = models.BooleanField(default=False)
+    types = models.JSONField(default=list, blank=True, help_text="Product-specific types, e.g. ['Ragged', 'Straight', 'Skinny']")
     image = models.CharField(max_length=10, default='📦')  # Emoji string
 
     approved = models.BooleanField(default=False)
