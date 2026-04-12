@@ -39,8 +39,11 @@ window.allProducts = [
   detailSalePrice: 0,
   activeTab: 0,
   searchQuery: '',
+  chosenType: '',
+  allTypes: [{% for t in product_types %}'{{ t.name|escapejs }}'{% if not forloop.last %},{% endif %}{% endfor %}],
 
   /* ── variant tab helpers ── */
+  get typeChosen() { return this.chosenType !== ''; },
   get allTabsFilled() {
     if (!this.activeProduct?.option_types?.length) return true;
     return this.activeProduct.option_types.every(ot => this.variantSelections[ot.name]);
@@ -58,11 +61,9 @@ window.allProducts = [
   selectTab(idx) { this.activeTab = idx; },
   pickValue(optName, val) {
     this.variantSelections = {...this.variantSelections, [optName]: val};
-    /* auto-advance tab */
     if (this.activeTab < (this.activeProduct?.option_types?.length || 1) - 1) {
       this.activeTab++;
     }
-    /* set price when variant found */
     const mv = this.matchedVariant;
     if (mv) this.detailSalePrice = mv.price;
   },
@@ -73,6 +74,7 @@ window.allProducts = [
   },
   get showPriceSection() {
     if (!this.activeProduct) return false;
+    if (!this.typeChosen) return false;
     if (!this.activeProduct.has_variants) return true;
     return this.allTabsFilled;
   },
@@ -81,17 +83,19 @@ window.allProducts = [
     this.detailQty = 1;
     this.detailSalePrice = prod.price;
     this.activeTab = 0;
+    this.chosenType = '';
     this.resetVariantSelection();
     this.posView = 'detail';
   },
   addItemToCart() {
     const mv = this.matchedVariant;
     const item = mv
-      ? { id: mv.id, is_variant: true, parent_product: this.activeProduct.id, name: mv.name, price: mv.price, sale_price: this.detailSalePrice, stock_qty: mv.stock_qty, image: this.activeProduct.image }
-      : { id: this.activeProduct.id, is_variant: false, parent_product: this.activeProduct.id, name: this.activeProduct.name, price: this.activeProduct.price, sale_price: this.detailSalePrice, stock_qty: this.activeProduct.stock_qty, image: this.activeProduct.image };
+      ? { id: mv.id, is_variant: true, parent_product: this.activeProduct.id, name: mv.name, price: mv.price, sale_price: this.detailSalePrice, stock_qty: mv.stock_qty, image: this.activeProduct.image, chosen_type: this.chosenType }
+      : { id: this.activeProduct.id, is_variant: false, parent_product: this.activeProduct.id, name: this.activeProduct.name, price: this.activeProduct.price, sale_price: this.detailSalePrice, stock_qty: this.activeProduct.stock_qty, image: this.activeProduct.image, chosen_type: this.chosenType };
     this.addToCart(item, this.detailQty);
     this.posView = 'shop';
     this.activeProduct = null;
+    this.chosenType = '';
     this.resetVariantSelection();
   }
 }" class="flex flex-col" style="height:calc(100vh - 56px - 64px)">
@@ -157,7 +161,7 @@ window.allProducts = [
     </div>
   </div>
 
-  <!-- ═══════ VIEW 2: PRODUCT DETAIL — Tabs + Variants + Cart ═══════ -->
+  <!-- ═══════ VIEW 2: PRODUCT DETAIL — Type → Variants → Cart ═══════ -->
   <div x-show="posView==='detail'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background:#F8F9FB">
     <div class="flex-1 overflow-auto ns pb-6">
 
@@ -169,19 +173,45 @@ window.allProducts = [
           </div>
           <div class="flex-1 min-w-0">
             <h2 class="text-lg font-bold leading-tight" style="color:#12343b" x-text="activeProduct?.name"></h2>
-            <div class="flex items-center gap-2 mt-1">
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-lg" style="background:#2d545e;color:#e1b382" x-text="activeProduct?.type_name"></span>
-              <span class="text-xs" style="color:#9CA3AF" x-text="(activeProduct?.stock_qty||0)+' in stock'"></span>
-            </div>
+            <span class="text-xs" style="color:#9CA3AF" x-text="(activeProduct?.stock_qty||0)+' in stock'"></span>
           </div>
         </div>
       </div>
 
-      <!-- ── VARIANT TAB SELECTOR ── -->
-      <template x-if="activeProduct?.has_variants && activeProduct?.option_types?.length>0">
+      <!-- ── STEP 1: CHOOSE TYPE (vertical radio list) ── -->
+      <div class="bg-white px-4 py-4 border-b fade-in" style="border-color:#E5E7EB">
+        <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style="background:#2d545e;color:white">1</span>
+          Choose Type
+          <template x-if="chosenType">
+            <span class="ml-auto font-bold text-xs px-2 py-0.5 rounded-lg" style="background:#e1b38222;color:#c89666" x-text="chosenType"></span>
+          </template>
+        </p>
+        <div class="flex flex-col gap-2">
+          <template x-for="t in allTypes" :key="t">
+            <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-all active:scale-[0.98]"
+                   :style="chosenType===t ? 'background:#2d545e12;border-color:#2d545e' : 'background:white;border-color:#E5E7EB'">
+              <input type="radio" name="choose_type" :value="t"
+                     @change="chosenType=t"
+                     :checked="chosenType===t"
+                     class="w-4 h-4 border-gray-300 focus:ring-[#2d545e]" style="color:#2d545e">
+              <span class="font-semibold text-sm" style="color:#12343b" x-text="t"></span>
+            </label>
+          </template>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: CHOOSE VARIANTS (tabs) — only after type is chosen ── -->
+      <template x-if="typeChosen && activeProduct?.has_variants && activeProduct?.option_types?.length>0">
         <div class="fade-in">
+          <div class="bg-white px-4 pt-4 pb-1 border-b" style="border-color:#E5E7EB">
+            <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style="background:#2d545e;color:white">2</span>
+              Choose Variant
+            </p>
+          </div>
           <!-- Tab Headers -->
-          <div class="flex bg-white border-b px-4 gap-1 pt-3" style="border-color:#E5E7EB">
+          <div class="flex bg-white border-b px-4 gap-1 pt-1" style="border-color:#E5E7EB">
             <template x-for="(ot, idx) in activeProduct.option_types" :key="ot.name">
               <button @click="selectTab(idx)"
                       class="px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl border border-b-0 transition-all"
@@ -195,9 +225,9 @@ window.allProducts = [
             </template>
           </div>
 
-          <!-- Tab Content: values to pick -->
+          <!-- Tab Content -->
           <div class="bg-white px-4 py-4 border-b" style="border-color:#E5E7EB">
-            <template x-for="(ot, idx) in activeProduct.option_types" :key="ot.name+'_content'">
+            <template x-for="(ot, idx) in activeProduct.option_types" :key="ot.name+'_c'">
               <div x-show="activeTab===idx" x-transition.opacity class="flex flex-wrap gap-2">
                 <template x-for="val in ot.values" :key="val">
                   <button @click="pickValue(ot.name, val)"
@@ -210,10 +240,10 @@ window.allProducts = [
             </template>
           </div>
 
-          <!-- Reset link -->
+          <!-- Reset -->
           <template x-if="Object.keys(variantSelections).length>0">
             <div class="px-4 pt-2">
-              <button @click="resetVariantSelection(); activeTab=0" class="text-xs font-semibold px-3 py-1.5 rounded-lg active:scale-95" style="color:#DC2626;background:#DC262610">↻ Reset</button>
+              <button @click="resetVariantSelection();activeTab=0;chosenType=''" class="text-xs font-semibold px-3 py-1.5 rounded-lg active:scale-95" style="color:#DC2626;background:#DC262610">↻ Reset All</button>
             </div>
           </template>
         </div>
