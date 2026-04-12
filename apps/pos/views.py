@@ -27,7 +27,7 @@ def index(request):
     qs = qs.prefetch_related(
         Prefetch('variants', queryset=ProductVariant.objects.all()),
         'option_types',
-    )
+    ).select_related('product_type')
 
     is_admin = request.user.role == 'admin'
 
@@ -62,7 +62,7 @@ def index(request):
         products_with_data.append(product)
 
     from django.core.paginator import Paginator
-    paginator = Paginator(products_with_data, 24)
+    paginator = Paginator(products_with_data, 100)
     products = paginator.get_page(page_num)
 
     # Build type list for nav

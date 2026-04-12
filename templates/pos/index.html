@@ -13,7 +13,8 @@ window.allProducts = [
     stock_qty:   {{ p.total_stock|default:0 }},
     has_variants: {{ p.has_variants|yesno:"true,false" }},
     variants:    {{ p.safe_variants_json|default:"[]"|safe }},
-    option_types: {{ p.safe_option_types_json|default:"[]"|safe }}
+    option_types: {{ p.safe_option_types_json|default:"[]"|safe }},
+    type_name:   "{{ p.product_type.name|escapejs }}"
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
 ];
@@ -24,35 +25,40 @@ window.allProducts = [
 <style>
 .ns::-webkit-scrollbar{display:none}.ns{-ms-overflow-style:none;scrollbar-width:none}
 .product-row { touch-action: manipulation; }
-.product-row:active { background: #e1b38222 !important; }
+.product-row:active { background: #e1b38215 !important; }
+.fade-in { animation: fadeIn 0.25s ease-out; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
 </style>
 
 <div x-data="{
   posView: 'shop',
-  selectedTypeId: '',
-  expandedProductId: null,
-  inlineQty: 1
+  activeProduct: null,
+  detailQty: 1,
+  detailSalePrice: 0,
+  searchQuery: ''
 }" class="flex flex-col" style="height:calc(100vh - 56px - 64px)">
 
   <!-- ═══════ TOP BAR ═══════ -->
   <div class="shrink-0 px-4 py-3" style="background: #2d545e;">
     <div class="flex items-center gap-3">
-      <!-- Back button (payment view only) -->
-      <button x-show="posView === 'payment'" x-cloak
-              @click="posView = 'shop'"
+      <!-- Back button (detail / payment view) -->
+      <button x-show="posView !== 'shop'" x-cloak
+              @click="posView = posView === 'payment' ? 'shop' : 'shop'; activeProduct = null; resetVariantSelection();"
               class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:scale-90 transition-all"
               style="background: rgba(255,255,255,0.15); color: white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
       </button>
 
-      <!-- Title / Search -->
-      <div class="flex-1 flex items-center rounded-xl overflow-hidden" style="background: rgba(255,255,255,0.12)">
+      <!-- Title when in detail/payment -->
+      <h2 x-show="posView === 'detail'" x-cloak class="text-white font-bold text-base truncate flex-1" x-text="activeProduct?.name || ''"></h2>
+      <h2 x-show="posView === 'payment'" x-cloak class="text-white font-bold text-base truncate flex-1">Complete Payment</h2>
+
+      <!-- Search (shop view only) -->
+      <div x-show="posView === 'shop'" class="flex-1 flex items-center rounded-xl overflow-hidden" style="background: rgba(255,255,255,0.12)">
         <span class="pl-3" style="color: rgba(255,255,255,0.5)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </span>
-        <input id="search-input" type="text" name="q"
-               hx-get="{% url 'pos:index' %}" hx-trigger="input changed delay:200ms, search"
-               hx-target="#product-list" hx-include="[name='type']"
+        <input type="text" x-model="searchQuery"
                placeholder="Search products..."
                class="flex-1 px-3 py-3 text-base font-medium bg-transparent border-none outline-none"
                style="color: white"
@@ -61,106 +67,222 @@ window.allProducts = [
     </div>
   </div>
 
-  <!-- Hidden type input for HTMX filtering -->
-  <input type="hidden" name="type" value="{{ active_type|default:'all' }}" id="type-input">
-
-  <!-- ═══════ VIEW: SHOP (single page) ═══════ -->
+  <!-- ═══════ VIEW 1: SHOP — All Products ═══════ -->
   <div x-show="posView === 'shop'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background: #F8F9FB">
+    <div class="flex-1 overflow-auto ns" :style="itemCount > 0 ? 'padding-bottom: 90px' : ''">
 
-    <div class="flex-1 overflow-auto ns" :style="itemCount > 0 ? 'padding-bottom: 180px' : ''">
+      <!-- Available Header -->
+      <div class="px-4 pt-4 pb-2">
+        <h3 class="font-bold text-xs uppercase tracking-wider" style="color: #6B7280">
+          Available · <span class="font-mono" x-text="window.allProducts?.length || 0"></span> products
+        </h3>
+      </div>
 
-      <!-- Type Filters (vertical radio list) -->
-      <div class="px-4 py-4 bg-white border-b" style="border-color: #E5E7EB">
-        <h3 class="font-bold text-[10px] uppercase tracking-wider mb-3" style="color: #6B7280">Types</h3>
-        <div class="flex flex-col gap-2">
-          {% for t in product_types %}
-          <label class="flex items-center gap-3 cursor-pointer p-2.5 rounded-xl border transition-all active:scale-[0.98]"
-                 :style="selectedTypeId === '{{ t.id }}' ? 'background: #2d545e12; border-color: #2d545e' : 'background: white; border-color: #E5E7EB'">
-            <input type="radio" name="type_filter" value="{{ t.id }}"
-                   @change="selectedTypeId = '{{ t.id }}';
-                            document.getElementById('type-input').value = '{{ t.id }}';
-                            htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{type:'{{ t.id }}',q:''}})"
-                   :checked="selectedTypeId === '{{ t.id }}'"
-                   class="w-4 h-4 text-[#2d545e] border-gray-300 focus:ring-[#2d545e]">
-            <div class="flex items-center gap-2 flex-1">
-              <span class="font-semibold text-sm" style="color: #12343b">{{ t.name }}</span>
+      <!-- Product List -->
+      <div class="divide-y" style="border-color: #E5E7EB">
+        <template x-for="prod in (window.allProducts || []).filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()))" :key="prod.id">
+          <div class="product-row flex items-center gap-3 px-4 py-3.5 bg-white cursor-pointer transition-colors"
+               @click="activeProduct = prod; detailQty = 1; detailSalePrice = prod.price; resetVariantSelection(); posView = 'detail'">
+            <!-- Image -->
+            <div class="relative w-12 h-12 shrink-0 flex items-center justify-center text-2xl rounded-2xl"
+                 style="background: #e1b38215; border: 1px solid #e1b38233">
+              <span x-text="prod.image"></span>
+              <!-- In-cart dot -->
+              <template x-if="cart.items.some(i => i.parent_product === prod.id || i.id === prod.id)">
+                <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full ring-2 ring-white" style="background:#e1b382"></div>
+              </template>
             </div>
-            <span class="text-xs font-mono font-medium px-2 py-0.5 rounded-lg" style="background: #F8F9FB; color: #6B7280">{{ t.products.count }}</span>
-          </label>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- Products Grid -->
-      <div id="product-list">
-        {% include 'pos/partials/product_list.html' %}
-      </div>
-
-    </div>
-
-    <!-- ═══════ DOCKED BOTTOM CART ═══════ -->
-    <div x-show="itemCount > 0" x-cloak x-transition
-         class="fixed bottom-[64px] left-0 right-0 z-[100] bg-white border-t shadow-lg"
-         style="border-color: #E5E7EB; box-shadow: 0 -4px 20px rgba(0,0,0,0.08)">
-
-      <!-- Cart items (compact, scrollable) -->
-      <div class="max-h-[180px] overflow-auto ns px-4 py-2">
-        <template x-for="(item, idx) in cart.items" :key="item.id">
-          <div class="flex items-center gap-2 py-2.5 border-b last:border-0" style="border-color:#F3F4F6">
-            <!-- Name -->
+            <!-- Info -->
             <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold truncate" style="color:#12343b" x-text="item.name"></div>
+              <h3 class="text-sm font-semibold leading-tight truncate" style="color: #12343b" x-text="prod.name"></h3>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md" style="background:#2d545e12;color:#2d545e" x-text="prod.type_name"></span>
+                <span class="text-xs" style="color: #9CA3AF" x-text="prod.stock_qty + ' in stock'"></span>
+              </div>
             </div>
-
-            <!-- Fixed Price (read-only) -->
-            <div class="flex flex-col items-center shrink-0">
-              <span class="text-[8px] font-bold uppercase" style="color:#9CA3AF">Fixed</span>
-              <span class="text-xs font-mono font-medium" style="color:#9CA3AF" x-text="'KES ' + Number(item.price).toLocaleString()"></span>
+            <!-- Price -->
+            <div class="shrink-0 text-right">
+              <div class="text-base font-bold font-mono tabular" style="color: #2d545e" x-text="Number(prod.price).toLocaleString()"></div>
+              <div class="text-[10px]" style="color: #e1b382">KES</div>
             </div>
-
-            <!-- Adjustable price -->
-            <div class="flex flex-col items-center shrink-0">
-              <span class="text-[8px] font-bold uppercase" style="color:#e1b382">Sell@</span>
-              <input type="number" :value="item.sale_price || item.price"
-                     @change="setLinePrice(item.id, $event.target.value)"
-                     class="w-20 text-xs font-bold font-mono tabular rounded-lg px-1.5 py-1 text-center focus:outline-none"
-                     style="color:#2d545e;background:#F8F9FB;border:1px solid #E5E7EB">
-            </div>
-
-            <!-- Qty stepper -->
-            <div class="flex items-center rounded-lg shrink-0" style="background:#F8F9FB;border:1px solid #E5E7EB">
-              <button @click="updateQty(item.id,-1)" class="w-7 h-7 flex items-center justify-center active:scale-90" style="color:#6B7280">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
-              <span class="w-5 text-center font-bold text-xs tabular" style="color:#12343b" x-text="item.qty"></span>
-              <button @click="updateQty(item.id,1)" class="w-7 h-7 flex items-center justify-center active:scale-90" style="color:#2d545e">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              </button>
-            </div>
-
-            <!-- Line total (dynamic) -->
-            <span class="font-bold text-xs font-mono tabular shrink-0 min-w-[60px] text-right" style="color:#2d545e" x-text="'KES ' + (((item.sale_price || item.price)) * item.qty).toLocaleString()"></span>
+            <!-- Chevron -->
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" class="shrink-0"><path d="m9 18 6-6-6-6"/></svg>
           </div>
         </template>
       </div>
+    </div>
 
-      <!-- Total + Proceed -->
-      <div class="px-4 py-3 flex items-center gap-4 border-t" style="border-color:#E5E7EB">
-        <div class="flex-1">
-          <div class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Total</div>
-          <div class="font-bold text-xl font-mono tabular leading-none" style="color:#12343b">KES <span x-text="cartTotal.toLocaleString()"></span></div>
+    <!-- Mini cart bar (shop view) -->
+    <div x-show="itemCount > 0" x-cloak x-transition
+         class="fixed bottom-[64px] left-0 right-0 z-[100]"
+         style="box-shadow: 0 -4px 20px rgba(0,0,0,0.08)">
+      <button @click="posView = 'payment'"
+              class="w-full flex items-center justify-between px-5 py-4 active:scale-[0.99] transition-all"
+              style="background: #2d545e; color: white">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background:rgba(255,255,255,0.2)">
+            <span x-text="itemCount"></span>
+          </div>
+          <span class="font-semibold text-sm">View Cart & Pay</span>
         </div>
-        <button @click="posView = 'payment'"
-                class="px-6 py-3 font-bold text-sm rounded-2xl transition-all active:scale-95"
-                style="background:#2d545e;color:white">
-          Proceed to Payment →
-        </button>
-      </div>
+        <span class="font-bold text-lg font-mono tabular" x-text="'KES ' + cartTotal.toLocaleString()"></span>
+      </button>
     </div>
   </div>
 
-  <!-- ═══════ VIEW: PAYMENT ═══════ -->
-  <div x-show="posView === 'payment'" x-transition class="flex-1 flex flex-col overflow-hidden ns" style="background: #F8F9FB">
+  <!-- ═══════ VIEW 2: PRODUCT DETAIL — Type, Variants, Price, Cart ═══════ -->
+  <div x-show="posView === 'detail'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background: #F8F9FB">
+    <div class="flex-1 overflow-auto ns pb-6">
+
+      <!-- Product Hero -->
+      <div class="bg-white px-5 pt-5 pb-4 border-b" style="border-color:#E5E7EB">
+        <div class="flex items-center gap-4">
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background:#e1b38215;border:1px solid #e1b38233">
+            <span x-text="activeProduct?.image || '📦'"></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <h2 class="text-lg font-bold leading-tight" style="color:#12343b" x-text="activeProduct?.name"></h2>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-lg" style="background:#2d545e;color:#e1b382" x-text="activeProduct?.type_name"></span>
+              <span class="text-xs" style="color:#9CA3AF" x-text="(activeProduct?.stock_qty || 0) + ' in stock'"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Variant Selection (step-by-step) -->
+      <template x-if="activeProduct?.has_variants && activeProduct?.option_types?.length > 0">
+        <div class="px-4 pt-4 space-y-4 fade-in">
+          <!-- Show each option type step -->
+          <template x-for="(ot, stepIdx) in activeProduct.option_types" :key="ot.name">
+            <div x-show="stepIdx <= variantStep">
+              <p class="text-[10px] font-bold uppercase tracking-wider mb-2 flex items-center gap-2" style="color:#6B7280">
+                <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style="background:#2d545e;color:white" x-text="stepIdx + 1"></span>
+                <span x-text="'Choose ' + ot.name"></span>
+                <template x-if="variantSelections[ot.name]">
+                  <span class="ml-auto font-bold text-xs px-2 py-0.5 rounded-lg" style="background:#e1b38222;color:#c89666" x-text="variantSelections[ot.name]"></span>
+                </template>
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <template x-for="val in (stepIdx === variantStep ? currentStepValues : ot.values)" :key="val">
+                  <button @click="selectVariantOption(val)"
+                          class="px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all active:scale-95"
+                          :style="variantSelections[ot.name] === val
+                            ? 'background:#2d545e;border-color:#e1b382;color:#e1b382'
+                            : 'background:white;border-color:#E5E7EB;color:#12343b'"
+                          x-text="val"></button>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Reset selection -->
+          <template x-if="Object.keys(variantSelections).length > 0">
+            <button @click="resetVariantSelection()" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all active:scale-95" style="color:#DC2626;background:#DC262610">
+              ↻ Reset Selection
+            </button>
+          </template>
+        </div>
+      </template>
+
+      <!-- Price & Qty Section (appears after variant is selected OR for non-variant products) -->
+      <template x-if="activeProduct && (selectedVariant || !activeProduct.has_variants)">
+        <div class="px-4 pt-5 fade-in">
+          <div class="bg-white border rounded-2xl p-4 space-y-4" style="border-color:#E5E7EB">
+            <p class="text-[10px] font-bold uppercase tracking-wider" style="color:#6B7280">Pricing & Quantity</p>
+
+            <!-- Fixed + Adjustable Price side by side -->
+            <div class="flex items-stretch gap-3">
+              <!-- Fixed Price -->
+              <div class="flex-1 p-3 rounded-xl text-center" style="background:#F8F9FB;border:1px solid #E5E7EB">
+                <div class="text-[9px] font-bold uppercase tracking-wider mb-1" style="color:#9CA3AF">Fixed Price</div>
+                <div class="text-lg font-bold font-mono tabular" style="color:#9CA3AF"
+                     x-text="'KES ' + Number(selectedVariant ? selectedVariant.price : activeProduct.price).toLocaleString()"></div>
+              </div>
+              <!-- Adjustable Price -->
+              <div class="flex-1 p-3 rounded-xl text-center" style="background:#e1b38210;border:2px solid #e1b382">
+                <div class="text-[9px] font-bold uppercase tracking-wider mb-1" style="color:#c89666">Sell Price</div>
+                <input type="number"
+                       x-model.number="detailSalePrice"
+                       x-init="$watch('selectedVariant', v => { if(v) detailSalePrice = v.price; })"
+                       class="w-full text-lg font-bold font-mono tabular text-center bg-transparent border-none outline-none focus:ring-0"
+                       style="color:#2d545e">
+              </div>
+            </div>
+
+            <!-- Quantity -->
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold" style="color:#6B7280">Quantity</span>
+              <div class="flex items-center rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">
+                <button @click="detailQty = Math.max(1, detailQty - 1)" class="w-10 h-10 flex items-center justify-center active:scale-90 text-lg font-bold" style="color:#6B7280">−</button>
+                <span class="w-10 text-center font-bold text-base tabular" style="color:#12343b" x-text="detailQty"></span>
+                <button @click="detailQty++" class="w-10 h-10 flex items-center justify-center active:scale-90 text-lg font-bold" style="color:#2d545e">+</button>
+              </div>
+            </div>
+
+            <!-- Dynamic Line Total -->
+            <div class="flex items-center justify-between pt-3 border-t" style="border-color:#E5E7EB">
+              <span class="text-sm font-semibold" style="color:#6B7280">Line Total</span>
+              <span class="text-xl font-bold font-mono tabular" style="color:#2d545e" x-text="'KES ' + (detailSalePrice * detailQty).toLocaleString()"></span>
+            </div>
+          </div>
+
+          <!-- Add to Cart Button -->
+          <button @click="
+            const item = selectedVariant
+              ? { id: selectedVariant.id, is_variant: true, parent_product: activeProduct.id, name: selectedVariant.name, price: selectedVariant.price, sale_price: detailSalePrice, stock_qty: selectedVariant.stock_qty, image: activeProduct.image }
+              : { id: activeProduct.id, is_variant: false, parent_product: activeProduct.id, name: activeProduct.name, price: activeProduct.price, sale_price: detailSalePrice, stock_qty: activeProduct.stock_qty, image: activeProduct.image };
+            addToCart({...item, sale_price: detailSalePrice}, detailQty);
+            posView = 'shop'; activeProduct = null; resetVariantSelection();"
+                  class="btn w-full h-14 mt-4 text-base font-semibold rounded-2xl transition-all active:scale-[0.98]"
+                  style="background:#2d545e;color:white">
+            <span class="flex items-center gap-2">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              Add to Cart
+            </span>
+          </button>
+        </div>
+      </template>
+
+      <!-- Existing Cart Items (shown on detail page too) -->
+      <template x-if="itemCount > 0">
+        <div class="px-4 pt-6 fade-in">
+          <p class="text-[10px] font-bold uppercase tracking-wider mb-2" style="color:#6B7280">
+            Cart · <span x-text="itemCount"></span> items
+          </p>
+          <div class="bg-white border rounded-2xl overflow-hidden" style="border-color:#E5E7EB">
+            <template x-for="(item, idx) in cart.items" :key="item.id">
+              <div class="flex items-center gap-2 px-3 py-2.5 border-b last:border-0" style="border-color:#F3F4F6">
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs font-semibold truncate" style="color:#12343b" x-text="item.name"></div>
+                </div>
+                <span class="text-[10px] font-mono" style="color:#9CA3AF" x-text="'×' + item.qty"></span>
+                <span class="text-xs font-bold font-mono tabular" style="color:#2d545e" x-text="'KES ' + ((item.sale_price || item.price) * item.qty).toLocaleString()"></span>
+                <button @click="removeItem(item.id)" class="w-6 h-6 flex items-center justify-center rounded-lg active:scale-90" style="color:#DC2626">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </template>
+          </div>
+
+          <!-- Proceed to Payment -->
+          <button @click="posView = 'payment'"
+                  class="btn w-full h-14 mt-4 text-base font-semibold rounded-2xl transition-all active:scale-[0.98]"
+                  style="background:#16A34A;color:white">
+            <span class="flex items-center gap-3">
+              Proceed to Payment
+              <span class="font-mono tabular" x-text="'KES ' + cartTotal.toLocaleString()"></span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </span>
+          </button>
+        </div>
+      </template>
+
+    </div>
+  </div>
+
+  <!-- ═══════ VIEW 3: PAYMENT ═══════ -->
+  <div x-show="posView === 'payment'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background: #F8F9FB">
     <!-- Header -->
     <div class="px-5 py-4 bg-white border-b flex items-center justify-between" style="border-color: #E5E7EB">
       <div class="flex items-center gap-3">
@@ -176,6 +298,39 @@ window.allProducts = [
     </div>
 
     <div class="flex-1 overflow-auto ns p-5 max-w-lg mx-auto w-full">
+
+      <!-- Cart Summary with editable prices -->
+      <p class="text-[10px] font-semibold uppercase tracking-wider mb-2" style="color:#6B7280">Order Summary</p>
+      <div class="bg-white border rounded-2xl overflow-hidden mb-6" style="border-color:#E5E7EB">
+        <template x-for="(item, idx) in cart.items" :key="item.id">
+          <div class="flex items-center gap-2 px-3 py-3 border-b last:border-0" style="border-color:#F3F4F6">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold truncate" style="color:#12343b" x-text="item.name"></div>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-[10px] font-mono" style="color:#9CA3AF" x-text="'Fixed: KES ' + Number(item.price).toLocaleString()"></span>
+              </div>
+            </div>
+            <!-- Adjustable Price -->
+            <div class="flex flex-col items-center shrink-0">
+              <span class="text-[8px] font-bold uppercase" style="color:#e1b382">Sell@</span>
+              <input type="number" :value="item.sale_price || item.price"
+                     @change="setLinePrice(item.id, $event.target.value)"
+                     class="w-20 text-xs font-bold font-mono tabular rounded-lg px-1.5 py-1 text-center focus:outline-none"
+                     style="color:#2d545e;background:#F8F9FB;border:1px solid #E5E7EB">
+            </div>
+            <!-- Qty -->
+            <div class="flex items-center rounded-lg shrink-0" style="background:#F8F9FB;border:1px solid #E5E7EB">
+              <button @click="updateQty(item.id,-1)" class="w-7 h-7 flex items-center justify-center active:scale-90" style="color:#6B7280">−</button>
+              <span class="w-5 text-center font-bold text-xs tabular" style="color:#12343b" x-text="item.qty"></span>
+              <button @click="updateQty(item.id,1)" class="w-7 h-7 flex items-center justify-center active:scale-90" style="color:#2d545e">+</button>
+            </div>
+            <!-- Line total -->
+            <span class="font-bold text-xs font-mono tabular shrink-0 min-w-[55px] text-right" style="color:#2d545e" x-text="'KES ' + ((item.sale_price||item.price)*item.qty).toLocaleString()"></span>
+          </div>
+        </template>
+      </div>
+
+      <!-- Payment Method -->
       <p class="text-[10px] font-semibold uppercase tracking-wider mb-2" style="color:#6B7280">Payment Method</p>
       <div class="grid grid-cols-2 gap-3 mb-6">
         <template x-for="m in [{key:'cash',icon:'💵',label:'Cash'},{key:'mpesa',icon:'📱',label:'M-Pesa'},{key:'card',icon:'💳',label:'Card'},{key:'split',icon:'✂️',label:'Split'}]" :key="m.key">
@@ -222,7 +377,7 @@ window.allProducts = [
         </div>
       </template>
 
-      <!-- Checkout Execute Button -->
+      <!-- Checkout -->
       <button @click="checkoutLoading=true;
                 fetch('{% url 'pos:checkout' %}', {
                   method:'POST',
