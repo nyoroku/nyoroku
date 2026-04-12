@@ -75,7 +75,7 @@
                         <input type="hidden" name="image" id="emoji-input" value="📦">
                         <div class="flex-grow min-w-0">
                             <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: #6B7280">Product Name</label>
-                            <input type="text" name="name" x-model="editForm.name" required placeholder="Milk, Bread, etc." 
+                            <input type="text" name="name" x-model="editForm.name" required placeholder="T-Shirt, Denim Jacket, etc." 
                                    class="w-full bg-transparent border-none p-0 text-base font-bold focus:ring-0 outline-none placeholder:opacity-40" style="color: #12343b">
                         </div>
                     </div>
@@ -119,12 +119,7 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Barcode / SKU</label>
-                        <input type="text" name="barcode" x-model="editForm.barcode" placeholder="Optional — auto-generated if blank" 
-                               class="w-full rounded-xl px-4 py-3 text-sm font-mono medium focus:outline-none focus:ring-2"
-                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
-                    </div>
+
 
                     <!-- Modern Variant Manager -->
                     {% include 'catalogue/partials/manage_variants.html' %}
@@ -149,7 +144,7 @@
         return {
             addModal: false,
             isEdit: false,
-            editForm: { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', barcode: '', image: '📦', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
+            editForm: { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
 
             addOption() {
                 if (this.editForm.options.length >= 3) return;
@@ -172,7 +167,6 @@
                     price: this.editForm.price || 0,
                     cost_price: this.editForm.cost_price || 0,
                     stock_qty: 0,
-                    barcode: '',
                     isManual: true
                 });
             },
@@ -198,8 +192,7 @@
                         options: combinedOptions,
                         price: this.editForm.price || 0,
                         cost_price: this.editForm.cost_price || 0,
-                        stock_qty: 0,
-                        barcode: ''
+                        stock_qty: 0
                     };
                 });
                 this.editForm.variants = [...autoVariants, ...manualVariants];
@@ -207,11 +200,11 @@
 
             openAdd() { 
                 this.isEdit = false; 
-                this.editForm = { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', barcode: '', image: '📦', options: [], variants: [] }; 
+                this.editForm = { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] }; 
                 const catEl = document.querySelector('[name=category]');
                 if (catEl && catEl.options.length > 0) this.editForm.category = catEl.options[0].value;
-                document.getElementById('emoji-input').value = '📦'; 
-                document.getElementById('emoji-display').innerText = '📦'; 
+                document.getElementById('emoji-input').value = '👕'; 
+                document.getElementById('emoji-display').innerText = '👕'; 
                 this.addModal = true; 
             },
             openEdit(p, rawVariants=[], options=[]) { 
@@ -221,8 +214,8 @@
                     variants: rawVariants, 
                     options: options.map(opt => ({ ...opt, rawValues: opt.values.join(', ') })) 
                 }; 
-                document.getElementById('emoji-input').value = p.image || '📦'; 
-                document.getElementById('emoji-display').innerText = p.image || '📦'; 
+                document.getElementById('emoji-input').value = p.image || '👕'; 
+                document.getElementById('emoji-display').innerText = p.image || '👕'; 
                 this.addModal = true; 
             },
             submitForm(e) {
@@ -233,7 +226,7 @@
         }
     }
 
-    const emojis = ['📦', '🍞', '🥛', '🥤', '🍎', '🥩', '🥚', '🧂', '🧼', '🧀', '🍗', '🥪', '🍺', '🍫', '🧴', '💄', '💊', '🥫', '🍕', '☕'];
+    const emojis = ['👕', '👖', '👗', '🧥', '👚', '🩳', '👙', '👔', '🧢', '👒', '🧣', '🧤', '🧦', '🥾', '👟', '👠', '👜', '🎒', '👓', '🕶️'];
     document.getElementById('emoji-display').addEventListener('click', function() {
         const current = this.innerText;
         const nextIndex = (emojis.indexOf(current) + 1) % emojis.length;

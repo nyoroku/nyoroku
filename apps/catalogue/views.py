@@ -42,7 +42,6 @@ def add_product(request):
     price = request.POST.get('price')
     cost_price = request.POST.get('cost_price')
     stock_qty = request.POST.get('stock_qty')
-    barcode = request.POST.get('barcode', '')
     image = request.POST.get('image', '📦')
 
     category = get_object_or_404(Category, id=category_id)
@@ -56,7 +55,6 @@ def add_product(request):
         price=price,
         cost_price=cost_price or None,
         stock_qty=stock_qty or 0,
-        barcode=barcode,
         image=image,
         approved=is_approved,
         pending_by=request.user if not is_approved else None
@@ -104,7 +102,6 @@ def add_product(request):
                         options=v.get('options', {}),
                         price_override=price_val,
                         cost_price=variant_cost,
-                        barcode=v.get('barcode') or None,
                         stock_qty=int(v.get('stock_qty', 0)),
                         reorder_level=5
                     )
@@ -131,7 +128,6 @@ def edit_product(request):
     product.price = request.POST.get('price')
     cost_price = request.POST.get('cost_price')
     product.cost_price = cost_price if cost_price else None
-    product.barcode = request.POST.get('barcode', '')
     product.image = request.POST.get('image', '📦')
     
     # If edited by a non-admin, force it to pending mode again
@@ -188,7 +184,6 @@ def edit_product(request):
                             variant_obj.options = v.get('options', {})
                             variant_obj.price_override = price_val
                             variant_obj.cost_price = variant_cost
-                            variant_obj.barcode = v.get('barcode') or None
                             variant_obj.stock_qty = int(v.get('stock_qty', 0))
                             variant_obj.save()
                     else:
@@ -197,7 +192,6 @@ def edit_product(request):
                             options=v.get('options', {}),
                             price_override=price_val,
                             cost_price=variant_cost,
-                            barcode=v.get('barcode') or None,
                             stock_qty=int(v.get('stock_qty', 0)),
                             reorder_level=5
                         )

@@ -48,7 +48,6 @@ class Product(models.Model):
     stock_qty = models.IntegerField(default=0)
     reorder_level = models.IntegerField(default=5)
     has_variants = models.BooleanField(default=False)
-    barcode = models.CharField(max_length=100, blank=True, unique=True, null=True)
     image = models.CharField(max_length=10, default='📦')  # Emoji string
 
     approved = models.BooleanField(default=False)
@@ -70,8 +69,6 @@ class Product(models.Model):
         super().save(update_fields=['stock_qty'])
 
     def save(self, *args, **kwargs):
-        if not self.barcode:
-            self.barcode = str(uuid.uuid4().int)[:12]
         super().save(*args, **kwargs)
 
     @property
@@ -121,13 +118,10 @@ class ProductVariant(models.Model):
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     stock_qty = models.IntegerField(default=0)
     reorder_level = models.IntegerField(default=5)
-    barcode = models.CharField(max_length=100, blank=True, unique=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if not self.barcode:
-            self.barcode = str(uuid.uuid4().int)[:12]
         super().save(*args, **kwargs)
         self.product.sync_stock()
 

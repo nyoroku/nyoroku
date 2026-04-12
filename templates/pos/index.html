@@ -89,19 +89,10 @@ window.allProducts = [
   <!-- ═══════ VIEW: CATEGORIES LIST ═══════ -->
   <div x-show="posView === 'categories'" x-transition class="flex-1 overflow-auto ns" style="background: #F8F9FB">
     <div class="divide-y" style="border-color: #E5E7EB">
-      <!-- All Products -->
-      <button type="button"
-              @click="posView='items'; selectedCategoryName='All Products'; selectedSubCatName='';
-                      document.getElementById('cat-input').value='all';
-                      htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'all',q:''}})"
-              class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background: #2d545e22">🛍️</div>
-        <div class="flex-1">
-          <h3 class="text-base font-semibold" style="color: #12343b">All Products</h3>
-          <p class="text-sm" style="color: #6B7280">Browse everything</p>
-        </div>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-      </button>
+      <!-- Header -->
+      <div class="px-5 py-4 bg-white border-b" style="border-color: #E5E7EB">
+        <h2 class="font-bold text-xl" style="color: #12343b">Available</h2>
+      </div>
 
       {% for cat in categories %}
       <div>
