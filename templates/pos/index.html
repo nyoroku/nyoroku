@@ -31,7 +31,8 @@ window.allProducts = [
 <div x-data="{
   posView: '{{ active_category|default:'categories' }}' === 'all' || '{{ active_category|default:'categories' }}' === 'categories' ? 'categories' : 'items',
   selectedCategoryName: '',
-  selectedSubCatName: ''
+  selectedSubCatName: '',
+  activeSubCats: []
 }" class="flex flex-col" style="height:calc(100vh - 56px - 64px)">
 
   <!-- TOP BAR: Search (only shown in items view) -->
@@ -39,7 +40,10 @@ window.allProducts = [
     <div class="flex items-center gap-3">
       <!-- Back button (when in subcategories or items) -->
       <button x-show="posView !== 'categories'" x-cloak
-              @click="if(posView === 'items') { posView = 'categories' } else { posView = 'categories' }"
+              @click="if(posView === 'items') { 
+                        if(activeSubCats.length > 0 && selectedSubCatName) { posView = 'subcategories' } 
+                        else { posView = 'categories'; activeSubCats=[]; }
+                      } else { posView = 'categories'; activeSubCats=[]; selectedSubCatName=''; }"
               class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:scale-90 transition-all"
               style="background: rgba(255,255,255,0.15); color: white">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
@@ -100,44 +104,66 @@ window.allProducts = [
       </button>
 
       {% for cat in categories %}
-      <div x-data="{showSubs: false}">
+      <div>
         <button type="button"
-                @click="{% if cat.subcategories.all %}showSubs = !showSubs{% else %}posView='items'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName='';
+                @click="{% if cat.subcategories.all %}
+                        posView='subcategories'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName='';
+                        activeSubCats = [
+                          {% for sub in cat.subcategories.all %}
+                            { id: '{{ sub.id }}', name: '{{ sub.name|escapejs }}', count: '{{ sub.products.count|default:0 }}' }{% if not forloop.last %},{% endif %}
+                          {% endfor %}
+                        ];
+                        {% else %}posView='items'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName=''; activeSubCats=[];
                         document.getElementById('cat-input').value='{{ cat.id }}';
                         htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'{{ cat.id }}',q:''}}){% endif %}"
                 class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
           <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background: #e1b38222">📂</div>
           <div class="flex-1">
             <h3 class="text-base font-semibold" style="color: #12343b">{{ cat.name }}</h3>
-            {% if cat.subcategories.all %}<p class="text-sm" style="color: #6B7280">{{ cat.subcategories.count }} subcategories</p>{% endif %}
           </div>
-          {% if cat.subcategories.all %}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5" class="transition-transform" :class="showSubs ? 'rotate-90' : ''"><path d="m9 18 6-6-6-6"/></svg>
-          {% else %}
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-          {% endif %}
         </button>
-
-        <!-- Subcategories -->
-        {% if cat.subcategories.all %}
-        <div x-show="showSubs" x-cloak x-transition class="border-t" style="background: #F8F9FB; border-color: #E5E7EB">
-          {% for sub in cat.subcategories.all %}
-          <button type="button"
-                  @click="posView='items'; selectedCategoryName='{{ cat.name|escapejs }}'; selectedSubCatName='{{ sub.name|escapejs }}';
-                          document.getElementById('cat-input').value='{{ sub.id }}';
-                          htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:'{{ sub.id }}',q:''}})"
-                  class="cat-row flex items-center gap-4 w-full text-left pl-12 pr-5 py-3 hover:bg-white transition-colors">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style="background: #2d545e15">📁</div>
-            <div class="flex-1">
-              <h3 class="text-sm font-semibold" style="color: #12343b">{{ sub.name }}</h3>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-          </button>
-          {% endfor %}
-        </div>
-        {% endif %}
       </div>
       {% endfor %}
+    </div>
+  </div>
+
+  <!-- ═══════ VIEW: SUBCATEGORIES LIST ═══════ -->
+  <div x-show="posView === 'subcategories'" x-transition class="flex-1 overflow-auto ns" style="background: #F8F9FB">
+    <div class="px-5 py-4 border-b bg-white" style="border-color: #E5E7EB">
+      <h2 class="font-bold text-xl" style="color: #12343b" x-text="selectedCategoryName"></h2>
+      <p class="text-sm" style="color: #6B7280">Select a subcategory</p>
+    </div>
+    <div class="divide-y" style="border-color: #E5E7EB">
+      <!-- "All in Category" option -->
+      <button type="button"
+              @click="posView='items'; selectedSubCatName='All';
+                      let catId = '{{ categories.0.id }}'; // fallback
+                      {% for cat in categories %}if(selectedCategoryName === '{{ cat.name|escapejs }}') { catId = '{{ cat.id }}'; }{% endfor %}
+                      document.getElementById('cat-input').value = catId;
+                      htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:catId,q:''}})"
+              class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl" style="background: #2d545e22">🛍️</div>
+        <div class="flex-1">
+          <h3 class="text-base font-semibold" style="color: #12343b">All in <span x-text="selectedCategoryName"></span></h3>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+
+      <template x-for="sub in activeSubCats" :key="sub.id">
+        <button type="button"
+                @click="posView='items'; selectedSubCatName=sub.name;
+                        document.getElementById('cat-input').value=sub.id;
+                        htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:sub.id,q:''}})"
+                class="cat-row flex items-center gap-4 w-full text-left px-5 py-4 bg-white hover:bg-hover transition-colors">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style="background: #2d545e15">📁</div>
+          <div class="flex-1">
+            <h3 class="text-base font-semibold" style="color: #12343b" x-text="sub.name"></h3>
+            <p class="text-sm" style="color: #6B7280" x-text="sub.count + ' items'"></p>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </template>
     </div>
   </div>
 
