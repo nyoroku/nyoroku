@@ -121,25 +121,36 @@ window.allProducts = [
 
   <!-- ═══════ VIEW: PRODUCT LIST ═══════ -->
   <div x-show="posView === 'items'" x-transition class="flex-1 flex flex-col overflow-hidden ns" style="background: #F8F9FB">
-    <!-- Inline Subcategory Filters -->
-    <div x-show="activeSubCats.length > 0" x-cloak class="shrink-0 overflow-x-auto no-scrollbar border-b px-4 py-3 flex items-center gap-2" style="background: white; border-color: #E5E7EB">
-      <button @click="selectedSubCatName='All';
-                      let catId = '{{ categories.0.id }}'; // fallback
-                      {% for cat in categories %}if(selectedCategoryName === '{{ cat.name|escapejs }}') { catId = '{{ cat.id }}'; }{% endfor %}
-                      document.getElementById('cat-input').value = catId;
-                      htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:catId,q:''}})"
-              class="px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border active:scale-95"
-              :style="selectedSubCatName === 'All' ? 'background: #2d545e; color: white; border-color: #2d545e' : 'background: #F8F9FB; color: #6B7280; border-color: #E5E7EB'">
-        All
-      </button>
-      <template x-for="sub in activeSubCats" :key="sub.id">
-        <button @click="selectedSubCatName=sub.name;
-                        document.getElementById('cat-input').value=sub.id;
-                        htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:sub.id,q:''}})"
-                class="px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border active:scale-95"
-                :style="selectedSubCatName === sub.name ? 'background: #2d545e; color: white; border-color: #2d545e' : 'background: #F8F9FB; color: #6B7280; border-color: #E5E7EB'"
-                x-text="sub.name"></button>
-      </template>
+    <!-- Vertical Subcategory Filters -->
+    <div x-show="activeSubCats.length > 0" x-cloak class="shrink-0 border-b px-4 py-4 bg-white" style="border-color: #E5E7EB">
+      <h3 class="font-bold text-[10px] uppercase tracking-wider mb-2" style="color: #6B7280">Subcategories</h3>
+      <div class="flex flex-col gap-2 max-h-40 overflow-y-auto ns">
+        <label class="flex items-center gap-3 cursor-pointer p-2 rounded-xl border transition-all"
+               :style="selectedSubCatName === 'All' ? 'background: #2d545e15; border-color: #2d545e' : 'background: #F8F9FB; border-color: transparent'">
+          <input type="radio" name="subcat_mobile" value="All"
+                 @change="selectedSubCatName='All';
+                          let catId = '{{ categories.0.id }}'; // fallback
+                          {% for cat in categories %}if(selectedCategoryName === '{{ cat.name|escapejs }}') { catId = '{{ cat.id }}'; }{% endfor %}
+                          document.getElementById('cat-input').value = catId;
+                          htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:catId,q:''}})"
+                 :checked="selectedSubCatName === 'All'"
+                 class="w-4 h-4 text-[#2d545e] border-gray-300 focus:ring-[#2d545e]">
+          <span class="font-semibold text-sm" style="color: #12343b">All Items</span>
+        </label>
+        
+        <template x-for="sub in activeSubCats" :key="sub.id">
+          <label class="flex items-center gap-3 cursor-pointer p-2 rounded-xl border transition-all"
+                 :style="selectedSubCatName === sub.name ? 'background: #2d545e15; border-color: #2d545e' : 'background: #F8F9FB; border-color: transparent'">
+            <input type="radio" name="subcat_mobile" :value="sub.name"
+                   @change="selectedSubCatName=sub.name;
+                            document.getElementById('cat-input').value=sub.id;
+                            htmx.ajax('GET','{% url 'pos:index' %}',{target:'#product-list',values:{category:sub.id,q:''}})"
+                   :checked="selectedSubCatName === sub.name"
+                   class="w-4 h-4 text-[#2d545e] border-gray-300 focus:ring-[#2d545e]">
+            <span class="font-semibold text-sm" style="color: #12343b" x-text="sub.name"></span>
+          </label>
+        </template>
+      </div>
     </div>
 
     <!-- Grid -->
@@ -292,9 +303,97 @@ window.allProducts = [
       </button>
     </div>
   </div>
-</div>
+  <!-- ═══════ VIEW: PAYMENT ═══════ -->
+  <div x-show="posView === 'payment'" x-transition class="flex-1 flex flex-col overflow-hidden ns" style="background: #F8F9FB">
+    <!-- Header -->
+    <div class="px-5 py-4 bg-white border-b flex items-center justify-between" style="border-color: #E5E7EB">
+      <div class="flex items-center gap-3">
+        <button @click="posView='items'" class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition-all">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12343b" stroke-width="2.5"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
+        </button>
+        <h2 class="font-bold text-xl" style="color: #12343b">Complete Payment</h2>
+      </div>
+      <div class="text-right">
+        <div class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Grand Total</div>
+        <div class="font-bold text-2xl font-mono tabular leading-none" style="color:#12343b">KES <span x-text="cartTotal.toLocaleString()"></span></div>
+      </div>
+    </div>
+    
+    <div class="flex-1 overflow-auto ns p-5 max-w-lg mx-auto w-full">
+      <p class="text-[10px] font-semibold uppercase tracking-wider mb-2" style="color:#6B7280">Payment Method</p>
+      <div class="grid grid-cols-2 gap-3 mb-6">
+        <template x-for="m in [{key:'cash',icon:'💵',label:'Cash'},{key:'mpesa',icon:'📱',label:'M-Pesa'},{key:'card',icon:'💳',label:'Card'},{key:'split',icon:'✂️',label:'Split'}]" :key="m.key">
+          <button @click="payment=m.key; if(m.key==='split' && splitPayments.length===0) splitPayments.push({method:'cash',amount:0})"
+                  class="flex flex-col items-center gap-2 p-4 border rounded-2xl transition-all min-h-[80px]"
+                  :style="payment === m.key ? 'background:#2d545e15;border-color:#2d545e;color:#12343b' : 'background:white;border-color:#E5E7EB;color:#6B7280'">
+            <span class="text-2xl" x-text="m.icon"></span>
+            <span class="font-semibold text-sm" x-text="m.label"></span>
+          </button>
+        </template>
+      </div>
 
-<!-- ═══════ CART DRAWER ═══════ -->
+      <template x-if="payment==='split'">
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Split Details</p>
+            <button @click="splitPayments.push({method:'cash',amount:0})" class="btn px-3 py-1.5 text-xs rounded-xl" style="background:#2d545e;color:white">+ Add</button>
+          </div>
+          <div class="space-y-2 mb-3">
+            <template x-for="(sp, idx) in splitPayments" :key="idx">
+              <div class="flex items-center gap-2 p-2 rounded-xl" style="background:white;border:1px solid #E5E7EB">
+                <select x-model="sp.method" class="text-sm font-semibold rounded-lg px-2 py-1.5 focus:outline-none" style="background:#F8F9FB;border:1px solid #E5E7EB;color:#12343b">
+                  <option value="cash">Cash</option>
+                  <option value="mpesa">M-Pesa</option>
+                  <option value="card">Card</option>
+                </select>
+                <input type="number" x-model.number="sp.amount" placeholder="0" class="flex-1 text-right font-bold text-sm font-mono rounded-lg px-2 py-1.5 focus:outline-none" style="background:#F8F9FB;border:1px solid #E5E7EB;color:#2d545e">
+                <button @click="splitPayments.splice(idx,1)" style="color:#DC2626" class="p-1 active:scale-90">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+             </button>
+              </div>
+            </template>
+          </div>
+          <div class="p-4 rounded-xl" style="background:white;border:1px solid #E5E7EB">
+            <div class="flex justify-between text-sm font-semibold mb-2">
+              <span style="color:#6B7280">Collected Amount</span>
+              <span class="font-mono tabular" :style="totalPaid >= cartTotal ? 'color:#16A34A' : 'color:#DC2626'" x-text="'KES ' + totalPaid.toLocaleString()"></span>
+            </div>
+            <div class="w-full h-2 rounded-full overflow-hidden" style="background:#F8F9FB">
+              <div class="h-full transition-all duration-300 rounded-full"
+                   :style="`width:${Math.min(100,cartTotal>0?(totalPaid/cartTotal)*100:0)}%;background:${totalPaid >= cartTotal ? '#16A34A' : '#F59E0B'}`"></div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Checkout Execute Button -->
+      <button @click="checkoutLoading=true;
+                fetch('{% url 'pos:checkout' %}', {
+                  method:'POST',
+                  headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+                  body: JSON.stringify({
+                    items: cart.items.map(i => ({...i, sale_price: i.sale_price || i.price})),
+                    payment_method: payment,
+                    split_payments: payment==='split' ? splitPayments : [],
+                    coupon_code: couponApplied ? couponCode : ''
+                  })
+                })
+                .then(r => r.text())
+                .then(html => { document.getElementById('modal-container').innerHTML = html; checkoutLoading = false; clearCart(); })
+                .catch(() => { checkoutLoading = false })"
+              :disabled="checkoutLoading || itemCount===0 || (payment==='split' && totalPaid<cartTotal)"
+              class="btn w-full h-14 text-base font-semibold rounded-2xl transition-all disabled:opacity-40"
+              style="background:#16A34A;color:white">
+        <span x-show="!checkoutLoading" class="flex items-center gap-3">
+          <span>Complete Sale</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </span>
+        <span x-show="checkoutLoading" class="animate-pulse">Processing...</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════ CART DRAWER ═══════ -->
 <div x-show="cart.open" x-cloak class="fixed inset-0 z-[200] flex items-end sm:items-center justify-center">
   <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="cart.open=false" x-transition.opacity></div>
 
@@ -320,20 +419,8 @@ window.allProducts = [
       <button @click="clearCart()" class="font-semibold text-sm" style="color:#DC2626">Clear</button>
     </div>
 
-    <!-- Tab nav -->
-    <div class="flex gap-1 mx-4 mt-3 p-1 rounded-xl shrink-0" style="background:#F8F9FB">
-      <button @click="cartView='items'"
-              class="flex-1 py-2.5 font-semibold text-sm rounded-lg transition-all text-center"
-              :style="cartView === 'items' ? 'background:#2d545e;color:white' : 'color:#6B7280'">
-        Items <span x-show="itemCount>0" x-text="itemCount" class="text-xs px-1.5 py-0.5 rounded-full ml-1 tabular" :style="cartView === 'items' ? 'background:rgba(255,255,255,0.2)' : 'background:#2d545e;color:white'"></span>
-      </button>
-      <button @click="cartView='payment'"
-              class="flex-1 py-2.5 font-semibold text-sm rounded-lg transition-all text-center"
-              :style="cartView === 'payment' ? 'background:#2d545e;color:white' : 'color:#6B7280'">Payment</button>
-    </div>
-
     <!-- ITEMS -->
-    <div x-show="cartView==='items'" x-transition class="flex-1 overflow-auto ns px-4 py-3">
+    <div class="flex-1 overflow-auto ns px-4 py-3">
       <template x-for="(item, idx) in cart.items" :key="item.id">
         <div class="flex items-start gap-3 py-3 border-b last:border-0" style="border-color:#E5E7EB">
           <div class="w-11 h-11 shrink-0 flex items-center justify-center text-xl rounded-xl" style="background:#e1b38222;border:1px solid #e1b38244" x-text="item.image || '📦'"></div>
@@ -390,83 +477,24 @@ window.allProducts = [
       </template>
     </div>
 
-    <!-- PAYMENT -->
-    <div x-show="cartView==='payment'" x-transition class="flex-1 overflow-auto ns px-4 py-4">
-      <p class="text-sm font-semibold mb-3" style="color:#6B7280">Payment Method</p>
-      <div class="grid grid-cols-2 gap-3 mb-5">
-        <template x-for="m in [{key:'cash',icon:'💵',label:'Cash'},{key:'mpesa',icon:'📱',label:'M-Pesa'},{key:'card',icon:'💳',label:'Card'},{key:'split',icon:'✂️',label:'Split'}]" :key="m.key">
-          <button @click="payment=m.key; if(m.key==='split' && splitPayments.length===0) splitPayments.push({method:'cash',amount:0})"
-                  class="flex flex-col items-center gap-2 p-4 border rounded-2xl transition-all min-h-[80px]"
-                  :style="payment === m.key ? 'background:#2d545e15;border-color:#2d545e;color:#12343b' : 'background:white;border-color:#E5E7EB;color:#6B7280'">
-            <span class="text-2xl" x-text="m.icon"></span>
-            <span class="font-semibold text-sm" x-text="m.label"></span>
-          </button>
-        </template>
-      </div>
-
-      <template x-if="payment==='split'">
-        <div>
-          <div class="flex items-center justify-between mb-3">
-            <p class="text-sm font-semibold" style="color:#6B7280">Split Details</p>
-            <button @click="splitPayments.push({method:'cash',amount:0})" class="btn px-3 py-1.5 text-xs" style="background:#2d545e;color:white">+ Add</button>
-          </div>
-          <div class="space-y-2 mb-4">
-            <template x-for="(sp, idx) in splitPayments" :key="idx">
-              <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">
-                <select x-model="sp.method" class="text-sm font-semibold rounded-lg px-2 py-1.5" style="background:white;border:1px solid #E5E7EB;color:#12343b">
-                  <option value="cash">Cash</option>
-                  <option value="mpesa">M-Pesa</option>
-                  <option value="card">Card</option>
-                </select>
-                <input type="number" x-model.number="sp.amount" placeholder="0" class="flex-1 text-right font-bold text-sm font-mono rounded-lg px-2 py-1.5" style="background:white;border:1px solid #E5E7EB;color:#2d545e">
-                <button @click="splitPayments.splice(idx,1)" style="color:#DC2626" class="p-1">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-              </div>
-            </template>
-          </div>
-          <div class="p-3 rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">
-            <div class="flex justify-between text-sm font-semibold mb-2">
-              <span style="color:#6B7280">Collected</span>
-              <span :style="totalPaid >= cartTotal ? 'color:#16A34A' : 'color:#DC2626'" x-text="'KES ' + totalPaid.toLocaleString()"></span>
-            </div>
-            <div class="w-full h-2 rounded-full overflow-hidden" style="background:#E5E7EB">
-              <div class="h-full transition-all duration-300 rounded-full"
-                   :style="`width:${Math.min(100,cartTotal>0?(totalPaid/cartTotal)*100:0)}%;background:${totalPaid >= cartTotal ? '#16A34A' : '#F59E0B'}`"></div>
-            </div>
-          </div>
-        </div>
-      </template>
-    </div>
-
     <!-- FOOTER -->
     <div class="shrink-0 p-5 bg-white border-t" style="border-color:#E5E7EB">
       <div class="flex items-center justify-between mb-4">
         <div>
-          <div class="text-xs font-semibold uppercase tracking-wider" style="color:#6B7280">Grand Total</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Grand Total</div>
           <div class="font-bold text-3xl font-mono tabular leading-none mt-1" style="color:#12343b">KES <span x-text="cartTotal.toLocaleString()"></span></div>
         </div>
       </div>
-      <button @click="if(cartView === 'items') { cartView = 'payment'; return; }
-                checkoutLoading=true;
-                fetch('{% url 'pos:checkout' %}', {
-                  method:'POST',
-                  headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
-                  body: JSON.stringify({
-                    items: cart.items.map(i => ({...i, sale_price: i.sale_price || i.price})),
-                    payment_method: payment,
-                    split_payments: payment==='split' ? splitPayments : [],
-                    coupon_code: couponApplied ? couponCode : ''
-                  })
-                })
-                .then(r => r.text())
-                .then(html => { document.getElementById('modal-container').innerHTML = html; checkoutLoading = false; clearCart(); })
-                .catch(() => { checkoutLoading = false })"
-              :disabled="checkoutLoading || itemCount===0 || (payment==='split' && totalPaid<cartTotal)"
+      <button @click="cart.open = false; posView = 'payment';"
+              :disabled="itemCount===0"
               class="btn w-full h-14 text-base font-semibold rounded-2xl transition-all disabled:opacity-40"
-              :style="cartView === 'payment' ? 'background:#16A34A;color:white' : 'background:#2d545e;color:white'">
-        <span x-show="!checkoutLoading" class="flex items-center gap-3">
-          <span x-text="cartView === 'payment' ? 'Complete Sale' : 'Proceed to Payment'"></span>
+              style="background:#2d545e;color:white">
+        <span class="flex items-center gap-3">
+          <span>Proceed to Payment</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </span>
+      </button>
+    </div>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </span>
         <span x-show="checkoutLoading" class="animate-pulse">Processing...</span>

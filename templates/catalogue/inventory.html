@@ -1,9 +1,9 @@
-{% extends 'base.html' %}
+ZCX{% extends 'base.html' %}
 {% load static %}
 
 {% block content %}
 <div class="px-4 py-5 max-w-5xl mx-auto" x-data="inventoryState()">
-    
+
     <!-- Header & Status Tabs -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -13,18 +13,24 @@
 
         {% if user.role == 'admin' %}
         <div class="flex gap-1 p-1 rounded-xl" style="background: #F8F9FB; border: 1px solid #E5E7EB">
-            <a href="?status=all" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center"
-               style="{% if active_status == 'all' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
+            <a href="?status=all"
+                class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center"
+                style="{% if active_status == 'all' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
                 All Products
             </a>
-            <a href="?status=pending" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all relative no-underline text-center"
-               style="{% if active_status == 'pending' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
+            <a href="?status=pending"
+                class="px-4 py-2 rounded-lg text-xs font-semibold transition-all relative no-underline text-center"
+                style="{% if active_status == 'pending' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
                 Review Required
                 {% if pending_count > 0 %}
-                <span class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold" style="background: #DC2626; color: white">{{ pending_count }}</span>
+                <span
+                    class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                    style="background: #DC2626; color: white">{{ pending_count }}</span>
                 {% endif %}
             </a>
-            <a href="{% url 'catalogue:pending_actions' %}" class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center" style="color: #6B7280">
+            <a href="{% url 'catalogue:pending_actions' %}"
+                class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center"
+                style="color: #6B7280">
                 Action Queue
             </a>
         </div>
@@ -34,11 +40,14 @@
     <!-- Search bar -->
     <div class="mb-5 flex items-center rounded-xl overflow-hidden" style="background: white; border: 1px solid #E5E7EB">
         <span class="pl-4 pr-2" style="color: #9CA3AF">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+            </svg>
         </span>
         <input type="text" name="q" hx-get="{% url 'catalogue:inventory' %}" hx-trigger="input changed delay:300ms"
-               hx-target="#product-list" hx-push-url="true" placeholder="Search products..."
-               class="flex-1 py-3.5 text-sm font-medium border-none outline-none focus:ring-0" style="color: #12343b">
+            hx-target="#product-list" hx-push-url="true" placeholder="Search products..."
+            class="flex-1 py-3.5 text-sm font-medium border-none outline-none focus:ring-0" style="color: #12343b">
     </div>
 
     <!-- Product List -->
@@ -47,64 +56,81 @@
     </div>
 
     <!-- Add FAB -->
-    <button @click="openAdd()" class="fixed bottom-24 right-5 w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-lg z-30"
-            style="background: #2d545e; color: #e1b382">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    <button @click="openAdd()"
+        class="fixed bottom-24 right-5 w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-lg z-30"
+        style="background: #2d545e; color: #e1b382">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="round">
+            <path d="M5 12h14" />
+            <path d="M12 5v14" />
+        </svg>
     </button>
 
     <!-- Add Modal -->
     <div x-show="addModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div x-show="addModal" x-transition.opacity class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="addModal = false"></div>
-        
-        <div x-show="addModal" x-transition.duration.300ms 
-             class="relative w-full max-w-xl bg-white rounded-t-3xl sm:rounded-3xl shadow-modal overflow-hidden p-6 max-h-[90vh] flex flex-col">
-            
+        <div x-show="addModal" x-transition.opacity class="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            @click="addModal = false"></div>
+
+        <div x-show="addModal" x-transition.duration.300ms
+            class="relative w-full max-w-xl bg-white rounded-t-3xl sm:rounded-3xl shadow-modal overflow-hidden p-6 max-h-[90vh] flex flex-col">
+
             <div class="flex justify-between items-center mb-5 shrink-0">
-                <h3 class="font-bold text-lg" style="color: #12343b" x-text="isEdit ? 'Edit Product' : 'New Product'"></h3>
-                <button @click="addModal = false" class="p-1 active:scale-90 transition-all font-bold" style="color: #DC2626">✕</button>
+                <h3 class="font-bold text-lg" style="color: #12343b" x-text="isEdit ? 'Edit Product' : 'New Product'">
+                </h3>
+                <button @click="addModal = false" class="p-1 active:scale-90 transition-all font-bold"
+                    style="color: #DC2626">✕</button>
             </div>
 
             <div class="flex-1 overflow-auto pr-2" style="scrollbar-width: none">
-                <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'" method="POST" @submit="submitForm" class="space-y-5">
+                <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'"
+                    method="POST" @submit="submitForm" class="space-y-5">
                     {% csrf_token %}
                     <template x-if="isEdit"><input type="hidden" name="id" :value="editForm.id"></template>
-                    
+
                     <div class="flex items-center gap-4 bg-white border rounded-2xl p-4" style="border-color: #E5E7EB">
                         <div class="w-14 h-14 rounded-xl flex items-center justify-center text-3xl shrink-0 cursor-pointer shadow-sm border select-none"
-                             style="background: #F8F9FB; border-color: #E5E7EB" id="emoji-display" title="Click to change">📦</div>
+                            style="background: #F8F9FB; border-color: #E5E7EB" id="emoji-display"
+                            title="Click to change">📦</div>
                         <input type="hidden" name="image" id="emoji-input" value="📦">
                         <div class="flex-grow min-w-0">
-                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1" style="color: #6B7280">Product Name</label>
-                            <input type="text" name="name" x-model="editForm.name" required placeholder="T-Shirt, Denim Jacket, etc." 
-                                   class="w-full bg-transparent border-none p-0 text-base font-bold focus:ring-0 outline-none placeholder:opacity-40" style="color: #12343b">
+                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1"
+                                style="color: #6B7280">Product Name</label>
+                            <input type="text" name="name" x-model="editForm.name" required
+                                placeholder="T-Shirt, Denim Jacket, etc."
+                                class="w-full bg-transparent border-none p-0 text-base font-bold focus:ring-0 outline-none placeholder:opacity-40"
+                                style="color: #12343b">
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Category</label>
-                            <select name="category" x-model="editForm.category" required class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
-                                    style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
-                                <option value="" disabled>Select category...</option>
-                                {% for cat in categories %}
-                                <optgroup label="{{ cat.name }}">
-                                    <option value="{{ cat.id }}">{{ cat.name }} (Main)</option>
+                    <div>
+                        <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Category & Subcategory</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-48 overflow-y-auto p-3 rounded-xl border" style="background: #F8F9FB; border-color: #E5E7EB">
+                            {% for cat in categories %}
+                            <div>
+                                <label class="flex items-center gap-2 mb-1.5 cursor-pointer">
+                                    <input type="radio" name="category" value="{{ cat.id }}" x-model="editForm.category" required class="w-4 h-4 text-[#2d545e] bg-white border-gray-300 focus:ring-2 focus:ring-[#2d545e]">
+                                    <span class="font-bold text-sm" style="color: #12343b">{{ cat.name }} <span class="text-xs font-normal" style="color: #6B7280">(Main)</span></span>
+                                </label>
+                                <div class="pl-2 ml-2 border-l-2 space-y-2 mb-2" style="border-color: #E5E7EB">
                                     {% for sub in cat.subcategories.all %}
-                                    <option value="{{ sub.id }}">{{ sub.name }}</option>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="radio" name="category" value="{{ sub.id }}" x-model="editForm.category" required class="w-4 h-4 text-[#2d545e] bg-white border-gray-300 focus:ring-2 focus:ring-[#2d545e]">
+                                        <span class="text-sm font-medium" style="color: #6B7280">{{ sub.name }}</span>
+                                    </label>
                                     {% endfor %}
-                                </optgroup>
-                                {% endfor %}
-                            </select>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Price (KES)</label>
                             <input type="number" step="0.01" name="price" x-model="editForm.price" required placeholder="0.00" 
                                    class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
                                    style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #2d545e; --tw-ring-color: #2d545e">
                         </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Cost (KES)</label>
                             <input type="number" step="0.01" name="cost_price" x-model="editForm.cost_price" placeholder="0.00" 
@@ -113,8 +139,8 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Initial Stock</label>
-                            <input type="number" name="stock_qty" x-model="editForm.stock_qty" required
-                                   class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
+                            <input type="number" name="stock_qty" x-model="editForm.stock_qty" required placeholder="0" 
+                                   class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
                                    style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
                         </div>
                     </div>
@@ -125,12 +151,15 @@
                     {% include 'catalogue/partials/manage_variants.html' %}
 
                     <div class="pt-4 flex gap-3 shrink-0">
-                        <button type="button" @click="addModal = false" class="flex-1 py-4 rounded-xl font-semibold text-sm active:scale-95 transition-all"
-                                style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
+                        <button type="button" @click="addModal = false"
+                            class="flex-1 py-4 rounded-xl font-semibold text-sm active:scale-95 transition-all"
+                            style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
                             Cancel
                         </button>
-                        <button type="submit" class="flex-[3] py-4 rounded-xl font-semibold text-sm shadow-md active:scale-95 transition-all"
-                                style="background: #2d545e; color: white" x-text="isEdit ? 'Save Changes' : 'Create Product'">
+                        <button type="submit"
+                            class="flex-[3] py-4 rounded-xl font-semibold text-sm shadow-md active:scale-95 transition-all"
+                            style="background: #2d545e; color: white"
+                            x-text="isEdit ? 'Save Changes' : 'Create Product'">
                         </button>
                     </div>
                 </form>
@@ -181,10 +210,10 @@
                 const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
                 const optionValues = this.editForm.options.map(opt => opt.values.map(val => ({ [opt.name]: val })));
                 const permutations = this.editForm.options.length === 1 ? optionValues[0] : cartesian(...optionValues);
-                
+
                 const manualVariants = this.editForm.variants.filter(v => v.isManual);
                 const autoVariants = (this.editForm.options.length === 1 ? permutations : permutations).map(p => {
-                    const combinedOptions = Array.isArray(p) ? p.reduce((acc, curr) => ({...acc, ...curr}), {}) : p;
+                    const combinedOptions = Array.isArray(p) ? p.reduce((acc, curr) => ({ ...acc, ...curr }), {}) : p;
                     const existing = this.editForm.variants.find(v => !v.isManual && JSON.stringify(v.options) === JSON.stringify(combinedOptions));
                     if (existing) return existing;
 
@@ -198,25 +227,25 @@
                 this.editForm.variants = [...autoVariants, ...manualVariants];
             },
 
-            openAdd() { 
-                this.isEdit = false; 
-                this.editForm = { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] }; 
+            openAdd() {
+                this.isEdit = false;
+                this.editForm = { id: '', name: '', category: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] };
                 const catEl = document.querySelector('[name=category]');
                 if (catEl && catEl.options.length > 0) this.editForm.category = catEl.options[0].value;
-                document.getElementById('emoji-input').value = '👕'; 
-                document.getElementById('emoji-display').innerText = '👕'; 
-                this.addModal = true; 
+                document.getElementById('emoji-input').value = '👕';
+                document.getElementById('emoji-display').innerText = '👕';
+                this.addModal = true;
             },
-            openEdit(p, rawVariants=[], options=[]) { 
-                this.isEdit = true; 
-                this.editForm = { 
-                    ...p, 
-                    variants: rawVariants, 
-                    options: options.map(opt => ({ ...opt, rawValues: opt.values.join(', ') })) 
-                }; 
-                document.getElementById('emoji-input').value = p.image || '👕'; 
-                document.getElementById('emoji-display').innerText = p.image || '👕'; 
-                this.addModal = true; 
+            openEdit(p, rawVariants = [], options = []) {
+                this.isEdit = true;
+                this.editForm = {
+                    ...p,
+                    variants: rawVariants,
+                    options: options.map(opt => ({ ...opt, rawValues: opt.values.join(', ') }))
+                };
+                document.getElementById('emoji-input').value = p.image || '👕';
+                document.getElementById('emoji-display').innerText = p.image || '👕';
+                this.addModal = true;
             },
             submitForm(e) {
                 // Ensure JSONs are up to date!
@@ -227,7 +256,7 @@
     }
 
     const emojis = ['👕', '👖', '👗', '🧥', '👚', '🩳', '👙', '👔', '🧢', '👒', '🧣', '🧤', '🧦', '🥾', '👟', '👠', '👜', '🎒', '👓', '🕶️'];
-    document.getElementById('emoji-display').addEventListener('click', function() {
+    document.getElementById('emoji-display').addEventListener('click', function () {
         const current = this.innerText;
         const nextIndex = (emojis.indexOf(current) + 1) % emojis.length;
         this.innerText = emojis[nextIndex];

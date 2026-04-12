@@ -5,40 +5,59 @@
 
 <div class="divide-y divide-border">
   {% for product in products %}
-  <button type="button"
-          @click="openProduct('{{ product.id }}')"
-          class="product-row flex items-center gap-3 w-full text-left px-4 py-3 bg-white hover:bg-hover transition-colors">
-    
-    {# Image #}
-    <div class="relative w-14 h-14 shrink-0 flex items-center justify-center text-3xl bg-bg-main border border-border rounded-2xl">
-      {{ product.image|default:"📦" }}
-      {# In-cart indicator #}
-      <template x-if="cart.items.some(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}')">
-        <div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full ring-2 ring-white"></div>
-      </template>
+  <div class="product-row flex flex-col w-full bg-white transition-colors">
+    <div class="flex items-center gap-3 w-full text-left px-4 py-3 {% if not product.has_variants %}cursor-pointer hover:bg-hover active:bg-gray-100{% endif %}"
+         {% if not product.has_variants %}
+         @click="addToCart({ id: '{{ product.id }}', is_variant: false, name: '{{ product.name|escapejs }}', price: {{ product.price|stringformat:'f' }}, stock_qty: {{ product.stock_qty }}, image: '{{ product.image }}' }, 1)"
+         {% endif %}>
+      
+      {# Image #}
+      <div class="relative w-14 h-14 shrink-0 flex items-center justify-center text-3xl bg-bg-main border border-border rounded-2xl">
+        {{ product.image|default:"📦" }}
+        {# In-cart indicator #}
+        <template x-if="cart.items.some(i => i.id === '{{ product.id }}' || i.parent_id === '{{ product.id }}')">
+          <div class="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full ring-2 ring-white"></div>
+        </template>
+      </div>
+
+      {# Info #}
+      <div class="flex-1 min-w-0">
+        <h3 class="text-base font-semibold text-text-primary leading-tight truncate">
+          {{ product.name }}
+        </h3>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span class="text-sm text-text-secondary">{{ product.total_stock }} in stock</span>
+        </div>
+      </div>
+
+      {# Price (only if no variants, if variants price might vary) #}
+      {% if not product.has_variants %}
+      <div class="shrink-0 text-right">
+        <div class="text-lg font-bold text-primary font-mono tabular">
+          {{ product.price|floatformat:0 }}
+        </div>
+        <div class="text-xs text-text-secondary">KES</div>
+      </div>
+      {% endif %}
     </div>
 
-    {# Info #}
-    <div class="flex-1 min-w-0">
-      <h3 class="text-base font-semibold text-text-primary leading-tight truncate">
-        {{ product.name }}
-      </h3>
-      <div class="flex items-center gap-2 mt-0.5">
-        <span class="text-sm text-text-secondary">{{ product.total_stock }} in stock</span>
-        {% if product.has_variants %}
-        <span class="bg-primary/10 text-primary text-xs font-semibold px-1.5 py-0.5 rounded-md">Variants</span>
-        {% endif %}
-      </div>
+    {# Inline Variants Setup #}
+    {% if product.has_variants %}
+    <div class="px-4 pb-3 flex flex-wrap gap-2">
+      {% for v in product.variants.all %}
+      <button type="button" 
+              @click.stop="addToCart({ id: '{{ v.id }}', is_variant: true, parent_id: '{{ product.id }}', name: '{{ v.name|escapejs }}', price: {{ v.price|stringformat:'f' }}, stock_qty: {{ v.stock_qty }}, image: '{{ product.image }}' }, 1)"
+              class="flex flex-col items-center justify-center px-3 py-1.5 rounded-xl border transition-all active:scale-95"
+              style="background: #F8F9FB; border-color: #E5E7EB;">
+        <span class="text-xs font-bold" style="color: #12343b">
+          {% for key, val in v.options.items %}{{ val }}{% if not forloop.last %} · {% endif %}{% endfor %}
+        </span>
+        <span class="text-[10px] font-mono font-medium" style="color: #2d545e">KES {{ v.price|floatformat:0 }}</span>
+      </button>
+      {% endfor %}
     </div>
-
-    {# Price #}
-    <div class="shrink-0 text-right">
-      <div class="text-lg font-bold text-primary font-mono tabular">
-        {{ product.price|floatformat:0 }}
-      </div>
-      <div class="text-xs text-text-secondary">KES</div>
-    </div>
-  </button>
+    {% endif %}
+  </div>
   {% empty %}
   <div class="flex flex-col items-center justify-center py-20 opacity-30">
     <div class="text-5xl mb-4">🔍</div>
