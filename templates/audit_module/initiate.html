@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-bold mb-4" style="color: var(--primary-dark)">Initiate Stock Audit</h1>
+  <div class="bg-white rounded-2xl border border-border p-6">
+    <form method="POST" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Scope</label>
+        <select name="scope" class="w-full px-4 py-3 rounded-xl border border-border text-sm" onchange="document.getElementById('cat-field').style.display=this.value==='category'?'block':'none'; document.getElementById('subcat-field').style.display=this.value==='subcategory'?'block':'none'">
+          <option value="all">All Products</option>
+          <option value="category">Specific Category</option>
+          <option value="subcategory">Specific Sub-Category</option>
+        </select>
+      </div>
+      <div id="cat-field" style="display:none">
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Category</label>
+        <select name="category_id" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
+          {% for c in categories %}<option value="{{ c.pk }}">{{ c.icon }} {{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div id="subcat-field" style="display:none">
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sub-Category</label>
+        <select name="subcategory_id" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
+          {% for sc in subcategories %}<option value="{{ sc.pk }}">{{ sc.category.name }} › {{ sc.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sample Size</label>
+        <input type="number" name="sample_size" value="10" min="1" max="100" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
+        <p class="text-xs text-text-secondary mt-1">Products will be randomly selected (weighted towards recently moved stock)</p>
+      </div>
+      <button type="submit" class="btn btn-primary w-full text-sm">🔍 Generate Audit Sheet</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% load l10n %}
+<form hx-post="{% url 'catalogue:edit_product' %}" 
+      hx-swap="none"
+      hx-on::before-request="document.getElementById('edit-error-msg').classList.add('hidden')"
+      hx-on::after-request="if(event.detail.failed) { 
+        const msg = document.getElementById('edit-error-msg');
+        msg.innerText = event.detail.xhr.responseText;
+        msg.classList.remove('hidden');
+      }"
+      class="p-6 space-y-4">
+  {% csrf_token %}
+  <div id="edit-error-msg" class="hidden p-3 rounded-lg bg-red-50 text-red-600 text-xs font-bold border border-red-200"></div>
+  <input type="hidden" name="id" value="{{ product.pk }}">
+  
+  <div>
+    <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Product Name *</label>
+    <input type="text" name="name" value="{{ product.name }}" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Barcode</label>
+      <input type="text" name="barcode" value="{{ product.barcode|default:'' }}" placeholder="Scan or type barcode" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">SKU</label>
+      <input type="text" name="sku" value="{{ product.sku|default:'' }}" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
+    </div>
+  </div>
+  <div>
+    <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Category *</label>
+    <select name="subcategory_id" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none">
+      {% for cat in categories %}
+        {% for sub in cat.subcategories.all %}
+        <option value="{{ sub.pk }}" {% if product.subcategory_id == sub.pk %}selected{% endif %}>{{ cat.name }} &rsaquo; {{ sub.name }}</option>
+        {% endfor %}
+      {% endfor %}
+    </select>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Base Unit Label</label>
+      <input type="text" name="base_unit_label" value="{{ product.base_unit_label }}" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Base Price (KES) *</label>
+      <input type="number" name="base_unit_price" value="{{ product.base_unit_price|unlocalize }}" step="0.01" required class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
+    </div>
+  </div>
+
+  <div class="space-y-3 pt-2">
+    <div class="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Advanced Configurations</div>
+    
+    <div class="space-y-2">
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+        <input type="checkbox" name="is_kadogo" class="w-5 h-5 rounded" {% if product.is_kadogo %}checked{% endif %} onchange="document.getElementById('edit-kadogo-fields').classList.toggle('hidden')">
+        <div><div class="font-semibold text-sm">Kadogo / Fractional Sell</div><div class="text-xs text-text-secondary">Cut whole units into smaller pieces</div></div>
+      </label>
+      <div id="edit-kadogo-fields" class="{% if not product.is_kadogo %}hidden{% endif %} pl-8 space-y-4 bg-blue-50/30 p-4 rounded-xl border border-blue-100">
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Whole Label</label><input type="text" name="whole_unit_label" value="{{ product.whole_unit_label|default:'Bar' }}" class="w-full px-3 py-2 rounded-lg border border-border text-xs"></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Stock (Whole)</label><input type="number" value="{{ product.whole_unit_stock }}" readonly class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono bg-gray-50 opacity-70"></div>
+        </div>
+        
+        <div class="space-y-2">
+          <div class="text-[10px] font-bold text-blue-600 uppercase">Fragment Sizes</div>
+          {% for frag in product.fragment_sizes.all %}
+          <div class="p-3 bg-white rounded-lg border border-blue-100 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-primary">FRAGMENT #{{ forloop.counter }}</span>
+              <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" name="frag_active_{{ frag.id }}" {% if frag.is_active %}checked{% endif %} class="rounded text-primary"><span class="text-[10px] font-bold">Active</span></label>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label class="text-[10px] text-text-secondary uppercase block">Name</label><input type="text" name="frag_name_{{ frag.id }}" value="{{ frag.name }}" class="w-full px-2 py-1 rounded border border-border text-[11px]"></div>
+              <div><label class="text-[10px] text-text-secondary uppercase block">Count</label><input type="number" name="frag_count_{{ frag.id }}" value="{{ frag.fragment_count }}" class="w-full px-2 py-1 rounded border border-border text-[11px] font-mono"></div>
+              <div><label class="text-[10px] text-text-secondary uppercase block">Price</label><input type="number" name="frag_price_{{ frag.id }}" value="{{ frag.fragment_price|unlocalize }}" step="0.01" class="w-full px-2 py-1 rounded border border-border text-[11px] font-mono"></div>
+            </div>
+          </div>
+          {% endfor %}
+          
+          <div class="p-3 border border-dashed border-blue-200 rounded-lg">
+            <div class="text-[10px] font-bold text-text-secondary mb-2 uppercase">Add New Fragment Size</div>
+            <div class="grid grid-cols-3 gap-2">
+              <input type="text" name="new_frag_name" placeholder="Name" class="px-2 py-1 rounded border border-border text-[11px]">
+              <input type="number" name="new_frag_count" placeholder="Qty" class="px-2 py-1 rounded border border-border text-[11px] font-mono">
+              <input type="number" name="new_frag_price" placeholder="Price" step="0.01" class="px-2 py-1 rounded border border-border text-[11px] font-mono">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+        <input type="checkbox" name="split_enabled" class="w-5 h-5 rounded" {% if product.split_enabled %}checked{% endif %} onchange="document.getElementById('edit-split-fields').classList.toggle('hidden')">
+        <div><div class="font-semibold text-sm">Split / Piece Sell</div><div class="text-xs text-text-secondary">Sell individual units from a pack (Legacy)</div></div>
+      </label>
+      <div id="edit-split-fields" class="{% if not product.split_enabled %}hidden{% endif %} pl-8 space-y-2">
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Piece Label</label><input type="text" name="split_unit_label" value="{{ product.split_unit_label|default:'Piece' }}" class="w-full px-3 py-2 rounded-lg border border-border text-xs"></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Price/Piece</label><input type="number" name="split_unit_price" value="{{ product.split_unit_price|default:''|unlocalize }}" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Pieces per {{ product.base_unit_label|default:'Unit' }}</label><input type="number" name="pieces_per_base" value="{{ product.pieces_per_base|default:1 }}" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Min Sale Qty</label><input type="number" name="split_min_qty" value="{{ product.split_min_qty|default:1 }}" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+        </div>
+      </div>
+
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+        <input type="checkbox" name="weight_sell_enabled" class="w-5 h-5 rounded" {% if product.weight_sell_enabled %}checked{% endif %} onchange="document.getElementById('edit-weight-fields').classList.toggle('hidden')">
+        <div><div class="font-semibold text-sm">Weight / Value Sell</div><div class="text-xs text-text-secondary">Sell by weight</div></div>
+      </label>
+      <div id="edit-weight-fields" class="{% if not product.weight_sell_enabled %}hidden{% endif %} pl-8 space-y-2">
+        <div class="grid grid-cols-3 gap-2">
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Weight Unit</label><select name="weight_unit" class="w-full px-3 py-2 rounded-lg border border-border text-xs"><option value="kg" {% if product.weight_unit == 'kg' %}selected{% endif %}>kg</option><option value="g" {% if product.weight_unit == 'g' %}selected{% endif %}>g</option><option value="litre" {% if product.weight_unit == 'litre' %}selected{% endif %}>litre</option><option value="ml" {% if product.weight_unit == 'ml' %}selected{% endif %}>ml</option></select></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Price/Unit</label><input type="number" name="price_per_weight_unit" value="{{ product.price_per_weight_unit|default:''|unlocalize }}" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Stock (weight)</label><input type="number" name="stock_in_weight_unit" value="{{ product.stock_in_weight_unit|default:0|unlocalize }}" step="0.001" readonly class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono bg-gray-50 opacity-70"></div>
+        </div>
+        <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Sell Mode</label><select name="weight_sell_mode" class="w-full px-3 py-2 rounded-lg border border-border text-xs"><option value="BY_WEIGHT" {% if product.weight_sell_mode == 'BY_WEIGHT' %}selected{% endif %}>By Weight</option><option value="BY_CASH" {% if product.weight_sell_mode == 'BY_CASH' %}selected{% endif %}>By Cash</option></select></div>
+      </div>
+
+      <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+        <input type="checkbox" name="bundle_pricing_enabled" class="w-5 h-5 rounded" {% if product.bundle_pricing_enabled %}checked{% endif %} onchange="document.getElementById('edit-bundle-fields').classList.toggle('hidden')">
+        <div><div class="font-semibold text-sm">Bulk & Bundle Pricing</div><div class="text-xs text-text-secondary">Manage purchase packets and bundle sales</div></div>
+      </label>
+      <div id="edit-bundle-fields" class="{% if not product.bundle_pricing_enabled %}hidden{% endif %} pl-8 space-y-3 bg-gray-50/50 p-4 rounded-xl border border-dashed border-border mt-2">
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Purchase Unit (e.g. Packet)</label><input type="text" name="purchase_unit_label" value="{{ product.purchase_unit_label|default:'packet' }}" class="w-full px-3 py-2 rounded-lg border border-border text-xs"></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Units per Packet</label><input type="number" name="units_per_purchase" value="{{ product.units_per_purchase|default:1 }}" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Bundle Qty</label><input type="number" name="bundle_qty" value="{{ product.bundle_qty|default:3 }}" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Bundle Price (KES)</label><input type="number" name="bundle_price" value="{{ product.bundle_price|default:''|unlocalize }}" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer mt-2">
+          <input type="checkbox" name="allow_single_sale" class="rounded text-primary" {% if product.allow_single_sale %}checked{% endif %} onchange="document.getElementById('edit-single-sale-field').classList.toggle('hidden')">
+          <span class="text-xs font-medium">Allow Single Sale (Partial Bundle)</span>
+        </label>
+        <div id="edit-single-sale-field" class="{% if not product.allow_single_sale %}hidden{% endif %}">
+          <label class="text-[10px] font-semibold text-text-secondary uppercase block">Single Unit Price (KES)</label>
+          <input type="number" name="single_unit_price" value="{{ product.single_unit_price|default:''|unlocalize }}" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" 
+          class="btn btn-primary w-full text-sm flex items-center justify-center gap-2"
+          hx-disabled-elt="this">
+    <span class="htmx-indicator animate-spin">⏳</span>
+    <span>Save Changes</span>
+  </button>
+</form>

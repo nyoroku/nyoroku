@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+{% load payroll_extras %}
+{% block content %}
+
+<!-- Hyper-Premium Background Glows -->
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden d-print-none">
+  <div class="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vh] rounded-full blur-[120px] opacity-20" style="background: radial-gradient(circle, var(--success, #10b981) 0%, transparent 70%);"></div>
+  <div class="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vh] rounded-full blur-[140px] opacity-[0.15]" style="background: radial-gradient(circle, var(--accent, #d4a852) 0%, transparent 70%);"></div>
+  <div class="absolute top-[40%] left-[20%] w-[40vw] h-[40vh] rounded-full blur-[100px] opacity-10" style="background: radial-gradient(circle, var(--primary-light, #2d5a6e) 0%, transparent 70%);"></div>
+</div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 safe-bottom" 
+       x-data="{ activeModal: null, theme: localStorage.getItem('theme') || 'dark' }" 
+       x-init="$watch('theme', val => { localStorage.setItem('theme', val); document.documentElement.setAttribute('data-theme', val); }); document.documentElement.setAttribute('data-theme', theme);"
+       style="font-family: 'Inter', sans-serif;">
+
+    <!-- Screen Header -->
+    <div class="screen-header d-print-none">
+      <div class="flex flex-wrap -mx-4 items-center">
+        <div class="w-full md:w-2/3 px-4">
+          <h2 class="mb-2 flex items-center gap-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg> Payroll Detail</h2>
+          <p class="mb-0 opacity-75">{{ period.name }} • {{ entries.count }} employees</p>
+        </div>
+        <div class="w-full md:w-1/3 px-4 flex items-center justify-end gap-4">
+          <!-- Theme Toggle Button -->
+          <button @click="theme = theme === 'dark' ? 'light' : 'dark'" 
+                  class="theme-toggle-btn flex items-center justify-center w-10 h-10 rounded-full transition-all shadow-sm">
+            <svg x-show="theme === 'dark'" x-cloak xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg x-show="theme === 'light'" x-cloak xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold status-badge shadow-sm">
+            {% if period.status == 'Draft' %}
+              <svg width="12" height="12" class="mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Draft
+            {% elif period.status == 'Approved' %}
+              <svg width="12" height="12" class="mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Approved
+            {% else %}
+              <svg width="12" height="12" class="mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Paid
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Period Info Card -->
+    <div class="card overflow-hidden mb-4 d-print-none">
+      <div class="p-6">
+        <div class="flex flex-wrap -mx-4 gap-4">
+          <div class="w-full md:w-1/4 px-4">
+            <div class="flex items-center">
+              <svg width="24" height="24" class="text-[var(--primary)] mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <div>
+                <strong class="block">Period</strong>
+                <span class="text-text-secondary">{{ period.start_date }} to {{ period.end_date }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="w-full md:w-1/4 px-4">
+            <div class="flex items-center">
+              <svg width="24" height="24" class="text-emerald-500 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              <div>
+                <strong class="block">Pay Date</strong>
+                <span class="text-text-secondary">{{ period.pay_date }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="w-full md:w-1/4 px-4">
+            <div class="flex items-center">
+              <svg width="24" height="24" class="text-cyan-500 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <div>
+                <strong class="block">Total Employees</strong>
+                <span class="text-text-secondary">{{ entries.count }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="w-full md:w-1/4 px-4">
+            <div class="flex items-center">
+              <svg width="24" height="24" class="text-amber-500 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
+              <div>
+                <strong class="block">Net Payroll</strong>
+                <span class="text-emerald-500 font-bold">KSh {{ total_net|floatformat:2 }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mb-4 d-print-none">
+      {% if period.status == 'Draft' %}
+        <form method="post" action="{% url 'payroll:recalculate_payroll' period.id %}" class="inline-block mr-2">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-warning px-5 py-2.5 rounded-xl font-bold shadow-md hover:-translate-y-0.5 transition-transform inline-flex items-center" style="background-color: var(--warning, #f59e0b); color: white; border: none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mr-2"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg> Recalculate All
+          </button>
+        </form>
+
+        <form method="post" action="{% url 'payroll:approve_payroll' period.id %}" class="inline-block">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success px-5 py-2.5 rounded-xl font-bold shadow-lg hover:-translate-y-0.5 transition-transform inline-flex items-center"
+                  onclick="return confirm('Are you sure you want to approve this payroll? This will generate payslips and prevent further modifications.')"
+                  style="background-color: var(--success, #10b981); color: white; border: none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mr-2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Approve Payroll
+          </button>
+        </form>
+      {% elif period.status == 'Approved' %}
+        <button class="btn btn-outline-primary mr-2 px-5 py-2.5 rounded-xl font-bold hover:bg-gray-50 transition-colors inline-flex items-center" onclick="window.print()" style="border: 2px solid var(--primary, #1e293b); color: var(--primary, #1e293b);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mr-2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg> Print for Bank
+        </button>
+
+        <form method="post" action="{% url 'payroll:mark_paid' period.id %}" class="inline-block">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary px-5 py-2.5 rounded-xl font-bold shadow-lg hover:-translate-y-0.5 transition-transform inline-flex items-center"
+                  onclick="return confirm('Mark this payroll as paid?')"
+                  style="background-color: var(--primary, #1e293b); color: white; border: none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="mr-2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Mark as Paid
+          </button>
+        </form>
+      {% endif %}
+    </div>
+
+    <!-- Payroll Summary Cards -->
+    <div class="flex flex-wrap -mx-4 mb-4 d-print-none">
+      <div class="w-full md:w-1/3 px-4">
+        <div class="summary-card gross">
+          <svg width="32" height="32" class="mb-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m19 12-7 7-7-7"/><path d="M12 19V5"/></svg>
+          <h3 class="mb-1">KSh {{ total_gross|floatformat:2 }}</h3>
+          <small>Total Gross Pay</small>
+        </div>
+      </div>
+      <div class="w-full md:w-1/3 px-4">
+        <div class="summary-card deductions">
+          <svg width="32" height="32" class="mb-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 7-7 7 7"/><path d="M12 5v14"/></svg>
+          <h3 class="mb-1">KSh {{ total_deductions|floatformat:2 }}</h3>
+          <small>Total Deductions</small>
+        </div>
+      </div>
+      <div class="w-full md:w-1/3 px-4">
+        <div class="summary-card net">
+          <svg width="32" height="32" class="mb-3 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <h3 class="mb-1">KSh {{ total_net|floatformat:2 }}</h3>
+          <small>Net Payroll</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Print Area - Contains everything that should print -->
+    <div class="print-area">
+
+      <!-- Print Header (only visible when printing) -->
+      <div class="print-header d-none d-print-block">
+        <h2>JIMMY'S MINIMART</h2>
+        <div class="company-info" style="margin-bottom: 15px; font-size: 14px;">
+          Kibingoti, Mugumo Estate, off Sagana - Karatina Superhighway<br>
+          Ground floor, ACE HOTEL building.<br>
+          Phone: 0722297673<br><br>
+          <strong>Payroll Report</strong>
+        </div>
+        <div class="period-info">
+          <strong>Period:</strong> {{ period.start_date|date:"d M Y" }} – {{ period.end_date|date:"d M Y" }} |
+          <strong>Pay Date:</strong> {{ period.pay_date|date:"d M Y" }} |
+          <strong>Total Employees:</strong> {{ entries.count }}
+        </div>
+      </div>
+
+      <!-- Employee Entries Table -->
+      <div class="card overflow-hidden">
+        <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between d-print-none">
+          <h5 class="mb-0 flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg> Employee Payroll Entries</h5>
+        </div>
+
+        <div class="p-6 p-0">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-full divide-y divide-gray-200 divide-y divide-[var(--border)] mb-0 print-table">
+              <!-- Screen header -->
+              <thead class="bg-gray-50/50 text-text-secondary uppercase text-xs tracking-wider d-print-none">
+                <tr class="border-b border-[var(--border)]">
+                  <th class="py-4 px-6">
+                    <div class="inline-flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Employee</div>
+                  </th>
+
+                  <th class="py-4 px-6"><svg width="12" height="12" class="inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> Basic Pay</th>
+                  <th class="py-4 px-6"><svg width="12" height="12" class="inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="M8 12h8"/></svg> Allowances</th>
+                  <th class="py-4 px-6"><svg width="12" height="12" class="inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg> Gross Pay</th>
+                  <th class="py-4 px-6"><svg width="12" height="12" class="inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg> Deductions</th>
+                  <th class="py-4 px-6"><svg width="12" height="12" class="inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Net Pay</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+
+              <!-- Print header -->
+              <thead class="d-none d-print-table-header-group">
+                <tr class="border-b border-[var(--border)]">
+                  <th class="py-4 px-6">Employee</th>
+                  <th class="py-4 px-6">Basic Pay</th>
+                  <th class="py-4 px-6">Allowances</th>
+                  <th class="py-4 px-6">Gross Pay</th>
+                  <th class="py-4 px-6">Deductions</th>
+                  <th class="py-4 px-6">Net Pay</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for entry in entries %}
+                <tr>
+                  <td class="py-4 px-6 text-sm">
+                    <div class="d-print-none">
+                      <a href="{% url 'payroll:user_profile' entry.user.id %}" class="text-decoration-none font-bold text-text-primary hover:text-primary transition-colors">
+                        {{ entry.user.name }}
+                      </a>
+                    </div>
+                    <div class="d-none d-print-block font-bold">
+                      {{ entry.user.name }}
+                    </div>
+                  </td>
+
+                  <td class="py-4 px-6 text-sm">KSh {{ entry.base_pay|floatformat:2 }}</td>
+                  <td class="py-4 px-6 text-sm">KSh {{ entry.total_allowances|floatformat:2 }}</td>
+                  <td class="font-bold">KSh {{ entry.gross_pay|floatformat:2 }}</td>
+                  <td class="py-4 px-6 text-sm">KSh {{ entry.total_deductions|floatformat:2 }}</td>
+                  <td class="font-bold text-emerald-500">KSh {{ entry.net_pay|floatformat:2 }}</td>
+
+                  <!-- Actions (screen only) -->
+                  <td class="d-print-none text-center">
+                    {% if period.status == 'Draft' %}
+
+
+                      <button type="button" class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 hover:scale-105 active:scale-95 transition-all mr-1.5 shadow-sm"
+                              @click="activeModal = 'adjustment-{{ entry.id }}'"
+                              title="Add Adjustment">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                      </button>
+
+                      {% if entry.adjustments.exists %}
+                        <button type="button" class="inline-flex items-center justify-center px-3 h-10 rounded-xl bg-cyan-50 text-cyan-600 hover:bg-cyan-100 hover:scale-105 active:scale-95 transition-all mr-1.5 shadow-sm text-xs font-bold"
+                                @click="activeModal = 'view-{{ entry.id }}'"
+                                title="View Adjustments">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" class="mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg> {{ entry.adjustments.count }}
+                        </button>
+                      {% endif %}
+                    {% endif %}
+
+                    {% if period.status != 'Draft' %}
+                      <a href="{% url 'payroll:payslip_detail' entry.id %}"
+                         class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all"
+                         title="View Payslip">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Print Summary (only visible when printing) -->
+      <div class="print-summary d-none d-print-block">
+        <div class="summary-flex flex-wrap -mx-4">
+          <span>Total Gross Pay:</span>
+          <span>KSh {{ total_gross|floatformat:2 }}</span>
+        </div>
+        <div class="summary-flex flex-wrap -mx-4">
+          <span>Total Deductions:</span>
+          <span>KSh {{ total_deductions|floatformat:2 }}</span>
+        </div>
+        <div class="summary-flex flex-wrap -mx-4 total">
+          <span>Net Payroll:</span>
+          <span>KSh {{ total_net|floatformat:2 }}</span>
+        </div>
+      </div>
+
+  <!-- ===== MODALS ===== -->
+  {% for entry in entries %}
+  <!-- Add Adjustment Modal -->
+  <div x-show="activeModal === 'adjustment-{{ entry.id }}'" 
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 transform scale-95"
+       x-transition:enter-end="opacity-100 transform scale-100"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 transform scale-100"
+       x-transition:leave-end="opacity-0 transform scale-95"
+       class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+       x-cloak>
+    <div @click.away="activeModal = null" 
+         class="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-border">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-5 bg-primary text-white flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(255,255,255,0.1);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg leading-tight">Add Adjustment</h3>
+            <p class="text-xs" style="color: rgba(255,255,255,0.7);">{{ entry.user.name }}</p>
+          </div>
+        </div>
+        <button @click="activeModal = null" class="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style="hover:background: rgba(255,255,255,0.1);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <form method="post" action="{% url 'payroll:add_one_time_adjustment' entry.id %}" class="p-6 space-y-5">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_adjustment">
+        
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-text-secondary ml-1">Adjustment Type</label>
+          <div class="relative">
+            {{ adjustment_form.type }}
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-text-secondary ml-1">Name / Description</label>
+          {{ adjustment_form.name }}
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold uppercase tracking-wider text-text-secondary ml-1">Amount (KSh)</label>
+          {{ adjustment_form.amount }}
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="pt-6 flex gap-3 mt-4 border-t border-border" style="border-top-width: 1px; padding-top: 20px;">
+          <button type="button" @click="activeModal = null" class="flex-1 px-4 py-3 rounded-xl font-bold text-sm transition-all" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">
+            Cancel
+          </button>
+          <button type="submit" class="flex-[2] px-4 py-3 rounded-xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2" style="background-color: var(--primary, #1a3a4a); color: white;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Add Adjustment
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Adjustments Modal -->
+  <div x-show="activeModal === 'view-{{ entry.id }}'" 
+       x-transition:enter="transition ease-out duration-300"
+       x-transition:enter-start="opacity-0 transform scale-95"
+       x-transition:enter-end="opacity-100 transform scale-100"
+       x-transition:leave="transition ease-in duration-200"
+       x-transition:leave-start="opacity-100 transform scale-100"
+       x-transition:leave-end="opacity-0 transform scale-95"
+       class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" 
+       x-cloak tabindex="-1">
+    <div @click.away="activeModal = null" 
+         class="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden border border-border">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-5 bg-cyan-600 text-white flex justify-between items-center" style="background-color: #0891b2;">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(255,255,255,0.1);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg leading-tight">Payroll Adjustments</h3>
+            <p class="text-xs" style="color: rgba(255,255,255,0.7);">{{ entry.user.name }}</p>
+          </div>
+        </div>
+        <button @click="activeModal = null" class="w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6">
+        {% if entry.adjustments.exists %}
+          <div class="overflow-hidden border border-border rounded-2xl mb-6">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead class="bg-gray-50 text-text-secondary uppercase text-xs font-bold tracking-widest">
+                <tr>
+                  <th class="py-3 px-4">Type</th>
+                  <th class="py-3 px-4">Description</th>
+                  <th class="py-3 px-4">Amount</th>
+                  <th class="py-3 px-4">Added By</th>
+                  <th class="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                {% for adjustment in entry.adjustments.all %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="py-3 px-4">
+                    {% if adjustment.type == 'ALLOWANCE' %}
+                      <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold text-emerald-700 bg-emerald-100">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                        Allowance
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold text-rose-700 bg-rose-100">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/></svg>
+                        Deduction
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="py-3 px-4 text-sm font-medium">{{ adjustment.name }}</td>
+                  <td class="py-3 px-4 text-sm font-bold tabular">KSh {{ adjustment.amount|floatformat:2 }}</td>
+                  <td class="py-3 px-4 text-xs text-text-secondary">
+                    {{ adjustment.created_by.name|default:'System' }}
+                    <span class="block opacity-60">{{ adjustment.created_at|date:"M d, H:i" }}</span>
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    {% if period.status == 'Draft' %}
+                      <form method="post" action="{% url 'payroll:remove_adjustment' adjustment.id %}"
+                            class="inline-block"
+                            onsubmit="return confirm('Are you sure you want to remove this adjustment?')">
+                        {% csrf_token %}
+                        <button type="submit" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center transition-colors">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                        </button>
+                      </form>
+                    {% else %}
+                      <span class="text-text-secondary text-xs font-bold uppercase tracking-wider opacity-60">Locked</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Summary in Modal -->
+          <div class="grid grid-cols-2 gap-4 p-4 rounded-2xl bg-gray-50 border border-border">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-emerald-600 bg-emerald-100">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold uppercase text-text-secondary">Total Allowances</p>
+                <p class="text-base font-bold text-emerald-600 tabular">KSh {{ entry.adjustments.all|filter_by_type:'ALLOWANCE'|sum_amounts|floatformat:2|default:0.00 }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-rose-600 bg-rose-100">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              </div>
+              <div>
+                <p class="text-xs font-bold uppercase text-text-secondary">Total Deductions</p>
+                <p class="text-base font-bold text-rose-600 tabular">KSh {{ entry.adjustments.all|filter_by_type:'DEDUCTION'|sum_amounts|floatformat:2|default:0.00 }}</p>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-center py-12">
+            <div class="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-text-secondary opacity-40"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            </div>
+            <h4 class="font-bold text-text-primary mb-1">No adjustments found</h4>
+            <p class="text-sm text-text-secondary">No one-time allowances or deductions for this employee.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-5 flex justify-end gap-3" style="background: #f8fafc; border-top: 1px solid #e2e8f0;">
+        {% if period.status == 'Draft' %}
+          <button type="button" @click="activeModal = 'adjustment-{{ entry.id }}'"
+                  class="px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg" style="background-color: var(--primary, #1e293b); color: white;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Add New Adjustment
+          </button>
+        {% endif %}
+        <button type="button" @click="activeModal = null" class="px-5 py-3 rounded-xl font-bold text-sm transition-all" style="background: white; color: #475569; border: 1px solid #cbd5e1;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <style>
+    /* -----------------------------------------------------
+       HYPER-PREMIUM GLASSMORPHIC DESIGN SYSTEM
+       ----------------------------------------------------- */
+    @media screen {
+      
+      /* ================= DARK MODE (DEFAULT) ================= */
+      html[data-theme="dark"] body {
+        background-color: #050b14 !important;
+        background-image: radial-gradient(circle at 50% 0%, rgba(13,31,45,0.8) 0%, #050b14 100%) !important;
+        background-attachment: fixed !important;
+        color: white !important;
+      }
+      html[data-theme="dark"] .text-text-primary, html[data-theme="dark"] .text-gray-900, html[data-theme="dark"] .text-gray-800 { color: #ffffff !important; }
+      html[data-theme="dark"] .text-text-secondary, html[data-theme="dark"] .opacity-75 { color: rgba(255,255,255,0.55) !important; }
+      
+      html[data-theme="dark"] .card, html[data-theme="dark"] .summary-card, html[data-theme="dark"] .bg-white.rounded-3xl, html[data-theme="dark"] .bg-gray-50 {
+        background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+        box-shadow: 0 24px 48px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+        color: white !important;
+      }
+      html[data-theme="dark"] .bg-gray-50\/50 { background: rgba(0,0,0,0.3) !important; }
+      html[data-theme="dark"] .bg-primary, html[data-theme="dark"] .status-badge { background: linear-gradient(135deg, rgba(26,58,74,0.8), rgba(13,31,45,0.9)) !important; color: white !important; }
+      html[data-theme="dark"] table { color: white !important; }
+      html[data-theme="dark"] th { background: rgba(0,0,0,0.25) !important; color: rgba(255,255,255,0.45) !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
+      html[data-theme="dark"] td, html[data-theme="dark"] .border-b { border-color: rgba(255,255,255,0.03) !important; }
+      html[data-theme="dark"] tr:hover td { background: rgba(255,255,255,0.02) !important; }
+      
+      html[data-theme="dark"] .theme-toggle-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; }
+      html[data-theme="dark"] .theme-toggle-btn:hover { background: rgba(255,255,255,0.2); }
+      html[data-theme="dark"] .summary-card.gross { box-shadow: -4px 0 24px -10px rgba(45,90,110,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+      html[data-theme="dark"] .summary-card.deductions { box-shadow: -4px 0 24px -10px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+      html[data-theme="dark"] .summary-card.net { box-shadow: -4px 0 24px -10px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+      
+      html[data-theme="dark"] select, html[data-theme="dark"] input[type="text"], html[data-theme="dark"] input[type="number"] {
+        background: rgba(0,0,0,0.2) !important; border: 1px solid rgba(255,255,255,0.15) !important; color: white !important;
+      }
+      html[data-theme="dark"] select:focus, html[data-theme="dark"] input:focus {
+        border-color: var(--accent, #d4a852) !important; background: rgba(0,0,0,0.4) !important; box-shadow: 0 0 0 4px rgba(212,168,82,0.15) !important;
+      }
+
+      /* ================= LIGHT MODE ================= */
+      html[data-theme="light"] body {
+        background-color: #f8fafc !important;
+        background-image: radial-gradient(circle at 50% 0%, #ffffff 0%, #f1f5f9 100%) !important;
+        background-attachment: fixed !important;
+        color: #0f172a !important;
+      }
+      html[data-theme="light"] .text-text-primary, html[data-theme="light"] .text-gray-900, html[data-theme="light"] .text-gray-800 { color: #0f172a !important; }
+      html[data-theme="light"] .text-text-secondary, html[data-theme="light"] .opacity-75 { color: #64748b !important; }
+      
+      html[data-theme="light"] .card, html[data-theme="light"] .summary-card, html[data-theme="light"] .bg-white.rounded-3xl, html[data-theme="light"] .bg-gray-50 {
+        background: rgba(255, 255, 255, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 1) !important;
+        box-shadow: 0 12px 32px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1) !important;
+        color: #0f172a !important;
+      }
+      html[data-theme="light"] .bg-gray-50\/50 { background: #f8fafc !important; }
+      html[data-theme="light"] .bg-primary, html[data-theme="light"] .status-badge { background: #f1f5f9 !important; color: #334155 !important; border: 1px solid #e2e8f0 !important; }
+      html[data-theme="light"] table { color: #334155 !important; }
+      html[data-theme="light"] th { background: #f8fafc !important; color: #64748b !important; border-bottom: 1px solid #e2e8f0 !important; }
+      html[data-theme="light"] td, html[data-theme="light"] .border-b { border-color: #e2e8f0 !important; }
+      html[data-theme="light"] tr:hover td { background: #f1f5f9 !important; }
+      
+      html[data-theme="light"] .theme-toggle-btn { background: white; border: 1px solid #cbd5e1; color: #475569; }
+      html[data-theme="light"] .theme-toggle-btn:hover { background: #f8fafc; }
+      html[data-theme="light"] .summary-card.gross { box-shadow: -4px 0 24px -10px rgba(59,130,246,0.2), inset 0 1px 0 rgba(255,255,255,1) !important; }
+      html[data-theme="light"] .summary-card.deductions { box-shadow: -4px 0 24px -10px rgba(239,68,68,0.2), inset 0 1px 0 rgba(255,255,255,1) !important; }
+      html[data-theme="light"] .summary-card.net { box-shadow: -4px 0 24px -10px rgba(16,185,129,0.2), inset 0 1px 0 rgba(255,255,255,1) !important; }
+      
+      html[data-theme="light"] select, html[data-theme="light"] input[type="text"], html[data-theme="light"] input[type="number"] {
+        background: #f8fafc !important; border: 2px solid #cbd5e1 !important; color: #0f172a !important;
+      }
+      html[data-theme="light"] select:focus, html[data-theme="light"] input:focus {
+        border-color: var(--primary, #3b82f6) !important; background: white !important; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important;
+      }
+      html[data-theme="light"] .fixed.inset-0.pointer-events-none { opacity: 0 !important; }
+      
+      /* Shared Styles */
+      .text-text-primary, .text-gray-900, .text-gray-800 { font-weight: 600; letter-spacing: -0.02em; }
+      .text-text-secondary, .opacity-75 { font-weight: 500; }
+      .card, .summary-card, .bg-white.rounded-3xl, .bg-gray-50 {
+        backdrop-filter: blur(24px) saturate(1.2) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(1.2) !important;
+        border-radius: 24px !important;
+      }
+      table { border-spacing: 0; }
+      th { font-weight: 700; letter-spacing: 0.05em; padding-top: 20px !important; padding-bottom: 20px !important; }
+      .bg-blue-50 { background: rgba(59,130,246,0.1) !important; border: 1px solid rgba(59,130,246,0.2) !important; }
+      .text-blue-600 { color: #3b82f6 !important; }
+      .bg-cyan-50 { background: rgba(6,182,212,0.1) !important; border: 1px solid rgba(6,182,212,0.2) !important; }
+      .text-cyan-600 { color: #06b6d4 !important; }
+      .bg-emerald-100 { background: rgba(16,185,129,0.1) !important; border: 1px solid rgba(16,185,129,0.2) !important; }
+      .text-emerald-700 { color: #059669 !important; }
+      h2, h3, h5 { letter-spacing: -0.03em; }
+    }
+
+    /* Premium Styling for Modal Inputs */
+    select, input[type="text"], input[type="number"] {
+      width: 100% !important;
+      background: rgba(0,0,0,0.2) !important;
+      border: 1px solid rgba(255,255,255,0.15) !important;
+      border-radius: 12px !important;
+      padding: 14px 16px !important;
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      color: white !important;
+      transition: all 0.2s !important;
+      outline: none !important;
+    }
+    select:focus, input[type="text"]:focus, input[type="number"]:focus {
+      border-color: var(--accent, #d4a852) !important;
+      background: rgba(0,0,0,0.4) !important;
+      box-shadow: 0 0 0 4px rgba(212,168,82,0.15) !important;
+    }
+    
+    .summary-card {
+      padding: 28px; border-radius: 24px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative; overflow: hidden;
+    }
+    .summary-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .summary-card:hover { 
+      transform: translateY(-6px) scale(1.02); 
+      box-shadow: 0 32px 64px -16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15) !important; 
+    }
+    .summary-card:hover::before { opacity: 1; }
+    
+    /* Elegant side glows instead of harsh borders for the cards */
+    .summary-card.gross { box-shadow: -4px 0 24px -10px rgba(45,90,110,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+    .summary-card.deductions { box-shadow: -4px 0 24px -10px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+    .summary-card.net { box-shadow: -4px 0 24px -10px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.05) !important; }
+    
+    .tabular { font-variant-numeric: tabular-nums; }
+    
+    /* Missing utility classes for print/screen display */
+    .d-none { display: none !important; }
+    @media print {
+      .d-print-none { display: none !important; }
+      .d-print-block { display: block !important; }
+      .d-print-table-header-group { display: table-header-group !important; }
+      
+      body { background: white !important; color: black !important; }
+      .card { border: none !important; box-shadow: none !important; }
+    }
+  </style>
+
+</div> <!-- Closing the max-w-7xl and x-data scope that was started at line 8 -->
+
+{% endblock %}

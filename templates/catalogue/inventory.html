@@ -1,280 +1,563 @@
 {% extends 'base.html' %}
-{% load static %}
-
 {% block content %}
-<div class="px-4 py-5 max-w-5xl mx-auto" x-data="inventoryState()">
-
-    <!-- Header & Status Tabs -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-            <h1 class="text-xl font-bold" style="color: #12343b">Inventory</h1>
-            <p class="text-sm" style="color: #6B7280">Manage products, variants &amp; stock</p>
+<div class="max-w-7xl mx-auto px-4 py-6 pb-24">
+  <!-- Dynamic Edit Product Modal -->
+  <div id="edit-product-modal" class="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+    <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl relative">
+      <div class="p-6 border-b border-border flex items-center justify-between sticky top-0 bg-white z-10">
+        <h2 class="text-lg font-bold" style="color: var(--primary-dark)">Edit Product</h2>
+        <button onclick="document.getElementById('edit-product-modal').style.display='none'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-lg">&times;</button>
+      </div>
+      <div id="edit-modal-body">
+        <div class="p-12 flex flex-col items-center justify-center gap-4 text-text-secondary">
+          <span class="animate-spin text-primary">⏳</span>
+          <span class="text-sm font-medium">Loading product data...</span>
         </div>
-
-        {% if user.role == 'admin' %}
-        <div class="flex gap-1 p-1 rounded-xl" style="background: #F8F9FB; border: 1px solid #E5E7EB">
-            <a href="?status=all"
-                class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center"
-                style="{% if active_status == 'all' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
-                All Products
-            </a>
-            <a href="?status=pending"
-                class="px-4 py-2 rounded-lg text-xs font-semibold transition-all relative no-underline text-center"
-                style="{% if active_status == 'pending' %}background: #2d545e; color: #e1b382{% else %}color: #6B7280{% endif %}">
-                Review Required
-                {% if pending_count > 0 %}
-                <span
-                    class="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
-                    style="background: #DC2626; color: white">{{ pending_count }}</span>
-                {% endif %}
-            </a>
-            <a href="{% url 'catalogue:pending_actions' %}"
-                class="px-4 py-2 rounded-lg text-xs font-semibold transition-all no-underline text-center"
-                style="color: #6B7280">
-                Action Queue
-            </a>
-        </div>
-        {% endif %}
+      </div>
     </div>
+  </div>
 
-    <!-- Search bar -->
-    <div class="mb-5 flex items-center rounded-xl overflow-hidden" style="background: white; border: 1px solid #E5E7EB">
-        <span class="pl-4 pr-2" style="color: #9CA3AF">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-            </svg>
-        </span>
-        <input type="text" name="q" hx-get="{% url 'catalogue:inventory' %}" hx-trigger="input changed delay:300ms"
-            hx-target="#product-list" hx-push-url="true" placeholder="Search products..."
-            class="flex-1 py-3.5 text-sm font-medium border-none outline-none focus:ring-0" style="color: #12343b">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Inventory</h1>
+      <p class="text-sm text-text-secondary font-medium">{{ product_count }} product{{ product_count|pluralize }}</p>
     </div>
-
-    <!-- Product List -->
-    <div id="product-list" class="space-y-3 pb-24">
-        {% include 'catalogue/partials/product_list.html' %}
-    </div>
-
-    <!-- Bulk Action Bar -->
-    <div x-show="selectedProducts.length > 0" x-transition x-cloak
-         class="fixed bottom-24 left-1/2 -translate-x-1/2 rounded-2xl px-5 py-3 shadow-xl z-40 flex items-center gap-4 border" style="background:#12343b;border-color:rgba(255,255,255,0.1)">
-        <span class="text-white text-sm font-bold"><span x-text="selectedProducts.length"></span> selected</span>
-        <button @click="bulkDelete()" class="px-4 py-2 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors active:scale-95" style="background:#DC2626">
-            Delete
-        </button>
-    </div>
-
-    <!-- Add FAB -->
-    <button @click="openAdd()"
-        class="fixed bottom-24 right-5 w-14 h-14 rounded-2xl flex items-center justify-center active:scale-90 transition-transform shadow-lg z-30"
-        style="background: #2d545e; color: #e1b382">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-            stroke-linecap="round">
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-        </svg>
+    {% if request.user.role == 'admin' or request.user.role == 'manager' %}
+    <button onclick="document.getElementById('add-product-modal').style.display='flex'" class="btn btn-accent text-sm" id="add-product-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      Add Product
     </button>
+    {% endif %}
+  </div>
 
-    <!-- Add Modal -->
-    <div x-show="addModal" x-cloak class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div x-show="addModal" x-transition.opacity class="absolute inset-0 bg-black/30 backdrop-blur-sm"
-            @click="addModal = false"></div>
-
-        <div x-show="addModal" x-transition.duration.300ms
-            class="relative w-full max-w-xl bg-white rounded-t-3xl sm:rounded-3xl shadow-modal overflow-hidden p-6 max-h-[90vh] flex flex-col">
-
-            <div class="flex justify-between items-center mb-5 shrink-0">
-                <h3 class="font-bold text-lg" style="color: #12343b" x-text="isEdit ? 'Edit Product' : 'New Product'">
-                </h3>
-                <button @click="addModal = false" class="p-1 active:scale-90 transition-all font-bold"
-                    style="color: #DC2626">✕</button>
-            </div>
-
-            <div class="flex-1 overflow-auto pr-2" style="scrollbar-width: none">
-                <form :action="isEdit ? '{% url 'catalogue:edit_product' %}' : '{% url 'catalogue:add_product' %}'"
-                    method="POST" @submit="submitForm" class="space-y-5">
-                    {% csrf_token %}
-                    <template x-if="isEdit"><input type="hidden" name="id" :value="editForm.id"></template>
-
-                    <div class="flex items-center gap-4 bg-white border rounded-2xl p-4" style="border-color: #E5E7EB">
-                        <div class="w-14 h-14 rounded-xl flex items-center justify-center text-3xl shrink-0 cursor-pointer shadow-sm border select-none"
-                            style="background: #F8F9FB; border-color: #E5E7EB" id="emoji-display"
-                            title="Click to change">📦</div>
-                        <input type="hidden" name="image" id="emoji-input" value="📦">
-                        <div class="flex-grow min-w-0">
-                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1"
-                                style="color: #6B7280">Product Name</label>
-                            <input type="text" name="name" x-model="editForm.name" required
-                                placeholder="T-Shirt, Denim Jacket, etc."
-                                class="w-full bg-transparent border-none p-0 text-base font-bold focus:ring-0 outline-none placeholder:opacity-40"
-                                style="color: #12343b">
-                        </div>
-                    </div>
-
-                    <!-- Specific Types -->
-                    <div>
-                        <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Types (Comma separated)</label>
-                        <input type="text" name="types" x-model="editForm.types"
-                               placeholder="Ragged, Straight, Skinny"
-                               class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
-                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
-                    </div>
-
-                    <div class="grid grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Price (KES)</label>
-                            <input type="number" step="0.01" name="price" x-model="editForm.price" required placeholder="0.00" 
-                                   class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
-                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #2d545e; --tw-ring-color: #2d545e">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Cost (KES)</label>
-                            <input type="number" step="0.01" name="cost_price" x-model="editForm.cost_price" placeholder="0.00" 
-                                   class="w-full rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2"
-                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Initial Stock</label>
-                            <input type="number" name="stock_qty" x-model="editForm.stock_qty" required placeholder="0" 
-                                   class="w-full rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2"
-                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b; --tw-ring-color: #2d545e">
-                        </div>
-                    </div>
-
-
-
-                    <!-- Modern Variant Manager -->
-                    {% include 'catalogue/partials/manage_variants.html' %}
-
-                    <div class="pt-4 flex gap-3 shrink-0">
-                        <button type="button" @click="addModal = false"
-                            class="flex-1 py-4 rounded-xl font-semibold text-sm active:scale-95 transition-all"
-                            style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">
-                            Cancel
-                        </button>
-                        <button type="submit"
-                            class="flex-[3] py-4 rounded-xl font-semibold text-sm shadow-md active:scale-95 transition-all"
-                            style="background: #2d545e; color: white"
-                            x-text="isEdit ? 'Save Changes' : 'Create Product'">
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+  <!-- Filters Bar -->
+  <div class="inv-filters mb-4">
+    <!-- Category Pills -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+      <a href="{% url 'catalogue:inventory' %}" class="inv-pill {% if not active_category %}active{% endif %}">All</a>
+      {% for cat in categories %}
+      <a href="{% url 'catalogue:inventory' %}?category={{ cat.pk }}" 
+         class="inv-pill {% if active_category == cat.pk|slugify %}active{% endif %}">{{ cat.name }}</a>
+      {% endfor %}
     </div>
+
+    <!-- Search -->
+    <div class="relative mt-3">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" name="q" value="{{ query }}" placeholder="Search by name, SKU, or barcode..."
+             class="w-full pl-10 pr-4 py-3 rounded-xl border border-border bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+             hx-get="{% url 'catalogue:inventory' %}" hx-trigger="keyup changed delay:300ms" hx-target="#product-table" hx-swap="innerHTML"
+             hx-include="[name=q]" id="inv-search">
+    </div>
+
+    <!-- Stock Status Filters -->
+    <div class="flex gap-2 mt-3">
+      <a href="{% url 'catalogue:inventory' %}" class="stock-pill {% if not stock_filter %}active{% endif %}">All Stock</a>
+      <a href="{% url 'catalogue:inventory' %}?stock=low" class="stock-pill warning {% if stock_filter == 'low' %}active{% endif %}">Low Stock</a>
+      <a href="{% url 'catalogue:inventory' %}?stock=out" class="stock-pill danger {% if stock_filter == 'out' %}active{% endif %}">Out of Stock</a>
+    </div>
+  </div>
+
+  <!-- Product Table -->
+  <div id="product-table" class="bg-white rounded-2xl border border-border overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left" style="background: #f8f9fb">
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase">Product</th>
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase">Barcode / SKU</th>
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase">Category</th>
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase text-right">Price</th>
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase text-right">Stock</th>
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase">Modes</th>
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase">Batches</th>
+            <th class="px-4 py-3 font-semibold text-text-secondary text-xs uppercase text-right">Margin</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+          {% for pd in products_data %}
+          {% with product=pd.product %}
+          <tr class="hover:bg-gray-50/50 transition-colors">
+            <td class="px-4 py-3">
+              <div class="flex flex-col">
+                <span class="font-bold text-sm" style="color: var(--primary-dark)">{{ product.name }}</span>
+                <span class="text-xs text-text-secondary font-mono">{{ product.sku }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-text-secondary text-xs">
+              {{ product.subcategory.category.name }} &rsaquo; {{ product.subcategory.name }}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex flex-col gap-0.5">
+                {% if product.barcode %}
+                <span class="text-xs font-mono font-semibold" style="color: var(--primary)">{{ product.barcode }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-4 py-3 text-right">
+              <div class="font-mono font-bold">KES {{ product.base_unit_price|floatformat:0 }}</div>
+              {% if product.cost_price %}<div class="text-xs text-text-secondary font-mono">Cost: {{ product.cost_price|floatformat:0 }}</div>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right">
+               {% if product.is_kadogo %}
+                <div class="flex flex-col items-end">
+                  <span class="font-mono font-bold {% if product.whole_unit_stock <= 0 %}text-danger{% else %}text-primary{% endif %}">
+                    {{ product.whole_unit_stock }} {{ product.whole_unit_label }}s
+                  </span>
+                   {% for frag in product.fragment_sizes.all %}
+                   <div class="flex flex-col items-end mt-1">
+                     <span class="text-[10px] font-bold text-primary">
+                       {% widthratio product.whole_unit_stock 1 frag.fragment_count %} {{ frag.name }}s potential
+                     </span>
+                     <span class="text-[9px] text-text-secondary font-mono opacity-70">
+                       + {{ frag.fragment_pool }} {{ frag.name }}s in pool
+                     </span>
+                   </div>
+                   {% endfor %}
+                </div>
+              {% elif product.weight_sell_enabled %}
+                <span class="font-mono font-semibold {% if product.stock_in_weight_unit <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_in_weight_unit }} {{ product.weight_unit }}</span>
+              {% else %}
+                <div class="flex flex-col items-end">
+                  {% if product.bundle_pricing_enabled and product.units_per_purchase > 1 %}
+                    <span class="font-mono font-bold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
+                      {% widthratio product.stock_qty product.units_per_purchase 1 %} {{ product.purchase_unit_label }}s
+                    </span>
+                    <span class="text-[10px] text-text-secondary font-mono">
+                      ({{ product.stock_qty|floatformat:0 }} {{ product.base_unit_label }}s)
+                    </span>
+                  {% else %}
+                    <span class="font-mono font-semibold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_qty|floatformat:0 }} {{ product.base_unit_label }}s</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex gap-1 flex-wrap">
+                <span class="inv-badge badge-base">{{ product.base_unit_label }}</span>
+                {% if product.split_enabled %}<span class="inv-badge badge-split">{{ product.split_unit_label }}</span>{% endif %}
+                {% if product.weight_sell_enabled %}<span class="inv-badge badge-weight">{{ product.weight_unit }}</span>{% endif %}
+                {% if product.bundle_pricing_enabled %}<span class="inv-badge badge-bunch">Bundle</span>{% endif %}
+              </div>
+            </td>
+            <td class="px-4 py-3">
+              {% with batch_count=product.batches.count %}
+              {% if batch_count > 0 %}
+                <button onclick="toggleBatches('{{ product.pk }}')" class="text-xs font-semibold px-2 py-1 rounded-lg transition-colors hover:bg-blue-50" style="color: var(--primary)">
+                  {{ batch_count }} batch{{ batch_count|pluralize:"es" }}
+                </button>
+              {% else %}
+                <span class="text-xs text-text-secondary">--</span>
+              {% endif %}
+              {% endwith %}
+            </td>
+            <td class="px-4 py-3 text-right">
+              {% if product.gross_margin_pct is not None %}
+                <span class="font-mono text-xs font-bold {% if product.gross_margin_pct >= 20 %}text-success{% elif product.gross_margin_pct >= 10 %}text-warning{% else %}text-danger{% endif %}">{{ product.gross_margin_pct }}%</span>
+              {% else %}
+                <span class="text-xs text-text-secondary">--</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex gap-1">
+                {% if product.is_kadogo %}
+                <button onclick="openCutModal('{{ product.pk }}', '{{ product.name|escapejs }}', '{{ product.whole_unit_label|escapejs }}', {{ product.whole_unit_stock }}, {{ pd.fragments|safe }}, {{ product.total_kadogo_pieces }})" 
+                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-primary transition-colors" title="Manual Cut">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 15L12 9L18 15"/><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg>
+                </button>
+                {% endif %}
+                <button onclick="openAdjustModal('{{ product.pk }}', '{{ product.name|escapejs }}', {{ product.units_per_purchase }}, '{{ product.base_unit_label|escapejs }}', '{{ product.purchase_unit_label|escapejs }}', '{{ product.bundle_pricing_enabled|yesno:'true,false' }}')" 
+                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-success transition-colors" title="Adjust Stock">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+                <button hx-get="{% url 'catalogue:edit_product_form' product.pk %}" 
+                        hx-target="#edit-modal-body" 
+                        hx-swap="innerHTML"
+                        onclick="document.getElementById('edit-product-modal').style.display='flex'"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-text-secondary transition-colors" 
+                        title="Edit Product">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                {% if request.user.role == 'admin' %}
+                <button hx-post="{% url 'catalogue:delete_product' product.pk %}" hx-confirm="Delete {{ product.name }}?"
+                        hx-target="closest tr" hx-swap="outerHTML"
+                        class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-danger transition-colors">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          <!-- Batch detail row (hidden) -->
+          <tr id="batch-row-{{ product.pk }}" class="batch-detail-row" style="display:none">
+            <td colspan="9" class="px-6 py-3" style="background: #f8fafc">
+              <div class="text-xs font-bold text-text-secondary uppercase mb-2">Batches for {{ product.name }}</div>
+              <div hx-get="{% url 'catalogue:batch_list' product.pk %}" hx-trigger="revealed" hx-swap="innerHTML" class="batch-container">
+                <span class="text-xs text-text-secondary">Loading...</span>
+              </div>
+            </td>
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr><td colspan="9" class="px-4 py-12 text-center">
+            <div class="text-4xl mb-3 opacity-20">📦</div>
+            <p class="text-sm text-text-secondary font-semibold">No products found</p>
+            <p class="text-xs text-text-secondary mt-1">Try a different search or filter</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add Product Modal -->
+<div id="add-product-modal" class="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+  <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="p-6 border-b border-border flex items-center justify-between">
+      <h2 class="text-lg font-bold" style="color: var(--primary-dark)">Add Product</h2>
+      <button onclick="document.getElementById('add-product-modal').style.display='none'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">&#10005;</button>
+    </div>
+    <div class="modal-body">
+    <form hx-post="{% url 'catalogue:add_product' %}" 
+          hx-swap="none"
+          hx-on::before-request="document.getElementById('add-error-msg').classList.add('hidden')"
+          hx-on::after-request="if(event.detail.failed) { 
+            const msg = document.getElementById('add-error-msg');
+            msg.innerText = event.detail.xhr.responseText;
+            msg.classList.remove('hidden');
+          }"
+          class="p-6 space-y-4">
+      {% csrf_token %}
+      <div id="add-error-msg" class="hidden p-3 rounded-lg bg-red-50 text-red-600 text-xs font-bold border border-red-200"></div>
+      <div>
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Product Name *</label>
+        <input type="text" name="name" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Barcode</label>
+          <input type="text" name="barcode" placeholder="Scan or type barcode" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">SKU (auto-gen if blank)</label>
+          <input type="text" name="sku" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Category *</label>
+        <select name="subcategory_id" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none">
+          {% for cat in categories %}
+            {% for sub in cat.subcategories.all %}
+            <option value="{{ sub.pk }}">{{ cat.name }} &rsaquo; {{ sub.name }}</option>
+            {% endfor %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Base Unit Label</label>
+          <input type="text" name="base_unit_label" value="Unit" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sell Price (KES) *</label>
+          <input type="number" name="base_unit_price" required step="0.01" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Cost Price</label>
+          <input type="number" name="cost_price" step="0.01" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Opening Stock (Units)</label>
+          <input type="number" name="stock_qty" id="add_stock_units" value="0" step="0.01" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
+        </div>
+      </div>
+
+      <!-- Sell Mode Checkboxes -->
+      <div class="border-t border-border pt-4">
+        <p class="text-xs font-semibold text-text-secondary uppercase mb-3">Special Sell Modes</p>
+        <div class="space-y-3">
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+            <input type="checkbox" name="is_kadogo" class="w-5 h-5 rounded" onchange="document.getElementById('kadogo-fields').classList.toggle('hidden')">
+            <div><div class="font-semibold text-sm">Kadogo / Fractional Sell</div><div class="text-xs text-text-secondary">Cut whole units into smaller pieces/halves</div></div>
+          </label>
+          <div id="kadogo-fields" class="hidden pl-8 space-y-3 bg-blue-50/30 p-4 rounded-xl border border-dashed border-blue-200 mt-2">
+            <div>
+              <label class="text-[10px] font-semibold text-text-secondary uppercase block">Whole Unit Label (e.g. Bar)</label>
+              <input type="text" name="whole_unit_label" value="Bar" class="w-full px-3 py-2 rounded-lg border border-border text-xs">
+            </div>
+            <p class="text-[10px] font-bold text-primary uppercase">Default Fragment Size</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Size Name</label><input type="text" name="kadogo_name" value="Piece" class="w-full px-3 py-2 rounded-lg border border-border text-xs"></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Count/Bar</label><input type="number" name="kadogo_count" value="7" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Price/Piece</label><input type="number" name="kadogo_price" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+            </div>
+            <p class="text-[10px] text-text-secondary italic">Additional fragment sizes (e.g. Half-bar) can be added in the 'Edit' screen.</p>
+          </div>
+
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+            <input type="checkbox" name="split_enabled" class="w-5 h-5 rounded" onchange="document.getElementById('add-split-fields').classList.toggle('hidden')">
+            <div><div class="font-semibold text-sm">Split / Piece Sell</div><div class="text-xs text-text-secondary">Sell individual units from a pack (Legacy)</div></div>
+          </label>
+          <div id="add-split-fields" class="hidden pl-8 space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Piece Label</label><input type="text" name="split_unit_label" value="Piece" class="w-full px-3 py-2 rounded-lg border border-border text-xs"></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Price/Piece</label><input type="number" name="split_unit_price" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Pieces per Unit</label><input type="number" name="pieces_per_base" value="1" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Min Sale Qty</label><input type="number" name="split_min_qty" value="1" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+            </div>
+          </div>
+
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+            <input type="checkbox" name="weight_sell_enabled" class="w-5 h-5 rounded" onchange="document.getElementById('weight-fields').classList.toggle('hidden')">
+            <div><div class="font-semibold text-sm">Weight / Value Sell</div><div class="text-xs text-text-secondary">Sell by weight (sugar, rice, flour)</div></div>
+          </label>
+          <div id="weight-fields" class="hidden pl-8 space-y-2">
+            <div class="grid grid-cols-3 gap-2">
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Weight Unit</label><select name="weight_unit" class="w-full px-3 py-2 rounded-lg border border-border text-xs"><option value="kg">kg</option><option value="g">g</option><option value="litre">litre</option><option value="ml">ml</option></select></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Price/Unit</label><input type="number" name="price_per_weight_unit" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Stock (weight)</label><input type="number" name="stock_in_weight_unit" step="0.001" value="0" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+            </div>
+            <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Sell Mode</label><select name="weight_sell_mode" class="w-full px-3 py-2 rounded-lg border border-border text-xs"><option value="BY_WEIGHT">By Weight</option><option value="BY_CASH">By Cash</option></select></div>
+          </div>
+
+          <label class="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-gray-50">
+            <input type="checkbox" name="bundle_pricing_enabled" class="w-5 h-5 rounded" onchange="document.getElementById('bunch-fields').classList.toggle('hidden')">
+            <div><div class="font-semibold text-sm">Bulk & Bundle Pricing</div><div class="text-xs text-text-secondary">Manage purchase packets and bundle sales</div></div>
+          </label>
+          <div id="bunch-fields" class="hidden pl-8 space-y-3 bg-gray-50/50 p-4 rounded-xl border border-dashed border-border mt-2">
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Purchase Unit (e.g. Packet)</label><input type="text" name="purchase_unit_label" value="packet" class="w-full px-3 py-2 rounded-lg border border-border text-xs"></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Units per Packet</label><input type="number" name="units_per_purchase" value="1" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Bundle Qty</label><input type="number" name="bundle_qty" value="3" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+              <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Bundle Price (KES)</label><input type="number" name="bundle_price" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer mt-2">
+              <input type="checkbox" name="allow_single_sale" class="rounded text-primary" onchange="document.getElementById('single-sale-field').classList.toggle('hidden')">
+              <span class="text-xs font-medium">Allow Single Sale (Partial Bundle)</span>
+            </label>
+            <div id="single-sale-field" class="hidden">
+              <label class="text-[10px] font-semibold text-text-secondary uppercase block">Single Unit Price (KES)</label>
+              <input type="number" name="single_unit_price" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full text-sm">Save Product</button>
+    </div>
+    </form>
+  </div>
+</div>
+
+<!-- Quick Adjust Stock Modal -->
+<div id="adjust-stock-modal" class="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div class="p-6 border-b border-border flex items-center justify-between">
+      <h2 class="text-lg font-bold" style="color: var(--primary-dark)">Adjust Stock</h2>
+      <button onclick="document.getElementById('adjust-stock-modal').style.display='none'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">&times;</button>
+    </div>
+    <form method="POST" action="{% url 'catalogue:adjust_stock' %}" class="p-6 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="product_id" id="adj_product_id">
+      
+      <div>
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Product</label>
+        <div id="adj_product_name" class="font-bold text-sm"></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Action</label>
+          <select name="adjustment_type" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
+            <option value="add">Add (+)</option>
+            <option value="subtract">Remove (-)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Entry Mode</label>
+          <select name="mode" id="adj_mode" class="w-full px-4 py-3 rounded-xl border border-border text-sm" onchange="updateAdjHelper()">
+            <option value="units">Base Units</option>
+            <option value="packets">Packets</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block" id="adj_qty_label">Quantity (Units)</label>
+        <input type="number" name="qty" required step="0.01" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono" oninput="updateAdjHelper()">
+        <div id="adj_helper" class="text-xs text-success font-medium mt-1"></div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Reason / Reference</label>
+        <input type="text" name="reason" placeholder="e.g. Manual Correction" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full text-sm">Confirm Adjustment</button>
+    </form>
+  </div>
 </div>
 
 <script>
-    function inventoryState() {
-        return {
-            addModal: false,
-            isEdit: false,
-            editForm: { id: '', name: '', type_name: '', types: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [], rawOptions_json: '', rawVariants_json: '' },
+let currentUnitsPerPurchase = 1;
+let currentBaseLabel = 'units';
+let currentPurchaseLabel = 'packets';
 
-            addOption() {
-                if (this.editForm.options.length >= 3) return;
-                this.editForm.options.push({ name: '', values: [], rawValues: '' });
-                this.generateVariants();
-            },
-            removeOption(index) {
-                this.editForm.options.splice(index, 1);
-                this.generateVariants();
-            },
-            updateValues(index) {
-                const opt = this.editForm.options[index];
-                const raw = opt.rawValues || '';
-                opt.values = raw.split(',').map(v => v.trim()).filter(v => v !== '');
-                this.generateVariants();
-            },
-            addManualVariant() {
-                this.editForm.variants.push({
-                    options: {},
-                    price: this.editForm.price || 0,
-                    cost_price: this.editForm.cost_price || 0,
-                    stock_qty: 0,
-                    isManual: true
-                });
-            },
-            variantLabel(v) {
-                if (Object.keys(v.options).length === 0) return "Manual Item";
-                return Object.values(v.options).join(' / ');
-            },
-            generateVariants() {
-                if (this.editForm.options.length === 0) return;
-                if (this.editForm.options.some(opt => opt.values.length === 0 || opt.name === '')) return;
-
-                const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
-                const optionValues = this.editForm.options.map(opt => opt.values.map(val => ({ [opt.name]: val })));
-                const permutations = this.editForm.options.length === 1 ? optionValues[0] : cartesian(...optionValues);
-
-                const manualVariants = this.editForm.variants.filter(v => v.isManual);
-                const autoVariants = (this.editForm.options.length === 1 ? permutations : permutations).map(p => {
-                    const combinedOptions = Array.isArray(p) ? p.reduce((acc, curr) => ({ ...acc, ...curr }), {}) : p;
-                    const existing = this.editForm.variants.find(v => !v.isManual && JSON.stringify(v.options) === JSON.stringify(combinedOptions));
-                    if (existing) return existing;
-
-                    return {
-                        options: combinedOptions,
-                        price: this.editForm.price || 0,
-                        cost_price: this.editForm.cost_price || 0,
-                        stock_qty: 0
-                    };
-                });
-                this.editForm.variants = [...autoVariants, ...manualVariants];
-            },
-
-            openAdd() {
-                this.isEdit = false;
-                this.editForm = { id: '', name: '', type_name: '', types: '', price: '0', cost_price: '0', stock_qty: '1', image: '👕', options: [], variants: [] };
-                document.getElementById('emoji-input').value = '👕';
-                document.getElementById('emoji-display').innerText = '👕';
-                this.addModal = true;
-            },
-            openEdit(p, rawVariants = [], options = []) {
-                this.isEdit = true;
-                this.editForm = {
-                    ...p,
-                    variants: rawVariants,
-                    options: options.map(opt => ({ ...opt, rawValues: opt.values.join(', ') }))
-                };
-                document.getElementById('emoji-input').value = p.image || '👕';
-                document.getElementById('emoji-display').innerText = p.image || '👕';
-                this.addModal = true;
-            },
-            selectedProducts: [],
-            bulkDelete() {
-                if (!confirm(`Are you sure you want to delete ${this.selectedProducts.length} products?`)) return;
-                
-                fetch('{% url "catalogue:bulk_delete_products" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({ product_ids: this.selectedProducts })
-                })
-                .then(res => {
-                    if (res.ok) {
-                        window.location.reload();
-                    } else {
-                        alert('Deletion failed');
-                    }
-                });
-            },
-            submitForm(e) {
-                // Ensure JSONs are up to date!
-                this.editForm.rawOptions_json = JSON.stringify(this.editForm.options);
-                this.editForm.rawVariants_json = JSON.stringify(this.editForm.variants);
-            }
-        }
+function openAdjustModal(id, name, multiplier, baseLabel, purchaseLabel, bundleEnabled) {
+    document.getElementById('adj_product_id').value = id;
+    document.getElementById('adj_product_name').innerText = name;
+    currentUnitsPerPurchase = multiplier || 1;
+    currentBaseLabel = baseLabel || 'units';
+    currentPurchaseLabel = purchaseLabel || 'packets';
+    
+    // Hide 'Packets' mode if bundle pricing is not enabled
+    const modeSelect = document.getElementById('adj_mode');
+    if (bundleEnabled === 'True') {
+        modeSelect.querySelector('option[value="packets"]').style.display = 'block';
+    } else {
+        modeSelect.value = 'units';
+        modeSelect.querySelector('option[value="packets"]').style.display = 'none';
     }
+    
+    document.getElementById('adjust-stock-modal').style.display = 'flex';
+    updateAdjHelper();
+}
 
-    const emojis = ['👕', '👖', '👗', '🧥', '👚', '🩳', '👙', '👔', '🧢', '👒', '🧣', '🧤', '🧦', '🥾', '👟', '👠', '👜', '🎒', '👓', '🕶️'];
-    document.getElementById('emoji-display').addEventListener('click', function () {
-        const current = this.innerText;
-        const nextIndex = (emojis.indexOf(current) + 1) % emojis.length;
-        this.innerText = emojis[nextIndex];
-        document.getElementById('emoji-input').value = emojis[nextIndex];
+function updateAdjHelper() {
+    const mode = document.getElementById('adj_mode').value;
+    const qty = parseFloat(document.getElementsByName('qty')[1].value) || 0;
+    const helper = document.getElementById('adj_helper');
+    const label = document.getElementById('adj_qty_label');
+    
+    if (mode === 'packets') {
+        label.innerText = `Quantity (${currentPurchaseLabel}s)`;
+        const units = (qty * currentUnitsPerPurchase).toFixed(0);
+        helper.innerText = `= ${units} ${currentBaseLabel}s will be adjusted`;
+    } else {
+        label.innerText = `Quantity (${currentBaseLabel}s)`;
+        helper.innerText = '';
+    }
+}
+
+let currentFragments = [];
+function openCutModal(id, name, wholeLabel, wholeStock, fragments, totalPotential) {
+    document.getElementById('cut-product-id').value = id;
+    document.getElementById('cut-product-name').innerText = name;
+    document.getElementById('cut-whole-label').innerText = wholeLabel;
+    document.getElementById('cut-available-whole').innerText = wholeStock;
+    document.getElementById('cut-total-potential').innerText = totalPotential;
+    
+    const select = document.getElementById('fragment-size-select');
+    select.innerHTML = '';
+    currentFragments = fragments;
+    
+    fragments.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f.id;
+        opt.innerText = `${f.name} (Yields ${f.count})`;
+        select.appendChild(opt);
     });
+    
+    updateCutPreview();
+    document.getElementById('manual-cut-modal').style.display = 'flex';
+}
+
+function updateCutPreview() {
+    const wholeQty = parseInt(document.getElementById('cut-whole-qty').value || 0);
+    const fragId = document.getElementById('fragment-size-select').value;
+    const frag = currentFragments.find(f => f.id === fragId);
+    const preview = document.getElementById('cut-preview');
+    
+    if (frag && wholeQty > 0) {
+        preview.innerText = `➔ This will create ${wholeQty * frag.count} ${frag.name}s`;
+        preview.classList.remove('hidden');
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+function closeCutModal() {
+    document.getElementById('manual-cut-modal').style.display = 'none';
+}
+</script>
+
+<!-- Manual Cut Modal -->
+<div id="manual-cut-modal" class="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div class="p-6 border-b border-border flex items-center justify-between">
+      <h3 class="font-bold text-lg">Manual Stock Cut</h3>
+      <button onclick="closeCutModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
+    </div>
+    <form action="{% url 'catalogue:manual_cut' %}" method="POST" class="p-6 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="product_id" id="cut-product-id">
+      
+      <div class="p-4 bg-blue-50 rounded-xl space-y-1">
+        <div class="text-xs font-bold text-primary uppercase mb-1" id="cut-product-name">Product Name</div>
+        <div class="text-sm">Available: <span class="font-bold" id="cut-available-whole">0</span> <span id="cut-whole-label">Bars</span></div>
+        <div class="text-[10px] text-blue-600 font-bold uppercase tracking-tight">
+          Total Potential Pieces: <span id="cut-total-potential">--</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Target Fragment Size</label>
+        <select name="fragment_size_id" id="fragment-size-select" onchange="updateCutPreview()" class="w-full px-3 py-2 rounded-lg border border-border text-sm"></select>
+      </div>
+
+      <div>
+        <label class="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Number of Whole Units to Cut</label>
+        <input type="number" name="whole_qty" id="cut-whole-qty" value="1" min="1" oninput="updateCutPreview()"
+               class="w-full px-3 py-2 rounded-lg border border-border text-sm font-mono">
+      </div>
+
+      <div id="cut-preview" class="p-3 bg-green-50 text-success text-xs font-bold rounded-lg hidden"></div>
+
+      <button type="submit" class="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20">Confirm Cut</button>
+    </form>
+  </div>
+</div>
+
+
+<style>
+  .inv-pill { display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; transition: all 0.15s; border: 1px solid var(--border); background: white; color: var(--text-primary); text-decoration: none; }
+  .inv-pill:hover { border-color: var(--primary-light); }
+  .inv-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  .stock-pill { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: white; color: var(--text-primary); text-decoration: none; transition: all 0.15s; }
+  .stock-pill:hover { border-color: var(--primary-light); }
+  .stock-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .stock-pill.warning.active { background: var(--warning); border-color: var(--warning); }
+  .stock-pill.danger.active { background: var(--danger); border-color: var(--danger); }
+
+  .inv-badge { display: inline-flex; align-items: center; gap: 2px; font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 6px; letter-spacing: 0.5px; }
+  .badge-base { background: #E8F5E9; color: #2E7D32; }
+  .badge-split { background: #EDE9FE; color: #7C3AED; }
+  .badge-weight { background: #FEF3C7; color: #D97706; }
+  .badge-bunch { background: #DBEAFE; color: #2563EB; }
+
+  .batch-detail-row td { border-bottom: 1px solid var(--border); }
+</style>
+
+<script>
+function toggleBatches(productId) {
+  const row = document.getElementById('batch-row-' + productId);
+  if (row) {
+    row.style.display = row.style.display === 'none' ? '' : 'none';
+    // Trigger HTMX load on first open
+    if (row.style.display !== 'none') {
+      htmx.trigger(row.querySelector('[hx-get]'), 'revealed');
+    }
+  }
+}
 </script>
 {% endblock %}

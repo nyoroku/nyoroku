@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Stock Audits</h1>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">Physical stock verification sessions</p>
+    </div>
+    <a href="{% url 'audit_module:initiate' %}" class="btn btn-accent text-sm gap-2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      New Audit
+    </a>
+  </div>
+
+  <!-- Audit Sessions -->
+  <div class="space-y-3">
+    {% for s in sessions %}
+    <a href="{% url 'audit_module:detail' s.pk %}" class="card block p-5 hover:border-[var(--accent)] transition-all group">
+      <div class="flex items-center justify-between">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-lg">{% if s.scope == 'random' %}🎲{% elif s.scope == 'category' %}📁{% else %}📦{% endif %}</span>
+            <span class="font-bold text-base" style="color: var(--primary-dark)">{{ s.get_scope_display }} Audit</span>
+          </div>
+          <div class="text-xs" style="color: var(--text-secondary)">
+            {{ s.created_at|date:"d M Y, H:i" }} · by {{ s.initiated_by.name }}
+          </div>
+          <div class="flex items-center gap-3 mt-2">
+            <span class="text-xs font-semibold px-2 py-1 rounded-lg bg-slate-100" style="color: var(--text-secondary)">{{ s.total_items }} items</span>
+            {% if s.variance_count > 0 %}
+            <span class="text-xs font-bold px-2 py-1 rounded-lg bg-red-50 text-red-700">{{ s.variance_count }} variances</span>
+            {% endif %}
+            {% if s.match_count > 0 %}
+            <span class="text-xs font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700">{{ s.match_count }} matched</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold px-3 py-1.5 rounded-xl
+            {% if s.status == 'completed' %}bg-emerald-50 text-emerald-700
+            {% else %}bg-amber-50 text-amber-700{% endif %}
+          ">{{ s.get_status_display }}</span>
+          <svg class="text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="card text-center py-16">
+      <div class="text-4xl mb-3 opacity-30">🔍</div>
+      <p class="text-lg font-bold" style="color: var(--primary-dark)">No audits yet</p>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">Start your first stock audit to verify inventory</p>
+      <a href="{% url 'audit_module:initiate' %}" class="btn btn-primary text-sm mt-4 inline-flex">Start First Audit</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,71 +1,188 @@
 {% extends 'base.html' %}
-{% load static %}
-
-{% block screen_title %}Analytics{% endblock %}
+{% block extra_head %}
+<style>
+  .kpi-card {
+    background: white; border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; position: relative; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .kpi-revenue::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+  .kpi-profit::before { background: linear-gradient(90deg, #10b981, #34d399); }
+  .kpi-net::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+  .kpi-basket::before { background: linear-gradient(90deg, var(--accent), var(--accent-glow)); }
+  .chart-bar {
+    transition: all 0.3s cubic-bezier(.4,0,.2,1);
+    border-radius: 6px 6px 0 0;
+  }
+  .chart-bar:hover { opacity: 0.8; transform: scaleY(1.02); transform-origin: bottom; }
+  .report-link {
+    padding: 16px; border-radius: 14px; border: 1px solid var(--border);
+    background: white; text-align: center; transition: all 0.2s;
+    text-decoration: none; color: var(--text-primary);
+  }
+  .report-link:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(212,168,82,0.1); transform: translateY(-2px); }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="px-4 py-6" x-data="{ period: 'today', customOpen: false, startDate: '', endDate: '' }">
-    
-    <!-- Period Filters -->
-    <div class="flex flex-col gap-3 mb-8">
-        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            <button @click="period = 'today'; customOpen = false" 
-                    hx-get="{% url 'reports:dashboard' %}?period=today"
-                    hx-target="#dashboard-body"
-                    :style="period === 'today' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
-                    :class="period === 'today' ? 'shadow-md' : ''"
-                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
-                Today
-            </button>
-            <button @click="period = '7days'; customOpen = false" 
-                    hx-get="{% url 'reports:dashboard' %}?period=7days"
-                    hx-target="#dashboard-body"
-                    :style="period === '7days' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
-                    :class="period === '7days' ? 'shadow-md' : ''"
-                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
-                7 Days
-            </button>
-            <button @click="period = '30days'; customOpen = false" 
-                    hx-get="{% url 'reports:dashboard' %}?period=30days"
-                    hx-target="#dashboard-body"
-                    :style="period === '30days' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
-                    :class="period === '30days' ? 'shadow-md' : ''"
-                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
-                30 Days
-            </button>
-            <button @click="customOpen = !customOpen; if(customOpen) period = 'custom';"
-                    :style="period === 'custom' ? 'background: #2d545e; color: #e1b382; border-color: #2d545e' : 'background: white; color: #6B7280; border-color: #E5E7EB'"
-                    :class="period === 'custom' ? 'shadow-md' : ''"
-                    class="px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider transition-all border whitespace-nowrap">
-                Custom Range
-            </button>
+<div class="max-w-7xl mx-auto px-4 py-6 lg:py-8 pb-24 lg:pb-8">
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Dashboard</h1>
+      <p class="text-sm" style="color: var(--text-secondary)">Business performance overview</p>
+    </div>
+    <div class="flex gap-1.5 p-1 rounded-xl bg-white border border-[var(--border)]">
+      <a href="{% url 'reports:dashboard' %}?period=today" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == 'today' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == 'today' %}style="background: var(--primary)"{% endif %}>Today</a>
+      <a href="{% url 'reports:dashboard' %}?period=7days" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == '7days' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == '7days' %}style="background: var(--primary)"{% endif %}>7 Days</a>
+      <a href="{% url 'reports:dashboard' %}?period=30days" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == '30days' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == '30days' %}style="background: var(--primary)"{% endif %}>30 Days</a>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="kpi-card kpi-revenue">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Revenue</p>
+      <p class="text-2xl font-extrabold font-mono mt-2" style="color: var(--primary-dark)">KES {{ revenue|floatformat:0 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">{{ tx_count }} transaction{{ tx_count|pluralize }}</p>
+    </div>
+    <div class="kpi-card kpi-profit">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Gross Profit</p>
+      <p class="text-2xl font-extrabold font-mono mt-2 {% if gross_profit >= 0 %}text-emerald-600{% else %}text-red-600{% endif %}">KES {{ gross_profit|floatformat:0 }}</p>
+      <p class="text-xs font-mono font-bold mt-1.5 {% if margin >= 20 %}text-emerald-600{% else %}text-amber-600{% endif %}">{{ margin|floatformat:1 }}% margin</p>
+    </div>
+    <div class="kpi-card kpi-net">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Net Profit</p>
+      <p class="text-2xl font-extrabold font-mono mt-2 {% if net_profit >= 0 %}text-emerald-600{% else %}text-red-600{% endif %}">KES {{ net_profit|floatformat:0 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">After KES {{ expenses|floatformat:0 }} expenses</p>
+    </div>
+    <div class="kpi-card kpi-basket">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Avg Basket</p>
+      <p class="text-2xl font-extrabold font-mono mt-2" style="color: var(--primary)">KES {{ avg_basket|floatformat:0 }}</p>
+      {% if total_discounts > 0 %}<p class="text-xs text-red-600 font-semibold mt-1.5">-KES {{ total_discounts|floatformat:0 }} discounts</p>{% endif %}
+    </div>
+  </div>
+
+  <!-- Revenue Chart -->
+  <div class="card p-5 mb-5">
+    <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Revenue Trend</h2>
+    <div class="flex items-end gap-1" style="height: 150px">
+      {% for d in chart_days %}
+      <div class="flex flex-col items-center flex-1 group cursor-pointer relative">
+        <div class="absolute -top-6 text-[10px] font-mono font-bold opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap" style="color: var(--primary)">{{ d.value|floatformat:0 }}</div>
+        <div class="chart-bar w-full" 
+             style="height: calc({{ d.value }} / {{ max_chart_value }} * 140px); min-height:{% if d.value > 0 %}4{% else %}0{% endif %}px;
+                    background: {% if d.is_today %}linear-gradient(180deg, var(--accent-glow), var(--accent)){% else %}linear-gradient(180deg, var(--primary-light), var(--primary)){% endif %};"></div>
+        <div class="text-[10px] text-text-secondary font-semibold mt-1.5">{{ d.label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-5 mb-5">
+    <!-- Payment Breakdown -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Payment Methods</h2>
+      <div class="space-y-3">
+        {% for method, amount in payment_stats.items %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold capitalize flex items-center gap-2">
+            {% if method == 'cash' %}💵{% elif method == 'mpesa' %}📱{% elif method == 'split' %}💳{% else %}📋{% endif %} {{ method }}
+          </span>
+          <span class="font-mono font-bold text-sm">KES {{ amount|floatformat:0 }}</span>
         </div>
-        
-        <!-- Custom Range Form -->
-        <div x-show="customOpen" x-collapse style="background: white; border: 1px solid #E5E7EB" class="p-4 rounded-2xl">
-            <form hx-get="{% url 'reports:dashboard' %}" hx-target="#dashboard-body" class="flex flex-col sm:flex-row gap-3 items-end">
-                <input type="hidden" name="period" value="custom">
-                <div class="flex-1 w-full">
-                    <label class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block">Start Date</label>
-                    <input type="date" name="start_date" x-model="startDate" required style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b" class="w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 transition-all">
-                </div>
-                <div class="flex-1 w-full">
-                    <label class="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 block">End Date</label>
-                    <input type="date" name="end_date" x-model="endDate" required style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b" class="w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-1 transition-all">
-                </div>
-                <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl font-extrabold text-sm shadow-md active:scale-95 transition-all" style="background: #2d545e; color: #e1b382">
-                    Apply Filter
-                </button>
-            </form>
-        </div>
+        {% endfor %}
+      </div>
     </div>
 
-    <!-- Dashboard Body -->
-    <div id="dashboard-body" hx-get="{% url 'reports:dashboard' %}?period=today" hx-trigger="load">
-        <!-- Initial loading state -->
-        <div class="flex items-center justify-center py-20">
-            <div class="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin" style="border-color: #e1b382"></div>
+    <!-- Day-of-Week -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Day Performance</h2>
+      <div class="flex items-end gap-2" style="height: 110px">
+        {% for d in dow_chart %}
+        <div class="flex flex-col items-center flex-1 group relative">
+          <div class="absolute -top-6 text-[10px] font-mono font-bold opacity-0 group-hover:opacity-100" style="color: var(--primary)">{{ d.revenue|floatformat:0 }}</div>
+          <div class="chart-bar w-full" style="background: linear-gradient(180deg, var(--primary-light), var(--primary)); height: calc({{ d.revenue }} / {{ max_dow_value }} * 100px); min-height: {% if d.revenue > 0 %}4{% else %}0{% endif %}px"></div>
+          <div class="text-[10px] text-text-secondary font-semibold mt-1.5">{{ d.label }}</div>
         </div>
+        {% endfor %}
+      </div>
     </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-5 mb-5">
+    <!-- Top Products -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Top Products</h2>
+      <div class="space-y-3">
+        {% for p in top_products %}
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white">{{ forloop.counter }}</span>
+            <span class="text-sm font-semibold truncate">{{ p.product__name }}</span>
+          </div>
+          <div class="text-right">
+            <div class="font-mono text-xs font-bold">KES {{ p.total_revenue|floatformat:0 }}</div>
+            <div class="text-[10px] text-text-secondary">{{ p.total_qty|floatformat:0 }} sold</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4 flex items-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Low Stock
+      </h2>
+      <div class="space-y-2">
+        {% for p in low_stock %}
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium truncate">{{ p.name }}</span>
+          <span class="font-mono font-bold {% if p.effective_stock <= 0 %}text-red-600{% else %}text-amber-600{% endif %}">
+            {{ p.effective_stock|floatformat:0 }} left
+          </span>
+        </div>
+        {% empty %}
+        <p class="text-sm text-center py-4" style="color: var(--text-secondary)">All stocked up! 🎉</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Navigation -->
+  <div class="card p-5">
+    <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Detailed Reports</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <a href="{% url 'reports:sales_by_category' %}" class="report-link">
+        <div class="text-2xl mb-2">📊</div><div class="text-xs font-bold">Sales by Category</div>
+      </a>
+      <a href="{% url 'reports:product_performance' %}" class="report-link">
+        <div class="text-2xl mb-2">📈</div><div class="text-xs font-bold">Product Performance</div>
+      </a>
+      <a href="{% url 'reports:margin_report' %}" class="report-link">
+        <div class="text-2xl mb-2">💰</div><div class="text-xs font-bold">Margin Report</div>
+      </a>
+      <a href="{% url 'reports:supplier_spend' %}" class="report-link">
+        <div class="text-2xl mb-2">🏢</div><div class="text-xs font-bold">Supplier Spend</div>
+      </a>
+      <a href="{% url 'reports:stock_valuation' %}" class="report-link">
+        <div class="text-2xl mb-2">📦</div><div class="text-xs font-bold">Stock Valuation</div>
+      </a>
+      <a href="{% url 'reports:batch_expiry' %}" class="report-link">
+        <div class="text-2xl mb-2">⏰</div><div class="text-xs font-bold">Batch Expiry</div>
+      </a>
+      <a href="{% url 'reports:po_history' %}" class="report-link">
+        <div class="text-2xl mb-2">📋</div><div class="text-xs font-bold">PO History</div>
+      </a>
+      <a href="{% url 'reports:promotion_effectiveness' %}" class="report-link">
+        <div class="text-2xl mb-2">⭐</div><div class="text-xs font-bold">Promo Effectiveness</div>
+      </a>
+    </div>
+  </div>
 </div>
 {% endblock %}

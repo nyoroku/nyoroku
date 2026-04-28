@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-bold mb-4" style="color: var(--primary-dark)">PO History</h1>
+  <div class="bg-white rounded-2xl border border-border overflow-hidden">
+    <table class="w-full text-sm"><thead><tr class="border-b border-border"><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-left">PO #</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Supplier</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Date</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Status</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Items</th></tr></thead>
+    <tbody>{% for po in pos %}<tr class="border-b border-border/50"><td class="px-4 py-2 font-mono font-bold"><a href="{% url 'procurement:po_detail' po.pk %}" style="color: var(--primary)">{{ po.po_number }}</a></td><td class="px-4 py-2">{{ po.supplier.name }}</td><td class="px-4 py-2 text-xs text-text-secondary">{{ po.created_at|date:"d M Y" }}</td><td class="px-4 py-2"><span class="text-xs font-bold">{{ po.get_status_display }}</span></td><td class="px-4 py-2 text-right font-mono">{{ po.line_items.count }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

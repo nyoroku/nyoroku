@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block title %}Payroll Profile: {{ profile_user.get_full_name }}{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-900 mb-4">Payroll Profile: {{ profile_user.get_full_name }}</h1>
+<p>Base Salary: {{ profile_user.basic_salary|floatformat:2 }} KES</p>
+
+<!-- Display any messages (success/error) -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="notification {% if message.tags == 'error' %}is-danger{% elif 'success' %}is-success{% 'warning' %}is-warning{% else %}is-info{% endif %}">
+            <button class="delete"></button>
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="bg-white rounded-lg shadow-md overflow-hidden mt-4">
+    <header class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <p class="text-lg font-bold text-gray-800">Recurring Allowances & Deductions</p>
+    </header>
+    <div class="p-6">
+        <table class="min-w-full divide-y divide-gray-200 is-fullwidth">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for adj in adjustments %}
+                    <tr>
+                        <td>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if adj.type == 'ALLOWANCE' %}is-success{% else %}is-danger{% endif %}">
+                                {{ adj.get_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ adj.name }}</td>
+                        <td>{{ adj.amount|floatformat:2 }} KES</td>
+                        <td>
+                            <a href="{% url 'payroll:remove_adjustment' adj.id %}"
+                               class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md font-semibold focus:outline-none transition ease-in-out duration-150 text-xs px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white"
+                               onclick="return confirm('Are you sure you want to remove this recurring adjustment: {{ adj.name }}?')">
+                                Remove
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center has-text-grey">
+                            No recurring adjustments found. Add one below.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <hr>
+
+        <h3 class="text-2xl font-bold text-gray-900 mb-4 is-5">Add New Recurring Adjustment</h3>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_adjustment">
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="id_type">Type</label>
+                <div class="relative">
+                    <div class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border is-fullwidth">
+                        <select name="type" id="id_type" required>
+                            <option value="">Select type...</option>
+                            <option value="ALLOWANCE" {% if form.type.value == 'ALLOWANCE' %}selected{% endif %}>Allowance</option>
+                            <option value="DEDUCTION" {% if form.type.value == 'DEDUCTION' %}selected{% endif %}>Deduction</option>
+                        </select>
+                    </div>
+                </div>
+                {% if form.type.errors %}
+                    <p class="help bg-red-600 hover:bg-red-700 text-white">{{ form.type.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="id_name">Name</label>
+                <div class="relative">
+                    <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2" type="text" name="name" id="id_name"
+                           value="{% if form.name.value %}{{ form.name.value }}{% endif %}"
+                           placeholder="e.g., House Allowance, Loan Repayment" required>
+                </div>
+                {% if form.name.errors %}
+                    <p class="help bg-red-600 hover:bg-red-700 text-white">{{ form.name.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1" for="id_amount">Amount (KES)</label>
+                <div class="relative">
+                    <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2" type="number" name="amount" id="id_amount"
+                           value="{% if form.amount.value %}{{ form.amount.value }}{% endif %}"
+                           step="0.01" min="0" placeholder="0.00" required>
+                </div>
+                {% if form.amount.errors %}
+                    <p class="help bg-red-600 hover:bg-red-700 text-white">{{ form.amount.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <div class="relative">
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md font-semibold focus:outline-none transition ease-in-out duration-150 bg-blue-600 hover:bg-blue-700 text-white">
+                        <span class="icon">
+                            <i class="fas fa-plus"></i>
+                        </span>
+                        <span>Add Recurring Adjustment</span>
+                    </button>
+                    <a href="{% url 'payroll:period_list' %}" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md font-semibold focus:outline-none transition ease-in-out duration-150 is-light">
+                        <span>Back to Payroll</span>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tax Profile Section -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden mt-4">
+    <header class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <p class="text-lg font-bold text-gray-800">Tax Profile</p>
+    </header>
+    <div class="p-6">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_tax_profile">
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Personal Relief (KES)</label>
+                <div class="relative">
+                    <input class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2" type="number" name="personal_relief"
+                           value="{{ tax_profile.personal_relief|default:0 }}"
+                           step="0.01" min="0" placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Applicable Tax Deductions</label>
+                <div class="relative">
+                    {% for rule in tax_rules %}
+                        <label class="checkbox">
+                            <input type="checkbox" name="applicable_deductions" value="{{ rule.id }}"
+                                   {% if rule in tax_profile.applicable_deductions.all %}checked{% endif %}>
+                            {{ rule.name }} - {{ rule.description }}
+                        </label><br>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <div class="relative">
+                    <button type="submit" class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md font-semibold focus:outline-none transition ease-in-out duration-150 bg-sky-500 hover:bg-sky-600 text-white">
+                        <span class="icon">
+                            <i class="fas fa-save"></i>
+                        </span>
+                        <span>Update Tax Profile</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-dismiss notifications
+    const notifications = document.querySelectorAll('.notification .delete');
+    notifications.forEach(function(deleteButton) {
+        deleteButton.addEventListener('click', function() {
+            deleteButton.parentElement.remove();
+        });
+    });
+
+    // Form validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const action = form.querySelector('input[name="action"]').value;
+            if (action === 'add_adjustment') {
+                const type = form.querySelector('select[name="type"]').value;
+                const name = form.querySelector('input[name="name"]').value.trim();
+                const amount = form.querySelector('input[name="amount"]').value;
+
+                if (!type) {
+                    alert('Please select an adjustment type');
+                    e.preventDefault();
+                    return;
+                }
+                if (!name) {
+                    alert('Please enter an adjustment name');
+                    e.preventDefault();
+                    return;
+                }
+                if (!amount || parseFloat(amount) <= 0) {
+                    alert('Please enter a valid amount greater than 0');
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

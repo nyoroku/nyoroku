@@ -1,83 +1,186 @@
 {% extends 'base.html' %}
-{% load static %}
-
 {% block content %}
-<div class="px-4 py-6 max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto px-4 py-6 pb-24">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-xl font-bold" style="color: #12343b">Stock Orders</h1>
-            <p class="text-sm" style="color: #6B7280">Purchase history &amp; tracking</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{% url 'procurement:supplier_list' %}" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center no-underline active:scale-95 transition-all"
-               style="background: #F8F9FB; color: #2d545e; border: 1px solid #E5E7EB">Suppliers</a>
-            <a href="{% url 'procurement:buy_stock' %}" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center gap-2 no-underline active:scale-95 transition-all shadow-md"
-               style="background: #2d545e; color: #e1b382">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                Buy Stock
-            </a>
-        </div>
+  <!-- Page Header -->
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Procurement</h1>
+      <p class="text-xs text-text-secondary font-medium mt-0.5">Purchase orders &amp; supplier management</p>
     </div>
+    <a href="{% url 'procurement:po_create' %}" class="btn btn-accent text-sm" id="new-po-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      New PO
+    </a>
+  </div>
 
-    <!-- Orders List -->
-    <div class="space-y-3 pb-20">
-        {% for po in pos %}
-        <a href="{% url 'procurement:po_detail' po.id %}" class="block rounded-2xl p-4 no-underline transition-all active:scale-[0.99]"
-           style="background: white; border: 1px solid #E5E7EB">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center"
-                         style="background: #2d545e15">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2d545e" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2 mb-0.5">
-                            <span class="font-bold text-base" style="color: #12343b">#{{ po.lpo_number|slice:"-4:" }}</span>
-                            {% if po.status == 'draft' %}
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #2d545e15; color: #2d545e">Draft</span>
-                            {% elif po.status == 'pending' %}
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #F59E0B22; color: #D97706">Pending</span>
-                            {% elif po.status == 'received' %}
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #16A34A18; color: #16A34A">Received</span>
-                            {% else %}
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" style="background: #F8F9FB; color: #6B7280">{{ po.status }}</span>
-                            {% endif %}
-                        </div>
-                        <div class="flex items-center gap-2 text-xs truncate" style="color: #6B7280">
-                            <span class="truncate">{{ po.supplier.name }}</span>
-                            <span>·</span>
-                            <span>{{ po.created_at|date:"d M" }}</span>
-                        </div>
-                    </div>
-                </div>
+  <!-- Navigation Tabs -->
+  <div class="proc-tabs mb-6">
+    <a href="{% url 'procurement:po_list' %}" class="proc-tab active" id="tab-purchase-orders">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+      Purchase Orders
+    </a>
+    <a href="{% url 'procurement:supplier_list' %}" class="proc-tab" id="tab-suppliers">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Suppliers
+    </a>
+  </div>
 
-                <div class="flex items-center gap-3 shrink-0">
-                    {% if po.status == 'pending' and user.role == 'admin' %}
-                    <form action="{% url 'procurement:quick_approve' po.id %}" method="POST" @click.stop>
-                        {% csrf_token %}
-                        <button type="submit" class="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all"
-                                style="background: #16A34A; color: white">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
-                        </button>
-                    </form>
-                    {% endif %}
-                    <div class="text-right">
-                        <div class="font-bold text-lg font-mono tabular" style="color: #2d545e">{{ po.total_cost|floatformat:0 }}</div>
-                        <div class="text-[10px] font-semibold" style="color: #c89666">KES</div>
-                    </div>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
-                </div>
-            </div>
-        </a>
-        {% empty %}
-        <div class="flex flex-col items-center justify-center py-20 rounded-2xl" style="background: white; border: 2px dashed #E5E7EB">
-            <div class="text-4xl mb-4 opacity-30">📋</div>
-            <p class="font-semibold" style="color: #6B7280">No stock orders yet</p>
-            <p class="text-xs mt-1" style="color: #9CA3AF">Create your first purchase order</p>
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-5">
+    <a href="{% url 'procurement:po_list' %}" class="stat-card {% if not active_status %}stat-active{% endif %}" id="stat-all">
+      <div class="stat-number">{{ stats.total }}</div>
+      <div class="stat-label">All</div>
+    </a>
+    <a href="{% url 'procurement:po_list' %}?status=draft" class="stat-card {% if active_status == 'draft' %}stat-active{% endif %}" id="stat-draft">
+      <div class="stat-number">{{ stats.draft }}</div>
+      <div class="stat-label">📝 Draft</div>
+    </a>
+    <a href="{% url 'procurement:po_list' %}?status=pending_approval" class="stat-card {% if active_status == 'pending_approval' %}stat-active{% endif %}" id="stat-pending">
+      <div class="stat-number">{{ stats.pending }}</div>
+      <div class="stat-label">⏳ Pending</div>
+    </a>
+    <a href="{% url 'procurement:po_list' %}?status=approved" class="stat-card {% if active_status == 'approved' %}stat-active{% endif %}" id="stat-approved">
+      <div class="stat-number">{{ stats.approved }}</div>
+      <div class="stat-label">✅ Approved</div>
+    </a>
+    <a href="{% url 'procurement:po_list' %}?status=partially_received" class="stat-card {% if active_status == 'partially_received' %}stat-active{% endif %}" id="stat-partial">
+      <div class="stat-number">{{ stats.partial }}</div>
+      <div class="stat-label">📦 Partial</div>
+    </a>
+    <a href="{% url 'procurement:po_list' %}?status=fully_received" class="stat-card {% if active_status == 'fully_received' %}stat-active{% endif %}" id="stat-received">
+      <div class="stat-number">{{ stats.received }}</div>
+      <div class="stat-label">✓ Done</div>
+    </a>
+  </div>
+
+  <!-- PO List -->
+  <div class="space-y-2">
+    {% for po in pos %}
+    <a href="{% url 'procurement:po_detail' po.pk %}" class="po-card" id="po-{{ po.pk }}">
+      <div class="flex items-center justify-between">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-bold text-sm font-mono" style="color: var(--primary)">{{ po.po_number }}</span>
+            <span class="po-status-badge
+              {% if po.status == 'draft' %}badge-draft
+              {% elif po.status == 'pending_approval' %}badge-pending
+              {% elif po.status == 'approved' %}badge-approved
+              {% elif po.status == 'partially_received' %}badge-partial
+              {% elif po.status == 'fully_received' %}badge-received
+              {% elif po.status == 'cancelled' %}badge-cancelled
+              {% endif %}">{{ po.get_status_display }}</span>
+          </div>
+          <div class="text-sm font-semibold" style="color: var(--text-primary)">{{ po.supplier.name }}</div>
+          <div class="text-xs text-text-secondary mt-0.5">{{ po.created_at|date:"d M Y, H:i" }} · {{ po.created_by.name }}</div>
         </div>
-        {% endfor %}
+        <div class="text-right shrink-0 ml-4">
+          <div class="font-bold font-mono text-sm" style="color: var(--primary-dark)">KES {{ po.total_cost|floatformat:0 }}</div>
+          <div class="text-xs text-text-secondary mt-0.5 font-mono">{{ po.line_items.count }} items</div>
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="text-center py-16">
+      <div class="text-5xl mb-4 opacity-30">📋</div>
+      <p class="text-lg font-bold text-text-secondary">No purchase orders{% if active_status %} with this status{% endif %}</p>
+      <p class="text-sm text-text-secondary mt-1">Create your first PO to get started</p>
+      <a href="{% url 'procurement:po_create' %}" class="btn btn-accent text-sm mt-4 inline-flex">+ New Purchase Order</a>
     </div>
+    {% endfor %}
+  </div>
 </div>
+
+<style>
+  /* Tabs */
+  .proc-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-main);
+    border-radius: 14px;
+    padding: 3px;
+    border: 1px solid var(--border);
+  }
+  .proc-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.2s;
+    flex: 1;
+    justify-content: center;
+  }
+  .proc-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.6); }
+  .proc-tab.active {
+    background: white;
+    color: var(--primary-dark);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+
+  /* Stats */
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    border-radius: 14px;
+    background: white;
+    border: 1px solid var(--border);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .stat-card:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 2px 8px rgba(26,58,74,0.08);
+    transform: translateY(-1px);
+  }
+  .stat-active {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+  .stat-active .stat-number { color: white; }
+  .stat-active .stat-label { color: rgba(255,255,255,0.7); }
+  .stat-number { font-size: 20px; font-weight: 800; color: var(--primary-dark); font-family: 'JetBrains Mono', monospace; line-height: 1; }
+  .stat-label { font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+
+  /* PO Card */
+  .po-card {
+    display: block;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    text-decoration: none;
+    transition: all 0.2s cubic-bezier(.4,0,.2,1);
+  }
+  .po-card:hover {
+    border-color: var(--primary-light);
+    box-shadow: 0 4px 16px rgba(26,58,74,0.08);
+    transform: translateY(-1px);
+  }
+  .po-card:active { transform: scale(0.99); }
+
+  /* Status Badge */
+  .po-status-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .badge-draft { background: #f1f5f9; color: #64748b; }
+  .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-approved { background: #d1fae5; color: #065f46; }
+  .badge-partial { background: #dbeafe; color: #1e40af; }
+  .badge-received { background: #d1fae5; color: #065f46; }
+  .badge-cancelled { background: #fee2e2; color: #991b1b; }
+</style>
 {% endblock %}

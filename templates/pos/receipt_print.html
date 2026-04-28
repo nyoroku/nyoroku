@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Receipt {{ transaction.receipt_number }}</title>
+    <title>Receipt {{ sale.receipt_number }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -67,7 +67,7 @@
         }
         .btn:active { transform: scale(0.97); }
         .btn-back { background: #F8F9FB; color: #111827; border: 1px solid #E5E7EB; }
-        .btn-print { background: #2563EB; color: white; }
+        .btn-print { background: #1a3a4a; color: white; }
         
         @media print {
             body { background: white; }
@@ -84,18 +84,21 @@
     <div class="receipt">
         <div class="receipt-body">
             <div class="header" style="text-align: center; margin-bottom: 20px;">
-                <h2>ELI CLASSICS</h2>
-                <div class="meta" style="margin-top: 4px;">Point of Sale System · Nairobi</div>
+                <h2 style="font-size: 20px; letter-spacing: -0.5px;">JIMMY'S MINIMART</h2>
+                <div class="meta" style="margin-top: 6px; line-height: 1.4;">
+                    Kibingoti, Mugumo Estate, off Sagana - Karatina Superhighway<br>
+                    Ground floor, ACE HOTEL building.
+                </div>
             </div>
 
             <div class="divider"></div>
 
             <div class="meta" style="margin-bottom: 12px;">
                 <div style="display:flex;justify-content:space-between;">
-                    <span>#{{ transaction.receipt_number }}</span>
-                    <span>{{ transaction.created_at|date:"d/m/Y H:i" }}</span>
+                    <span>#{{ sale.receipt_number }}</span>
+                    <span>{{ sale.created_at|date:"d/m/Y H:i" }}</span>
                 </div>
-                <div style="margin-top: 2px;">Cashier: {{ transaction.cashier.name|default:'Admin' }}</div>
+                <div style="margin-top: 2px;">Cashier: {{ sale.cashier.name|default:'Admin' }}</div>
             </div>
 
             <div class="divider"></div>
@@ -109,11 +112,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in transaction.items %}
+                    {% for item in sale.line_items.all %}
                     <tr>
-                        <td style="padding-right:8px;">{{ item.name }}</td>
-                        <td>{{ item.qty }}</td>
-                        <td style="text-align:right;font-weight:700;">{{ item.price|floatformat:0 }}</td>
+                        <td style="padding-right:8px;">
+                          {{ item.product_name }}
+                          {% if item.sell_mode == 'weight' %}
+                            <span style="font-size:10px; color:#6B7280;">({{ item.weight_value }}{{ item.weight_unit }})</span>
+                          {% elif item.sell_mode == 'bundle' %}
+                            <span style="font-size:10px; color:#6B7280;">(Bundle of {{ item.bundle_size_snapshot|default:0 }})</span>
+                          {% elif item.sell_mode == 'single' %}
+                            <span style="font-size:10px; color:#6B7280;">(Single)</span>
+                          {% endif %}
+                        </td>
+                        <td>{{ item.quantity }}</td>
+                        <td style="text-align:right;font-weight:700;">{{ item.line_total|floatformat:0 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -123,19 +135,18 @@
 
             <div class="total-row" style="display:flex;justify-content:space-between;">
                 <span style="font-family:'Inter',sans-serif;">TOTAL</span>
-                <span>KES {{ transaction.total|floatformat:0 }}</span>
+                <span>KES {{ sale.total|floatformat:0 }}</span>
             </div>
 
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">
                 <span class="meta">Payment:</span>
-                <span style="text-transform:uppercase;font-weight:600;">{{ transaction.payment_method }}</span>
+                <span style="text-transform:uppercase;font-weight:600;">{{ sale.get_payment_method_display }}</span>
             </div>
 
             <div class="divider"></div>
 
             <div style="text-align:center;font-size:12px;color:#6B7280;">
-                <p>Asante kwa kununua!</p>
-                <p style="font-size:10px;margin-top:4px;letter-spacing:1px;">Powered by Eli Classics</p>
+                <p style="font-size:10px;margin-top:4px;letter-spacing:1px;">Powered by JIMMY'S MINIMART POS</p>
             </div>
         </div>
     </div>

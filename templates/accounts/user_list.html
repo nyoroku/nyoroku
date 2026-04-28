@@ -33,17 +33,24 @@
                 </div>
             </div>
 
-            {% if user.id != u.id %}
-            <button hx-post="{% url 'accounts:delete_user' u.id %}" 
-                    hx-confirm="Permanently delete '{{ u.name }}'?"
-                    hx-target="closest div.bg-surface2"
-                    hx-swap="outerHTML"
-                    class="w-9 h-9 rounded-xl bg-brand-red/10 text-brand-red flex items-center justify-center active:scale-90 transition-all opacity-0 group-hover:opacity-100 hover:bg-brand-red/15">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-            </button>
-            {% else %}
-            <span class="text-[10px] font-bold text-text-muted/30 uppercase tracking-[0.15em] px-2">You</span>
-            {% endif %}
+            <div class="flex gap-2 transition-all opacity-0 group-hover:opacity-100">
+                <button hx-get="{% url 'accounts:edit_user_modal' u.id %}" 
+                        hx-target="#modal-container"
+                        class="w-9 h-9 rounded-xl bg-brand-green/10 text-brand-green flex items-center justify-center active:scale-90 transition-all hover:bg-brand-green/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>
+                {% if user.id != u.id %}
+                <button hx-post="{% url 'accounts:delete_user' u.id %}" 
+                        hx-confirm="Permanently delete '{{ u.name }}'?"
+                        hx-target="closest div.bg-surface2"
+                        hx-swap="outerHTML"
+                        class="w-9 h-9 rounded-xl bg-brand-red/10 text-brand-red flex items-center justify-center active:scale-90 transition-all hover:bg-brand-red/15">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
+                {% else %}
+                <span class="text-[10px] font-bold text-text-muted/30 uppercase tracking-[0.15em] px-2 flex items-center">YOU</span>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -91,10 +98,16 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">4-Digit PIN</label>
-                        <input type="text" name="pin" required placeholder="1234" maxlength="4" pattern="[0-9]{4}" inputmode="numeric"
-                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary font-bold text-center tracking-[0.5em] focus:border-brand-green/40 focus:ring-0 transition-all dm-mono">
+                        <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">Basic Salary</label>
+                        <input type="number" step="0.01" name="basic_salary" placeholder="0.00"
+                               class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary focus:border-brand-green/40 focus:ring-0 transition-all">
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-extrabold text-text-muted uppercase tracking-[0.12em] mb-1.5 ml-1">4-Digit PIN</label>
+                    <input type="text" name="pin" required placeholder="1234" maxlength="4" pattern="[0-9]{4}" inputmode="numeric"
+                           class="w-full bg-surface3 border border-border rounded-xl px-4 py-3.5 text-sm text-text-primary font-bold text-center tracking-[0.5em] focus:border-brand-green/40 focus:ring-0 transition-all dm-mono">
                 </div>
 
                 <div class="pt-3 flex gap-3">
@@ -109,4 +122,6 @@
         </div>
     </div>
 </div>
+
+<div id="modal-container"></div>
 {% endblock %}

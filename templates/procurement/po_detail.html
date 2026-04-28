@@ -1,229 +1,330 @@
 {% extends 'base.html' %}
-{% load static %}
-
 {% block content %}
-<div class="px-4 py-6 max-w-4xl mx-auto" x-data="{
-    addItemModal: false,
-    variantModal: false,
-    selectedProduct: { id: '', name: '', image: '', unit_cost: 0, has_variants: false, qty: 1 },
-    productVariants: [],
+<div class="max-w-5xl mx-auto px-4 py-6 pb-24" x-data="poBuilder()">
 
-    async selectProduct(p) {
-        if (p.has_variants) {
-            const resp = await fetch(`/procurement/get-variants/${p.id}/`);
-            const data = await resp.json();
-            this.productVariants = data.map(v => ({ ...v, qty: 0, edit_cost: parseFloat(v.cost_price || 0) }));
-            this.selectedProduct = p;
-            this.variantModal = true;
-        } else {
-            this.selectedProduct = { ...p, unit_cost: p.cost_price, qty: 1, variant_id: '' };
-            this.addItemModal = true;
-        }
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 mb-4 text-xs text-text-secondary font-medium">
+    <a href="{% url 'procurement:po_list' %}" class="hover:text-text-primary transition-colors">Procurement</a>
+    <span>›</span>
+    <span class="text-text-primary font-semibold">{{ po.po_number }}</span>
+  </div>
+
+  <!-- PO Header Card -->
+  <div class="bg-white rounded-2xl border border-border p-5 mb-4">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h1 class="text-xl font-extrabold font-mono" style="color: var(--primary)">{{ po.po_number }}</h1>
+        <p class="text-sm font-semibold mt-0.5">{{ po.supplier.name }}</p>
+        <p class="text-xs text-text-secondary mt-0.5">Created {{ po.created_at|date:"d M Y, H:i" }} by {{ po.created_by.name }}</p>
+        {% if po.approved_by %}
+        <p class="text-xs text-success mt-0.5 font-semibold">✓ Approved {{ po.approved_at|date:"d M Y" }} by {{ po.approved_by.name }}</p>
+        {% endif %}
+      </div>
+      <span class="po-status-badge
+        {% if po.status == 'draft' %}badge-draft
+        {% elif po.status == 'pending_approval' %}badge-pending
+        {% elif po.status == 'approved' %}badge-approved
+        {% elif po.status == 'partially_received' %}badge-partial
+        {% elif po.status == 'fully_received' %}badge-received
+        {% elif po.status == 'cancelled' %}badge-cancelled
+        {% endif %}">{{ po.get_status_display }}</span>
+    </div>
+
+    <!-- Summary Row -->
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div class="summary-chip">
+        <div class="text-lg font-extrabold font-mono" style="color: var(--primary-dark)">{{ total_items }}</div>
+        <div class="text-[10px] font-semibold text-text-secondary uppercase">Items</div>
+      </div>
+      <div class="summary-chip">
+        <div class="text-lg font-extrabold font-mono" style="color: var(--primary-dark)">KES {{ po.total_cost|floatformat:0 }}</div>
+        <div class="text-[10px] font-semibold text-text-secondary uppercase">Total Cost</div>
+      </div>
+      <div class="summary-chip">
+        <div class="text-lg font-extrabold font-mono" style="color: var(--primary-dark)">{{ received_count }}/{{ total_items }}</div>
+        <div class="text-[10px] font-semibold text-text-secondary uppercase">Received</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-2 flex-wrap">
+      {% if po.status == 'draft' %}
+      <form method="POST" action="{% url 'procurement:po_submit' po.pk %}">{% csrf_token %}<button class="btn btn-primary text-sm">Submit for Approval</button></form>
+      {% endif %}
+      {% if po.status == 'pending_approval' and request.user.role == 'admin' %}
+        {% if po.below_margin_count > 0 %}
+          <button onclick="document.getElementById('approve-warning-modal').style.display='flex'" class="btn btn-success text-sm">✓ Approve</button>
+        {% else %}
+          <form method="POST" action="{% url 'procurement:po_approve' po.pk %}">{% csrf_token %}<button class="btn btn-success text-sm">✓ Approve</button></form>
+        {% endif %}
+      {% endif %}
+      {% if po.status in 'approved,sent,partially_received' %}
+      <button onclick="document.getElementById('receive-modal').style.display='flex'" class="btn btn-accent text-sm">📦 Receive Goods</button>
+      {% endif %}
+      {% if po.status in 'draft,pending_approval,approved' %}
+      <form method="POST" action="{% url 'procurement:po_cancel' po.pk %}" onsubmit="return confirm('Cancel this PO?')">{% csrf_token %}<button class="btn btn-outline text-sm text-danger">Cancel PO</button></form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Add Item Search (draft/pending only) -->
+  {% if po.status in 'draft,pending_approval' %}
+  <div class="bg-white rounded-2xl border border-border p-5 mb-4" id="add-item-section">
+    <h3 class="text-sm font-bold text-text-secondary uppercase mb-3">Add Products</h3>
+    <div class="relative">
+      <div class="search-input-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="search-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="po-product-search" x-model="searchQuery" @input.debounce.300ms="doSearch()"
+               @keydown.escape="searchResults=[]; searchQuery=''"
+               @keydown.enter.prevent=""
+               placeholder="Search by name, SKU, or barcode..."
+               autocomplete="off"
+               class="search-input">
+        <button x-show="searchQuery.length > 0" @click="searchQuery=''; searchResults=[]" x-cloak
+                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 absolute right-2 top-1/2 -translate-y-1/2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Search Results Dropdown -->
+      <div x-show="searchResults.length > 0" x-cloak
+           class="search-dropdown" @click.outside="searchResults=[]">
+        <template x-for="product in searchResults" :key="product.id">
+          <button type="button" class="search-result-item" @click="selectProduct(product)">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style="background: rgba(26,58,74,0.08); color: var(--primary)" x-text="product.name.charAt(0)"></div>
+              <div class="min-w-0">
+                <div class="font-semibold text-sm truncate" x-text="product.name"></div>
+                <div class="text-xs text-text-secondary">
+                  <span x-text="product.category"></span> &rsaquo; <span x-text="product.subcategory"></span>
+                  <span class="font-mono ml-2">Stock: 
+                    <span x-text="product.bundle_pricing_enabled ? (Math.floor(product.stock_qty / product.units_per_purchase) + ' ' + product.purchase_unit_label + 's') : (product.stock_qty + ' ' + product.base_unit_label + 's')"></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-xs font-mono font-bold" style="color: var(--primary)" x-text="'KES ' + parseFloat(product.cost_price).toFixed(0)"></div>
+              <div class="text-[10px] text-text-secondary font-mono" x-text="'Sell: KES ' + parseFloat(product.sell_price).toFixed(0)"></div>
+            </div>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Quick Add Form (shown after selecting product) -->
+    <div x-show="selectedProduct" x-transition x-cloak class="mt-3">
+      <form method="POST" action="{% url 'procurement:po_add_item' po.pk %}" id="add-item-form"
+            hx-post="{% url 'procurement:po_add_item' po.pk %}" hx-target="#line-items-container" hx-swap="innerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="product_id" :value="selectedProduct?.id">
+        <div class="selected-product-bar">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style="background: var(--primary); color: white" x-text="selectedProduct?.name?.charAt(0) || ''"></div>
+            <div class="min-w-0">
+              <div class="font-semibold text-sm truncate" x-text="selectedProduct?.name"></div>
+              <div class="text-[10px] text-text-secondary font-mono" x-text="'Current cost: KES ' + parseFloat(selectedProduct?.cost_price || 0).toFixed(0)"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div>
+              <label class="text-[10px] font-semibold text-text-secondary uppercase block" 
+                     x-text="selectedProduct?.bundle_pricing_enabled ? 'Qty (' + (selectedProduct?.purchase_unit_label || 'packets') + ')' : 'Qty'"></label>
+              <input type="number" name="qty" value="1" min="1" step="0.001" class="w-24 px-3 py-2 rounded-lg border border-border text-sm font-mono text-center">
+            </div>
+            <div>
+              <label class="text-[10px] font-semibold text-text-secondary uppercase block" 
+                     x-text="selectedProduct?.bundle_pricing_enabled ? 'Cost per ' + (selectedProduct?.purchase_unit_label || 'packet') : 'Unit Cost'"></label>
+              <input type="number" name="unit_cost" step="0.01" 
+                     :value="(selectedProduct?.bundle_pricing_enabled && selectedProduct?.units_per_purchase > 1) ? (selectedProduct?.cost_price * selectedProduct?.units_per_purchase).toFixed(2) : selectedProduct?.cost_price" 
+                     class="w-28 px-3 py-2 rounded-lg border border-border text-sm font-mono text-right">
+            </div>
+            <div class="mt-4 px-2 hidden md:block">
+              <div class="text-[10px] text-success font-bold" x-show="selectedProduct?.bundle_pricing_enabled && selectedProduct?.units_per_purchase > 1">
+                &rarr; <span x-text="selectedProduct?.units_per_purchase"></span> <span x-text="selectedProduct?.base_unit_label"></span>s/ea
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary text-sm mt-3">Add</button>
+            <button type="button" @click="selectedProduct=null; searchQuery=''" class="btn btn-outline text-sm mt-3">✕</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Line Items Table -->
+  <div class="bg-white rounded-2xl border border-border overflow-hidden mb-4">
+    <div class="p-4 border-b border-border flex items-center justify-between">
+      <h2 class="font-bold text-sm uppercase text-text-secondary">Line Items & Margins</h2>
+      {% if po.below_margin_count > 0 %}
+      <div class="px-3 py-1.5 bg-red-50 rounded-lg text-xs text-danger font-semibold">
+        ⚠ {{ po.below_margin_count }} item(s) below target margin
+      </div>
+      {% endif %}
+    </div>
+    <div id="line-items-container">
+      {% include 'procurement/partials/po_line_items.html' %}
+    </div>
+  </div>
+
+  <!-- PO Trail -->
+  <div class="bg-white rounded-2xl border border-border p-4">
+    <h3 class="text-sm font-bold text-text-secondary uppercase mb-3">Activity</h3>
+    <div class="space-y-2">
+      {% for entry in trail %}
+      <div class="flex gap-3 text-sm">
+        <div class="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0"></div>
+        <div>
+          <span class="font-semibold">{{ entry.action }}</span>
+          <span class="text-text-secondary"> · {{ entry.user.name }} · {{ entry.created_at|date:"d M, H:i" }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Goods Receipt Modal -->
+<div id="receive-modal" class="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+  <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="p-6 border-b border-border flex items-center justify-between">
+      <h2 class="text-lg font-bold" style="color: var(--primary-dark)">Receive Goods</h2>
+      <button onclick="document.getElementById('receive-modal').style.display='none'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
+    </div>
+    <form method="POST" action="{% url 'procurement:po_receive' po.pk %}" class="p-6 space-y-4">
+      {% csrf_token %}
+      {% for line in line_items %}
+      {% if line.line_status != 'received' %}
+      <div class="p-3 rounded-xl border border-border">
+        <div class="font-semibold text-sm">
+          {{ line.product.name }}
+          {% if line.product.bundle_pricing_enabled %}
+          <span class="text-xs font-normal text-text-secondary ml-1 bg-gray-100 px-2 py-0.5 rounded">
+            1 {{ line.product.purchase_unit_label }} = {{ line.product.units_per_purchase }} {{ line.product.base_unit_label|default:'unit' }}(s)
+          </span>
+          {% endif %}
+        </div>
+        <div class="text-xs text-text-secondary mb-2 mt-1">Ordered: {{ line.ordered_qty }} · Received: {{ line.received_qty }} · Remaining: {{ line.remaining_qty }}</div>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="text-[10px] font-semibold text-text-secondary uppercase block">
+              Receive ({% if line.product.bundle_pricing_enabled %}{{ line.product.purchase_unit_label }}{% else %}{{ line.product.base_unit_label|default:'unit' }}{% endif %}s)
+            </label>
+            <input type="number" name="received_qty_{{ line.pk }}" step="0.001" max="{{ line.remaining_qty }}" class="w-full px-2 py-1.5 rounded-lg border border-border text-xs font-mono"
+                   {% if line.product.bundle_pricing_enabled %}
+                   oninput="document.getElementById('conv_{{ line.pk }}').innerText = (this.value ? (this.value * {{ line.product.units_per_purchase|default:1 }}).toFixed(0) : 0) + ' {{ line.product.base_unit_label|default:'unit' }}(s)'"
+                   {% endif %}>
+            {% if line.product.bundle_pricing_enabled %}
+            <div class="text-[10px] text-success font-medium mt-1">
+              +<span id="conv_{{ line.pk }}">0 {{ line.product.base_unit_label|default:'unit' }}(s)</span> to stock
+            </div>
+            {% endif %}
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-text-secondary uppercase block">Batch #</label>
+            <input type="text" name="batch_number_{{ line.pk }}" class="w-full px-2 py-1.5 rounded-lg border border-border text-xs">
+          </div>
+          <div>
+            <label class="text-[10px] font-semibold text-text-secondary uppercase block">Expiry</label>
+            <input type="date" name="expiry_date_{{ line.pk }}" class="w-full px-2 py-1.5 rounded-lg border border-border text-xs">
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+      <textarea name="notes" placeholder="Receipt notes..." class="w-full px-4 py-2.5 rounded-xl border border-border text-sm" rows="2"></textarea>
+      <button type="submit" class="btn btn-success w-full text-sm">Confirm Receipt</button>
+    </form>
+  </div>
+</div>
+
+<!-- Approval Warning Modal -->
+<div id="approve-warning-modal" class="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+    <div class="p-6 bg-red-50 border-b border-red-100 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-danger text-xl">⚠</div>
+      <div>
+        <h2 class="text-lg font-bold text-danger">Margin Warning</h2>
+        <p class="text-xs text-red-700">This order contains {{ po.below_margin_count }} items below target margin.</p>
+      </div>
+    </div>
+    <form method="POST" action="{% url 'procurement:po_approve' po.pk %}" class="p-6 space-y-4">
+      {% csrf_token %}
+      <p class="text-sm text-text-secondary leading-relaxed">
+        Approving this order will lock in costs that may result in lower-than-expected profits. Please provide a reason for overriding the margin targets.
+      </p>
+      <div>
+        <label class="text-xs font-bold text-text-secondary uppercase mb-1 block">Override Reason / Justification *</label>
+        <textarea name="margin_override_reason" required placeholder="e.g. Strategic supplier, bulk discount applied..." 
+                  class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:ring-2 focus:ring-red-500/20" rows="3"></textarea>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="document.getElementById('approve-warning-modal').style.display='none'" class="btn btn-outline flex-1">Cancel</button>
+        <button type="submit" class="btn btn-danger flex-1">Confirm Approval</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .summary-chip { text-align: center; padding: 12px; border-radius: 12px; background: #f8f9fb; }
+  .po-status-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .badge-draft { background: #f1f5f9; color: #64748b; }
+  .badge-pending { background: #fef3c7; color: #92400e; }
+  .badge-approved { background: #d1fae5; color: #065f46; }
+  .badge-partial { background: #dbeafe; color: #1e40af; }
+  .badge-received { background: #d1fae5; color: #065f46; }
+  .badge-cancelled { background: #fee2e2; color: #991b1b; }
+
+  .search-input-wrap { position: relative; }
+  .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); pointer-events: none; }
+  .search-input { width: 100%; padding: 12px 44px 12px 44px; border-radius: 14px; border: 1px solid var(--border); font-size: 14px; background: #f8f9fb; transition: all 0.2s; outline: none; }
+  .search-input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(26,58,74,0.08); }
+
+  .search-dropdown {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+    background: white; border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12); margin-top: 4px;
+    max-height: 320px; overflow-y: auto;
+  }
+  .search-result-item {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 12px 16px; border: none; background: none;
+    cursor: pointer; transition: background 0.15s; text-align: left;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .search-result-item:hover { background: #f8f9fb; }
+  .search-result-item:last-child { border-bottom: none; }
+
+  .selected-product-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 16px; border-radius: 12px; background: rgba(26,58,74,0.03);
+    border: 1px solid var(--primary-light); flex-wrap: wrap;
+  }
+</style>
+
+<script>
+function poBuilder() {
+  return {
+    searchQuery: '',
+    searchResults: [],
+    selectedProduct: null,
+
+    async doSearch() {
+      if (this.searchQuery.length < 1) { this.searchResults = []; return; }
+      try {
+        const resp = await fetch(`{% url 'procurement:product_search_json' %}?q=${encodeURIComponent(this.searchQuery)}`);
+        this.searchResults = await resp.json();
+      } catch(e) { console.error('Search error:', e); this.searchResults = []; }
     },
 
-    get modalTotalQty() {
-        return this.productVariants.reduce((s, v) => s + Number(v.qty), 0);
-    }
-}">
-
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-            <a href="{% url 'procurement:po_list' %}" class="w-10 h-10 rounded-xl flex items-center justify-center no-underline active:scale-90 transition-all"
-               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #2d545e">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-            </a>
-            <div>
-                <h1 class="text-xl font-bold" style="color: #12343b">Order #{{ po.lpo_number|slice:"-4:" }}</h1>
-                <div class="flex items-center gap-2 text-sm">
-                    {% if po.status == 'received' %}
-                        <span class="w-2 h-2 rounded-full" style="background: #16A34A"></span>
-                        <span style="color: #16A34A" class="font-semibold">Stock Added</span>
-                    {% elif po.status == 'pending' %}
-                        <span class="w-2 h-2 rounded-full animate-pulse" style="background: #F59E0B"></span>
-                        <span style="color: #D97706" class="font-semibold">Pending Approval</span>
-                    {% else %}
-                        <span class="w-2 h-2 rounded-full" style="background: #2d545e"></span>
-                        <span style="color: #2d545e" class="font-semibold capitalize">{{ po.status }}</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        {% if po.status == 'pending' and user.role == 'admin' %}
-        <form action="{% url 'procurement:quick_approve' po.id %}" method="POST">
-            {% csrf_token %}
-            <button type="submit" class="h-10 px-5 rounded-xl font-semibold text-sm flex items-center gap-2 active:scale-95 transition-all shadow-md"
-                    style="background: #16A34A; color: white; border: none; cursor: pointer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"/></svg>
-                Approve
-            </button>
-        </form>
-        {% endif %}
-    </div>
-
-    <!-- Supplier Info -->
-    <div class="rounded-2xl p-4 mb-4 flex items-center gap-3" style="background: white; border: 1px solid #E5E7EB">
-        <div class="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg" style="background: #e1b38222; color: #c89666">{{ po.supplier.name|slice:":1" }}</div>
-        <div>
-            <h2 class="font-bold text-base" style="color: #12343b">{{ po.supplier.name }}</h2>
-            <p class="text-xs" style="color: #6B7280">{{ po.supplier.phone|default:"No phone" }}</p>
-        </div>
-    </div>
-
-    <!-- Line Items Table -->
-    <div class="rounded-2xl overflow-hidden mb-4" style="background: white; border: 1px solid #E5E7EB">
-        <div class="px-5 py-3 flex items-center justify-between" style="background: #2d545e">
-            <h3 class="font-bold text-sm" style="color: white">Order Items</h3>
-            <span class="text-xs font-semibold px-2.5 py-1 rounded-full" style="background: rgba(255,255,255,0.15); color: #e1b382">{{ po.items|length }} items</span>
-        </div>
-
-        <div class="divide-y" style="border-color: #E5E7EB">
-            {% for item in po.items %}
-            <div class="flex items-center justify-between px-5 py-3.5">
-                <div class="min-w-0 flex-1">
-                    <div class="font-semibold text-sm truncate" style="color: #12343b">{{ item.name }}</div>
-                    <div class="text-xs" style="color: #6B7280">KES {{ item.unit_cost|floatformat:0 }} × {{ item.qty }}</div>
-                </div>
-                <div class="flex items-center gap-3 shrink-0">
-                    {% if po.status == 'draft' %}
-                    <form action="{% url 'procurement:po_update_qty' po.id forloop.counter0 %}" method="POST" class="inline-flex items-center">
-                        {% csrf_token %}
-                        <input type="number" name="qty" value="{{ item.qty }}" @change="$el.form.submit()"
-                               class="w-14 h-9 rounded-lg text-center font-bold text-sm focus:outline-none"
-                               style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                    </form>
-                    {% else %}
-                    <span class="font-bold text-sm tabular" style="color: #12343b">×{{ item.qty }}</span>
-                    {% endif %}
-                    <span class="font-bold text-sm font-mono tabular" style="color: #2d545e">{{ item.total_cost|floatformat:0 }}</span>
-                </div>
-            </div>
-            {% empty %}
-            <div class="py-16 text-center" style="color: #9CA3AF">
-                <div class="text-3xl mb-2 opacity-30">📋</div>
-                <p class="font-semibold text-sm">No items in order</p>
-            </div>
-            {% endfor %}
-        </div>
-
-        {% if po.items %}
-        <div class="px-5 py-4 flex items-center justify-between" style="background: #F8F9FB; border-top: 1px solid #E5E7EB">
-            <span class="text-xs font-semibold uppercase tracking-wider" style="color: #6B7280">Total</span>
-            <div>
-                <span class="text-xs font-medium mr-1" style="color: #6B7280">KES</span>
-                <span class="font-bold text-2xl font-mono tabular" style="color: #2d545e">{{ po.total_cost|floatformat:0 }}</span>
-            </div>
-        </div>
-        {% endif %}
-    </div>
-
-    {% if po.status == 'draft' %}
-    <!-- Add Products (Draft only) -->
-    <div class="rounded-2xl p-5" style="background: white; border: 1px solid #E5E7EB">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style="background: #2d545e; color: #e1b382">+</span>
-            <span class="text-sm font-semibold" style="color: #12343b">Add Products</span>
-        </div>
-        <div class="relative">
-            <input type="text" placeholder="Search product..."
-                   hx-get="{% url 'procurement:product_search' %}" hx-trigger="keyup changed delay:300ms" hx-target="#search-results"
-                   class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
-                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-        </div>
-        <div id="search-results" class="mt-3 max-h-[300px] overflow-y-auto"></div>
-    </div>
-    {% endif %}
-
-    <!-- Single Item Add Modal -->
-    <template x-if="addItemModal">
-        <div class="fixed inset-0 z-[600] flex items-end sm:items-center justify-center">
-            <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="addItemModal = false"></div>
-            <div class="relative w-full max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-modal p-6">
-                <h3 class="font-bold text-lg mb-1" style="color: #12343b" x-text="selectedProduct.name"></h3>
-                <p class="text-sm mb-5" style="color: #6B7280">Set quantity and cost price</p>
-
-                <form action="{% url 'procurement:po_add_item' po.id %}" method="POST" class="space-y-4">
-                    {% csrf_token %}
-                    <input type="hidden" name="product_id" :value="selectedProduct.id">
-                    <input type="hidden" name="variant_id" :value="selectedProduct.variant_id">
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Quantity</label>
-                            <input type="number" name="qty" x-model.number="selectedProduct.qty" min="1" required
-                                   class="w-full rounded-xl px-4 py-3 text-lg font-bold text-center focus:outline-none"
-                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Unit Cost</label>
-                            <input type="number" name="unit_cost" x-model.number="selectedProduct.unit_cost" min="0" step="0.01" required
-                                   class="w-full rounded-xl px-4 py-3 text-lg font-bold text-center focus:outline-none"
-                                   style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #2d545e">
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3 pt-2">
-                        <button type="button" @click="addItemModal = false" class="flex-1 py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all"
-                                style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">Cancel</button>
-                        <button type="submit" :disabled="selectedProduct.qty <= 0" class="flex-[2] py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all shadow-md disabled:opacity-30"
-                                style="background: #2d545e; color: #e1b382; border: none; cursor: pointer">Add to Order</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </template>
-
-    <!-- Variant Selection Modal -->
-    <template x-if="variantModal">
-        <div class="fixed inset-0 z-[600] flex items-end sm:items-center justify-center">
-            <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="variantModal = false"></div>
-            <div class="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-modal overflow-hidden max-h-[85vh] flex flex-col">
-                <div class="px-5 py-4 border-b shrink-0" style="background: #2d545e; border-color: rgba(255,255,255,0.1)">
-                    <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color: #e1b382">Select Variants</p>
-                    <h2 class="font-bold text-lg" style="color: white" x-text="selectedProduct.name"></h2>
-                </div>
-                <div class="flex-1 overflow-auto p-4 space-y-2">
-                    <template x-for="v in productVariants" :key="v.id">
-                        <div class="rounded-xl p-4 flex items-center justify-between gap-4" style="background: #F8F9FB; border: 1px solid #E5E7EB">
-                            <div class="min-w-0 flex-1">
-                                <p class="font-semibold text-sm truncate" style="color: #12343b" x-text="v.name"></p>
-                                <div class="flex items-center gap-2 mt-1.5">
-                                    <span class="text-[10px] font-semibold uppercase" style="color: #6B7280">Cost</span>
-                                    <input type="number" x-model.number="v.edit_cost" min="0"
-                                           class="w-20 h-8 rounded-lg px-2 text-sm font-bold font-mono text-right focus:outline-none"
-                                           style="background: white; border: 1px solid #E5E7EB; color: #2d545e">
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-center gap-1 shrink-0">
-                                <span class="text-[10px] font-semibold uppercase" style="color: #6B7280">Qty</span>
-                                <input type="number" x-model.number="v.qty" placeholder="0" min="0"
-                                       class="w-16 h-12 rounded-xl text-center font-bold text-lg focus:outline-none"
-                                       style="background: white; border: 1px solid #E5E7EB; color: #12343b">
-                            </div>
-                        </div>
-                    </template>
-                </div>
-                <div class="shrink-0 p-5 border-t" style="border-color: #E5E7EB">
-                    <form action="{% url 'procurement:po_add_item' po.id %}" method="POST">
-                        {% csrf_token %}
-                        <template x-for="v in productVariants.filter(v => v.qty > 0)" :key="v.id">
-                            <div>
-                                <input type="hidden" name="product_id" :value="selectedProduct.id">
-                                <input type="hidden" name="variant_id" :value="v.id">
-                                <input type="hidden" name="unit_cost" :value="v.edit_cost">
-                                <input type="hidden" name="qty" :value="v.qty">
-                            </div>
-                        </template>
-                        <button type="submit" :disabled="modalTotalQty === 0"
-                                class="w-full h-12 rounded-xl font-semibold text-sm transition-all active:scale-95 disabled:opacity-30"
-                                style="background: #2d545e; color: #e1b382; border: none; cursor: pointer">
-                            Add <span x-text="modalTotalQty"></span> to Order
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </template>
-</div>
+    selectProduct(product) {
+      this.selectedProduct = product;
+      this.searchResults = [];
+      this.searchQuery = product.name;
+    },
+  };
+}
+</script>
 {% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<style>
+  .audit-input {
+    width: 80px; padding: 8px 10px; border-radius: 10px;
+    border: 1.5px solid var(--border); text-align: right;
+    font-family: 'JetBrains Mono', monospace; font-weight: 700;
+    font-size: 14px; transition: all 0.2s; background: white;
+  }
+  .audit-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26,58,74,0.08); }
+  .note-input {
+    width: 100%; padding: 8px 12px; border-radius: 10px;
+    border: 1.5px solid var(--border); font-size: 12px; transition: all 0.2s;
+  }
+  .note-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26,58,74,0.08); }
+  .variance-cell { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; }
+  .audit-row { transition: background 0.15s; }
+  .audit-row:hover { background: rgba(26,58,74,0.02); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <a href="{% url 'audit_module:list' %}" class="text-text-secondary hover:text-primary transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+        <h1 class="text-xl font-extrabold tracking-tight" style="color: var(--primary-dark)">{{ session.get_scope_display }} Audit</h1>
+      </div>
+      <p class="text-sm" style="color: var(--text-secondary)">{{ session.created_at|date:"d M Y, H:i" }} · {{ session.initiated_by.name }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'audit_module:print' session.pk %}" target="_blank" class="btn btn-outline text-sm gap-2">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print Sheet
+      </a>
+      <span class="text-xs font-bold px-3 py-2 rounded-xl
+        {% if session.status == 'completed' %}bg-emerald-50 text-emerald-700
+        {% else %}bg-amber-50 text-amber-700{% endif %}
+      ">{{ session.get_status_display }}</span>
+    </div>
+  </div>
+
+  {% if session.status == 'in_progress' %}
+  <form method="POST" action="{% url 'audit_module:submit' session.pk %}">
+    {% csrf_token %}
+  {% endif %}
+
+  <!-- Items Table -->
+  <div class="card overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr style="background: var(--bg-main)">
+          <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Product</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">System Qty</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Physical Qty</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Variance</th>
+          <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr class="audit-row border-b {% if item.variance and item.variance != 0 %}bg-red-50/40{% endif %}" style="border-color: #f1f3f5">
+          <td class="px-5 py-3.5">
+            <div class="font-semibold text-sm">{{ item.product.name }}</div>
+            <div class="text-[11px]" style="color: var(--text-secondary)">{{ item.product.subcategory.category.name }} › {{ item.product.subcategory.name }}</div>
+          </td>
+          <td class="px-5 py-3.5 text-right font-mono font-bold text-sm">{{ item.system_qty }}</td>
+          <td class="px-5 py-3.5 text-right">
+            {% if session.status == 'in_progress' %}
+            <input type="number" name="physical_{{ item.pk }}" step="0.001" value="{{ item.physical_qty|default:'' }}"
+                   class="audit-input" inputmode="decimal" placeholder="—">
+            {% else %}
+            <span class="font-mono font-bold">{{ item.physical_qty|default:"—" }}</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3.5 text-right">
+            {% if item.variance is not None %}
+            <span class="variance-cell {% if item.variance == 0 %}text-emerald-600{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
+              {{ item.status_icon }} {{ item.variance }}
+            </span>
+            {% else %}
+            <span class="text-text-secondary">—</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3.5">
+            {% if session.status == 'in_progress' %}
+            <input type="text" name="note_{{ item.pk }}" placeholder="Add note..." class="note-input">
+            {% else %}
+            <span class="text-xs" style="color: var(--text-secondary)">{{ item.note }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if session.status == 'in_progress' %}
+    <div class="mt-5 space-y-3">
+      <textarea name="session_notes" placeholder="Overall audit notes (optional)..." class="w-full px-4 py-3 rounded-xl border-[1.5px] text-sm" style="border-color: var(--border)" rows="2"></textarea>
+      <button type="submit" class="btn btn-success w-full text-base font-bold gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Submit Audit & Adjust Stock
+      </button>
+    </div>
+  </form>
+  {% endif %}
+
+  <!-- Summary (completed) -->
+  {% if session.status == 'completed' %}
+  <div class="mt-5 card p-5">
+    <h3 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Audit Summary</h3>
+    <div class="grid grid-cols-3 gap-4">
+      <div class="p-4 rounded-xl bg-emerald-50 text-center">
+        <div class="text-3xl font-extrabold text-emerald-600 font-mono">{{ session.match_count }}</div>
+        <div class="text-xs font-bold text-emerald-700 mt-1">Matched</div>
+      </div>
+      <div class="p-4 rounded-xl bg-red-50 text-center">
+        <div class="text-3xl font-extrabold text-red-600 font-mono">{{ session.variance_count }}</div>
+        <div class="text-xs font-bold text-red-700 mt-1">Variances</div>
+      </div>
+      <div class="p-4 rounded-xl text-center" style="background: rgba(26,58,74,0.04)">
+        <div class="text-3xl font-extrabold font-mono" style="color: var(--primary)">{{ session.total_items }}</div>
+        <div class="text-xs font-bold" style="color: var(--text-secondary)">Total Items</div>
+      </div>
+    </div>
+    {% if session.notes %}<p class="text-sm mt-4" style="color: var(--text-secondary)">{{ session.notes }}</p>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -7,8 +7,12 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('inventory/', include('catalogue.urls')),
     path('pos/', include('pos.urls')),
+    path('procurement/', include('procurement.urls')),
+    path('promotions/', include('promotions.urls')),
+    path('audit/', include('audit_module.urls')),
     path('expenses/', include('expenses.urls')),
     path('reports/', include('reports.urls')),
-    path('procurement/', include('procurement.urls')),
-    path('', lambda r: redirect('accounts:login')), # Default entry point
+    path('payroll/', include('payroll.urls')),
+    path('trail/', include('core.urls')),
+    path('', lambda r: redirect('accounts:login')),
 ]

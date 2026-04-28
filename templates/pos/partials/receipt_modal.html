@@ -1,61 +1,116 @@
-<div x-data="{ open: true }" x-show="open" x-cloak class="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-end sm:items-center justify-center z-[9999] p-0 sm:p-4">
-    <div x-show="open"
-         x-transition:enter="transition ease-out duration-300 transform"
-         x-transition:enter-start="translate-y-full sm:scale-95 sm:translate-y-0 opacity-0"
-         x-transition:enter-end="translate-y-0 sm:scale-100 opacity-100"
-         class="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-modal overflow-hidden">
+<!-- Receipt Modal — injected into #receipt-container after successful sale -->
+<div class="receipt-overlay" onclick="if(event.target===this) this.remove()">
+  <div class="receipt-panel">
+    <!-- Print Area -->
+    <div id="print-area" class="p-6">
+      <div class="text-center mb-4">
+        <h2 class="text-lg font-bold" style="color: var(--primary-dark)">JIMMY'S MINIMART</h2>
+        <p class="text-xs text-text-secondary">Kibingoti, Mugumo Estate, off Sagana - Karatina Superhighway</p>
+        <p class="text-xs text-text-secondary">Ground floor, ACE HOTEL building.</p>
+        <p class="text-xs text-text-secondary">Phone: 0722297673</p>
+        {% if store_kra_pin %}<p class="text-xs text-text-secondary">KRA PIN: {{ store_kra_pin }}</p>{% endif %}
+        <p class="text-xs text-text-secondary mt-1">{{ sale.created_at|date:"d M Y, H:i" }}</p>
+      </div>
 
-        <!-- Success Header -->
-        <div class="bg-success p-6 text-center">
-            <div class="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
-            </div>
-            <div class="text-white font-bold text-xl">Payment Complete</div>
-            <div class="text-white/80 text-sm font-medium mt-1">
-                {{ transaction.payment_method|upper }} · KES {{ transaction.total|floatformat:0 }}
-            </div>
-        </div>
+      <div class="border-t border-dashed border-gray-300 my-3"></div>
 
-        <!-- Receipt Details -->
-        <div class="p-5 font-mono text-text-primary">
-            <div class="flex justify-between text-xs font-medium text-text-secondary border-b border-dashed border-border pb-3 mb-3">
-                <span>#{{ transaction.receipt_number|slice:"-6:" }}</span>
-                <span>{{ transaction.created_at|date:"M d, H:i" }}</span>
-            </div>
-
-            <div class="space-y-1.5 mb-3">
-                {% for item in transaction.items %}
-                <div class="flex justify-between text-sm">
-                    <span class="truncate pr-3">{{ item.name }} × {{ item.qty }}</span>
-                    <span class="font-semibold tabular shrink-0">{{ item.price|floatformat:0 }}</span>
-                </div>
-                {% endfor %}
-            </div>
-
-            {% if transaction.coupon_discount > 0 %}
-            <div class="flex justify-between text-sm text-success font-semibold mb-2">
-                <span>Discount</span>
-                <span class="tabular">- KES {{ transaction.coupon_discount|floatformat:0 }}</span>
-            </div>
+      <!-- Items -->
+      <div class="space-y-2 text-sm">
+        {% for item in sale.line_items.all %}
+        <div class="flex justify-between">
+          <div class="flex-1">
+            <span class="font-medium">{{ item.product_name }}</span>
+            {% if item.sell_mode == 'weight' %}
+              <span class="text-text-secondary text-xs"> — {{ item.weight_value }}{{ item.weight_unit }}</span>
+            {% elif item.sell_mode == 'bundle' %}
+              <span class="text-text-secondary text-xs"> (Bundle of {{ item.bundle_size_snapshot|default:0 }})</span>
+            {% elif item.sell_mode == 'single' %}
+              <span class="text-text-secondary text-xs"> (Single)</span>
             {% endif %}
-
-            <div class="border-t border-dashed border-border pt-3 flex justify-between font-bold text-xl text-text-primary">
-                <span>TOTAL</span>
-                <span class="tabular">KES {{ transaction.total|floatformat:0 }}</span>
+            {% if item.is_free_item %}
+              <span class="text-success text-xs font-bold"> FREE (BOGOF)</span>
+            {% endif %}
+            <div class="text-xs text-text-secondary">
+              {{ item.quantity }} × KES {{ item.unit_price }}
+              {% if item.discount_amount > 0 %}<span class="text-danger">-{{ item.discount_amount }}</span>{% endif %}
             </div>
+          </div>
+          <div class="font-mono font-semibold text-right">{{ item.line_total }}</div>
         </div>
+        {% endfor %}
+      </div>
 
-        <!-- Actions -->
-        <div class="p-5 pt-0 flex flex-col gap-2.5">
-            <a href="{% url 'pos:receipt_print' transaction.id %}" target="_blank"
-               class="btn btn-outline w-full h-12 text-base font-semibold no-underline">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                Print Receipt
-            </a>
-            <button @click="open = false; cart.open = false; clearCart()"
-                    class="btn btn-success w-full h-12 text-base font-semibold">
-                New Sale
-            </button>
+      <div class="border-t border-dashed border-gray-300 my-3"></div>
+
+      <!-- Totals -->
+      <div class="space-y-1 text-sm">
+        <div class="flex justify-between">
+          <span class="text-text-secondary">Subtotal</span>
+          <span class="font-mono">KES {{ sale.subtotal }}</span>
         </div>
+        {% if sale.discount_total > 0 %}
+        <div class="flex justify-between text-danger">
+          <span>Discount</span>
+          <span class="font-mono">-KES {{ sale.discount_total }}</span>
+        </div>
+        {% endif %}
+        <div class="flex justify-between font-bold text-base pt-1 border-t border-gray-200">
+          <span>TOTAL</span>
+          <span class="font-mono">KES {{ sale.total }}</span>
+        </div>
+      </div>
+
+      <div class="border-t border-dashed border-gray-300 my-3"></div>
+
+      <!-- Payment -->
+      <div class="text-sm space-y-1">
+        <div class="flex justify-between">
+          <span class="text-text-secondary">Payment</span>
+          <span class="font-medium capitalize">{{ sale.get_payment_method_display }}</span>
+        </div>
+        {% if sale.payment_method == 'cash' and sale.cash_tendered %}
+        <div class="flex justify-between">
+          <span class="text-text-secondary">Tendered</span>
+          <span class="font-mono">KES {{ sale.cash_tendered }}</span>
+        </div>
+        <div class="flex justify-between font-bold text-success">
+          <span>Change</span>
+          <span class="font-mono">KES {{ sale.change_due }}</span>
+        </div>
+        {% endif %}
+        {% if sale.mpesa_reference %}
+        <div class="flex justify-between">
+          <span class="text-text-secondary">M-Pesa Ref</span>
+          <span class="font-mono font-bold">{{ sale.mpesa_reference }}</span>
+        </div>
+        {% endif %}
+        {% if sale.payment_method == 'credit' %}
+        <div class="flex justify-between text-warning">
+          <span>CREDIT — {{ sale.credit_customer_name }}</span>
+          <span>Due: {{ sale.credit_due_date|date:"d M Y" }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="border-t border-dashed border-gray-300 my-3"></div>
+
+      <!-- Footer -->
+      <div class="text-center text-xs text-text-secondary">
+        <p class="font-mono font-bold text-sm mb-1">{{ sale.receipt_number }}</p>
+        <p>Served by {{ sale.cashier.name }}</p>
+        <p class="mt-2">Thank you for shopping with us!</p>
+        <p class="text-[10px] mt-1">Goods once sold cannot be returned. Terms apply.</p>
+      </div>
     </div>
+
+    <!-- Actions (no-print) -->
+    <div class="p-4 border-t border-border flex gap-2 no-print">
+      <button onclick="window.print()" class="btn btn-primary flex-1 text-sm">
+        🖨 Print Receipt
+      </button>
+      <button onclick="this.closest('.receipt-overlay').remove()" class="btn btn-outline flex-1 text-sm">
+        Close
+      </button>
+    </div>
+  </div>
 </div>

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Promotions</h1>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">{{ active_count }} active promotion{{ active_count|pluralize }}</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'promotions:hamper_list' %}" class="btn btn-outline text-sm gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        Hampers
+      </a>
+      <a href="{% url 'promotions:create' %}" class="btn btn-accent text-sm gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Promotion
+      </a>
+    </div>
+  </div>
+
+  <!-- Promotions Grid -->
+  <div class="space-y-3">
+    {% for promo in promos %}
+    <div class="card p-5 {% if not promo.is_currently_active %}opacity-60{% endif %} hover:border-[var(--accent)] transition-all">
+      <div class="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background: linear-gradient(135deg, rgba(212,168,82,0.12), rgba(212,168,82,0.06)); color: var(--accent-dark)">{{ promo.badge_text }}</span>
+            <h3 class="font-bold text-base" style="color: var(--primary-dark)">{{ promo.name }}</h3>
+          </div>
+          <div class="text-xs" style="color: var(--text-secondary)">
+            {% if promo.product %}Product: <span class="font-semibold">{{ promo.product.name }}</span>{% endif %}
+            {% if promo.category %}Category: <span class="font-semibold">{{ promo.category.name }}</span>{% endif %}
+            · {{ promo.start_date|date:"d M" }} → {{ promo.end_date|date:"d M Y" }}
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            {% if promo.is_currently_active %}
+              <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 px-2 py-0.5 rounded-lg bg-emerald-50">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
+              </span>
+            {% elif promo.is_active %}
+              <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 px-2 py-0.5 rounded-lg bg-amber-50">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Scheduled
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg bg-slate-100" style="color: var(--text-secondary)">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Disabled
+              </span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <a href="{% url 'promotions:edit' promo.pk %}" class="btn btn-outline text-xs py-2 px-3 gap-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            Edit
+          </a>
+          <form method="POST" action="{% url 'promotions:toggle' promo.pk %}" class="inline">{% csrf_token %}
+            <button class="btn btn-outline text-xs py-2 px-3">{% if promo.is_active %}Disable{% else %}Enable{% endif %}</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="card text-center py-16">
+      <div class="text-4xl mb-3 opacity-30">⭐</div>
+      <p class="text-lg font-bold" style="color: var(--primary-dark)">No promotions yet</p>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">Create your first promotion to drive sales</p>
+      <a href="{% url 'promotions:create' %}" class="btn btn-primary text-sm mt-4 inline-flex">Create Promotion</a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

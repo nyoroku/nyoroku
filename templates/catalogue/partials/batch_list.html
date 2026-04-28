@@ -1,0 +1,42 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+  {% for batch in batches %}
+  <div class="p-3 bg-white rounded-xl border {% if batch.is_expired %}border-red-200 bg-red-50/30{% else %}border-border{% endif %} shadow-sm">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-[10px] font-bold text-primary uppercase">Batch #{{ batch.batch_number }}</span>
+      {% if batch.status == 'quarantined' %}
+      <span class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[9px] font-bold uppercase">Quarantined</span>
+      {% elif batch.is_expired %}
+      <span class="px-2 py-0.5 rounded-md bg-red-100 text-red-700 text-[9px] font-bold uppercase">Expired</span>
+      {% else %}
+      <span class="px-2 py-0.5 rounded-md bg-green-100 text-green-700 text-[9px] font-bold uppercase">Active</span>
+      {% endif %}
+    </div>
+    
+    <div class="grid grid-cols-2 gap-2 mb-2">
+      <div>
+        <div class="text-[9px] text-text-secondary uppercase font-bold">Quantity</div>
+        <div class="text-xs font-mono font-bold">{{ batch.quantity }} {{ product.base_unit_label }}s</div>
+      </div>
+      <div>
+        <div class="text-[9px] text-text-secondary uppercase font-bold">Expiry</div>
+        <div class="text-xs font-mono font-bold {% if batch.is_expired %}text-red-600{% endif %}">
+          {{ batch.expiry_date|date:"Y-m-d"|default:"--" }}
+        </div>
+      </div>
+    </div>
+    
+    {% if batch.status == 'active' and not batch.is_expired %}
+    {% if request.user.role == 'admin' %}
+    <form hx-post="{% url 'catalogue:quarantine_batch' batch.pk %}" hx-confirm="Quarantine this batch?" hx-swap="none" hx-on::after-request="window.location.reload()">
+      {% csrf_token %}
+      <button type="submit" class="w-full py-1.5 rounded-lg border border-amber-200 text-amber-600 text-[10px] font-bold hover:bg-amber-50 transition-colors uppercase">Quarantine</button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="col-span-full py-4 text-center">
+    <div class="text-xs text-text-secondary italic">No batch records found for this product.</div>
+  </div>
+  {% endfor %}
+</div>

@@ -96,6 +96,42 @@ def add_user(request):
     user = User.objects.create_user(username=username, pin=pin, name=name, role=role)
     user.avatar = avatar
     user.set_pin(pin)
+    
+    basic_salary = request.POST.get('basic_salary')
+    if basic_salary:
+        user.basic_salary = basic_salary
+        
+    user.save()
+    return redirect('accounts:user_list')
+
+@login_required
+def edit_user_modal(request, pk):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+        
+    user = get_object_or_404(User, pk=pk)
+    return render(request, 'accounts/partials/edit_user_modal.html', {'u': user})
+
+@login_required
+@require_http_methods(["POST"])
+def edit_user(request, pk):
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+        
+    user = get_object_or_404(User, pk=pk)
+    
+    user.name = request.POST.get('name', user.name)
+    user.username = request.POST.get('username', user.username)
+    user.role = request.POST.get('role', user.role)
+    
+    pin = request.POST.get('pin')
+    if pin and len(pin) == 4 and pin.isdigit():
+        user.set_pin(pin)
+        
+    basic_salary = request.POST.get('basic_salary')
+    if basic_salary is not None and basic_salary != '':
+        user.basic_salary = basic_salary
+        
     user.save()
     return redirect('accounts:user_list')
 

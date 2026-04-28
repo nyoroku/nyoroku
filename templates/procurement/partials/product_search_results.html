@@ -1,0 +1,10 @@
+{% for p in products %}
+<div class="px-3 py-2 rounded-lg hover:bg-gray-50 cursor-pointer text-sm border-b border-border/50"
+     onclick="document.getElementById('selected-product-id').value='{{ p.pk }}'; document.getElementById('product-search').value='{{ p.name|escapejs }}'; document.getElementById('search-results').innerHTML=''">
+  <span class="font-medium">{{ p.name }}</span>
+  <span class="text-text-secondary text-xs ml-2">{{ p.subcategory.category.name }} › {{ p.subcategory.name }}</span>
+  <span class="text-xs font-mono ml-2" style="color: var(--primary)">KES {{ p.base_unit_price }}</span>
+</div>
+{% empty %}
+<p class="text-xs text-text-secondary p-2">No products found</p>
+{% endfor %}

@@ -1,442 +1,946 @@
 {% extends 'base.html' %}
-{% load static %}
 
 {% block extra_head %}
-<script>
-window.allProducts = [
-  {% for p in products %}
-  {
-    id:          "{{ p.id }}",
-    name:        "{{ p.name|escapejs }}",
-    price:       {{ p.safe_price|default:0 }},
-    image:       "{{ p.image|default:'📦'|escapejs }}",
-    stock_qty:   {{ p.total_stock|default:0 }},
-    has_variants: {{ p.has_variants|yesno:"true,false" }},
-    variants:    {{ p.safe_variants_json|default:"[]"|safe }},
-    option_types: {{ p.safe_option_types_json|default:"[]"|safe }},
-    types:       {{ p.safe_types_json|default:"[]"|safe }},
-    type_name:   "{{ p.product_type.name|escapejs }}"
-  }{% if not forloop.last %},{% endif %}
-  {% endfor %}
-];
-</script>
+<style>
+  .pos-container { 
+    height: calc(100dvh - 80px); /* Aggressive offset to guarantee it fits */
+    display: flex; flex-direction: column; overflow: hidden; position: relative; background: var(--bg-main); 
+  }
+  @media (min-width: 1024px) { 
+    .pos-container { height: calc(100vh - 90px); flex-direction: row; } 
+  }
+
+  .product-grid-area { flex: 1; overflow-y: auto; height: 100%; }
+
+  .cart-drawer {
+    background: #0d1f2d; color: #e2e8f0; z-index: 100;
+    display: flex; flex-direction: column;
+    box-shadow: -10px 0 50px rgba(0,0,0,0.3);
+    /* Mobile Drawer */
+    position: absolute; inset: 0; width: 100%;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .cart-drawer.mobile-open { transform: translateX(0); }
+
+  @media (min-width: 1024px) {
+    .cart-drawer {
+      /* Desktop Side Panel */
+      position: static; 
+      width: 420px; 
+      transform: none;
+      transition: none;
+      display: none; /* hidden by default */
+    }
+    .cart-drawer.desktop-open {
+      display: flex; /* shows when active */
+    }
+  }
+  .numpad-btn { height: 44px; }
+
+  .product-tile {
+    background: white; border: 1px solid #e8eaef; border-radius: 14px;
+    padding: 14px; cursor: pointer; transition: all 0.2s cubic-bezier(.4,0,.2,1);
+    display: flex; flex-direction: column; gap: 6px;
+    position: relative; min-height: 110px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .product-tile:hover { border-color: var(--accent); box-shadow: 0 6px 24px rgba(212,168,82,0.12); transform: translateY(-2px); }
+  .product-tile:active { transform: scale(0.97) translateY(0); }
+  .product-tile.low-stock { border-color: #fbbf24; background: #fffbeb; }
+  .product-tile.out-of-stock { opacity: 0.4; pointer-events: none; filter: grayscale(0.5); }
+
+  .sell-badge {
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    padding: 3px 7px; border-radius: 6px; letter-spacing: 0.5px;
+  }
+  .sell-badge-split { background: #ede9fe; color: #7c3aed; }
+  .sell-badge-weight { background: #fef3c7; color: #d97706; }
+  .sell-badge-bunch { background: #dbeafe; color: #2563eb; }
+
+  .promo-badge {
+    position: absolute; top: 8px; right: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+    color: var(--primary-dark); font-size: 9px; font-weight: 800;
+    padding: 3px 8px; border-radius: 8px; text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(212,168,82,0.3);
+  }
+
+  .category-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 9px 18px; border-radius: 24px; font-size: 13px;
+    font-weight: 600; white-space: nowrap; cursor: pointer;
+    transition: all 0.2s; border: 1.5px solid #e2e5ea;
+    background: white; color: var(--text-primary); min-height: 42px;
+  }
+  .category-pill:hover { border-color: var(--accent); color: var(--primary); }
+  .category-pill.active {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: white; border-color: transparent;
+    box-shadow: 0 4px 12px rgba(26,58,74,0.25);
+  }
+
+  /* Dark-themed numpad */
+  .numpad-btn {
+    width: 100%; height: 60px; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: #ffffff; transition: all 0.12s;
+    font-family: 'JetBrains Mono', monospace;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .numpad-btn:hover { background: rgba(255,255,255,0.1); }
+  .numpad-btn:active { transform: scale(0.93); background: rgba(255,255,255,0.14); }
+  .numpad-btn.accent {
+    background: linear-gradient(135deg, var(--accent), var(--accent-glow));
+    color: var(--primary-dark); border-color: transparent;
+    box-shadow: 0 4px 16px rgba(212,168,82,0.3);
+  }
+
+  .payment-tab {
+    flex: 1; padding: 10px; text-align: center; font-weight: 600; font-size: 12px;
+    cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;
+    color: rgba(255,255,255,0.4); min-height: 44px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .payment-tab:hover { color: rgba(255,255,255,0.7); }
+  .payment-tab.active { color: var(--accent-glow); border-bottom-color: var(--accent); }
+
+  .cart-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .cart-item:last-child { border-bottom: none; }
+
+  /* Dark inputs for cart drawer */
+  .cart-drawer input[type="number"], .cart-drawer input[type="tel"], .cart-drawer input[type="text"] {
+    background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.1) !important;
+    color: #e2e8f0 !important; caret-color: var(--accent);
+  }
+  .cart-drawer input::placeholder { color: rgba(255,255,255,0.25) !important; }
+  .cart-drawer input:focus { ring-color: rgba(212,168,82,0.3) !important; border-color: var(--accent) !important; }
+  .cart-drawer label { color: rgba(255,255,255,0.5) !important; }
+
+  .weight-modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  @media (min-width: 768px) { .weight-modal-overlay { align-items: center; } }
+  .weight-modal {
+    background: white; border-radius: 24px 24px 0 0; width: 100%; max-width: 440px;
+    padding: 28px; box-shadow: 0 -10px 60px rgba(0,0,0,0.2);
+    animation: slideUpModal 0.3s cubic-bezier(.4,0,.2,1);
+  }
+  @media (min-width: 768px) { .weight-modal { border-radius: 24px; } }
+  @keyframes slideUpModal { from { transform: translateY(100%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
+
+  .receipt-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .receipt-panel {
+    background: white; border-radius: 20px; width: 100%; max-width: 400px;
+    max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+    animation: scaleIn 0.25s cubic-bezier(.4,0,.2,1);
+  }
+  @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+</style>
 {% endblock %}
 
 {% block content %}
-<style>
-.ns::-webkit-scrollbar{display:none}.ns{-ms-overflow-style:none;scrollbar-width:none}
-.product-row{touch-action:manipulation}
-.product-row:active{background:#e1b38215!important}
-.fade-in{animation:fadeIn .25s ease-out}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.tab-active{background:#2d545e!important;color:#e1b382!important;border-color:#2d545e!important}
-.val-selected{background:#2d545e!important;border-color:#e1b382!important;color:#e1b382!important}
-</style>
-
-<div x-data="{
-  posView: 'shop',
-  activeProduct: null,
-  detailQty: 1,
-  detailSalePrice: 0,
-  activeTab: 0,
-  searchQuery: '',
-  chosenType: '',
-
-  /* ── variant tab helpers ── */
-  get typeChosen() {
-    if (!this.activeProduct?.types || this.activeProduct.types.length === 0) return true;
-    return this.chosenType !== '';
-  },
-  get allTabsFilled() {
-    if (!this.activeProduct?.option_types?.length) return true;
-    return this.activeProduct.option_types.every(ot => this.variantSelections[ot.name]);
-  },
-  get matchedVariant() {
-    if (!this.allTabsFilled || !this.activeProduct?.variants?.length) return null;
-    return this.activeProduct.variants.find(v => {
-      const opts = v.options || {};
-      for (const [k,val] of Object.entries(this.variantSelections)) {
-        if (opts[k] !== val) return false;
-      }
-      return true;
-    }) || null;
-  },
-  selectTab(idx) { this.activeTab = idx; },
-  pickValue(optName, val) {
-    this.variantSelections = {...this.variantSelections, [optName]: val};
-    if (this.activeTab < (this.activeProduct?.option_types?.length || 1) - 1) {
-      this.activeTab++;
-    }
-    const mv = this.matchedVariant;
-    if (mv) this.detailSalePrice = mv.price;
-  },
-  get detailFixedPrice() {
-    const mv = this.matchedVariant;
-    if (mv) return mv.price;
-    return this.activeProduct?.price || 0;
-  },
-  get showPriceSection() {
-    if (!this.activeProduct) return false;
-    if (!this.typeChosen) return false;
-    if (!this.activeProduct.has_variants) return true;
-    return this.allTabsFilled;
-  },
-  openDetail(prod) {
-    this.activeProduct = prod;
-    this.detailQty = 1;
-    this.detailSalePrice = prod.price;
-    this.activeTab = 0;
-    this.chosenType = '';
-    this.resetVariantSelection();
-    this.posView = 'detail';
-  },
-  addItemToCart() {
-    const mv = this.matchedVariant;
-    const item = mv
-      ? { id: mv.id, is_variant: true, parent_product: this.activeProduct.id, name: mv.name, price: mv.price, sale_price: this.detailSalePrice, stock_qty: mv.stock_qty, image: this.activeProduct.image, chosen_type: this.chosenType }
-      : { id: this.activeProduct.id, is_variant: false, parent_product: this.activeProduct.id, name: this.activeProduct.name, price: this.activeProduct.price, sale_price: this.detailSalePrice, stock_qty: this.activeProduct.stock_qty, image: this.activeProduct.image, chosen_type: this.chosenType };
-    this.addToCart(item, this.detailQty);
-    this.posView = 'shop';
-    this.activeProduct = null;
-    this.chosenType = '';
-    this.resetVariantSelection();
-  }
-}" class="flex flex-col" style="height:calc(100vh - 56px - 64px)">
-
-  <!-- ═══════ TOP BAR ═══════ -->
-  <div class="shrink-0 px-4 py-3" style="background:#2d545e">
-    <div class="flex items-center gap-3">
-      <button x-show="posView!=='shop'" x-cloak
-              @click="posView='shop';activeProduct=null;chosenType='';resetVariantSelection()"
-              class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl active:scale-90 transition-all"
-              style="background:rgba(255,255,255,0.15);color:white">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-      </button>
-      <h2 x-show="posView==='detail'" x-cloak class="text-white font-bold text-base truncate flex-1" x-text="activeProduct?.name||''"></h2>
-      <h2 x-show="posView==='payment'" x-cloak class="text-white font-bold text-base flex-1">Complete Payment</h2>
-      <div x-show="posView==='shop'" class="flex-1 flex items-center rounded-xl overflow-hidden" style="background:rgba(255,255,255,0.12)">
-        <span class="pl-3" style="color:rgba(255,255,255,0.5)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-        <input type="text" x-model="searchQuery" placeholder="Search products..." class="flex-1 px-3 py-3 text-base font-medium bg-transparent border-none outline-none" style="color:white" autocomplete="off">
+<div class="pos-container" x-data="posApp()" x-init="window.posAppInstance = $data">
+  
+  <!-- ─── LEFT: Product Grid ─── -->
+  <div class="product-grid-area p-3 lg:p-4 pb-16 lg:pb-4" :class="{ 'desktop-open': cart.length > 0 || checkoutMode }">
+    
+    <!-- Search Bar with Barcode Scanner Support -->
+    <div class="relative mb-3">
+      <div class="absolute -top-6 right-0 text-[10px] text-green-500 font-bold font-mono">v7.0.CLEAN_BREAK</div>
+      <input type="text" x-model="searchQuery" @input.debounce.300ms="searchProducts()"
+             @keydown.enter.prevent="handleBarcodeScan()"
+             placeholder="Search products, SKU, or scan barcode..."
+             style="border: 2px solid #ef4444 !important"
+             class="w-full pl-10 pr-20 py-3 rounded-xl bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+             id="pos-search" autocomplete="off">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        <span class="text-[9px] font-bold px-2 py-1 rounded-md" style="background: rgba(26,58,74,0.06); color: var(--primary-light)">BARCODE OK</span>
       </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="flex gap-2 overflow-x-auto no-scrollbar mb-3 pb-1">
+      <button class="category-pill" :class="{ active: activeCategory === 'all' }" @click="filterCategory('all')">
+        All Items
+      </button>
+      {% for cat in categories %}
+      <button class="category-pill" :class="{ active: activeCategory === '{{ cat.pk }}' }" @click="filterCategory('{{ cat.pk }}')">
+        {{ cat.name }}
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- Product Grid -->
+    <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3">
+      {% for pd in products_data %}
+      {% with p=pd.product promo=pd.promo %}
+      <div class="product-tile {% if p.effective_stock <= 0 %}out-of-stock{% elif p.is_low_stock %}low-stock{% endif %}"
+           data-product-json="{{ pd.product_json|escape }}"
+           @click="handleProductClick(JSON.parse($el.getAttribute('data-product-json')))"
+           data-category="{{ p.subcategory.category_id }}" data-barcode="{{ p.barcode }}">
+        
+        {% if promo %}<div class="promo-badge">{{ promo.badge_text }}</div>{% endif %}
+        
+        <div class="font-semibold text-sm leading-tight truncate">{{ p.name }}</div>
+        <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.base_unit_price|floatformat:0 }}</div>
+        {% if p.barcode %}<div class="text-[9px] text-text-secondary font-mono truncate mt-0.5">{{ p.barcode }}</div>{% endif %}
+        
+        <div class="flex items-center gap-1 mt-auto flex-wrap">
+          {% if p.effective_stock <= 0 %}
+            <span class="sell-badge" style="background:#FEE2E2; color:#DC2626">OUT</span>
+          {% elif p.is_low_stock %}
+            <span class="sell-badge" style="background:#FEF3C7; color:#D97706">{{ p.effective_stock|floatformat:0 }} left</span>
+          {% else %}
+            <span class="text-[10px] text-text-secondary font-medium">{{ p.effective_stock|floatformat:0 }} avail</span>
+          {% endif %}
+          {% if p.is_kadogo %}
+            <div class="w-full mt-2 flex items-center justify-between">
+              <span class="sell-badge" style="background:#E0F2FE; color:#0369A1">
+                {{ pd.total_fragments|floatformat:0 }} pieces tot.
+              </span>
+              <div class="text-[9px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/5">KADOGO</div>
+            </div>
+          {% endif %}
+          {% if p.split_enabled %}<span class="sell-badge sell-badge-split">{{ p.pieces_per_base }}pc/{{ p.base_unit_label }} @ {{ p.split_unit_price }}/pc</span>{% endif %}
+          {% if p.weight_sell_enabled %}<span class="sell-badge sell-badge-weight">per {{ p.weight_unit }}</span>{% endif %}
+          {% if p.bundle_pricing_enabled %}
+            <button @click.stop="addProduct(JSON.parse($el.closest('.product-tile').getAttribute('data-product-json')), 'bundle')" 
+                    class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold hover:bg-amber-100 border border-amber-200 transition-colors">
+              +Bundle (KES {{ p.bundle_price|floatformat:0 }})
+            </button>
+          {% endif %}
+        </div>
+      </div>
+      {% endwith %}
+      {% empty %}
+      <div class="col-span-full text-center py-12 text-text-secondary">
+        <p class="text-lg font-semibold">No products found</p>
+        <p class="text-sm mt-1">Try a different search or category</p>
+      </div>
+      {% endfor %}
     </div>
   </div>
 
-  <!-- ═══════ VIEW 1: SHOP ═══════ -->
-  <div x-show="posView==='shop'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background:#F8F9FB">
-    <div class="flex-1 overflow-auto ns" :style="itemCount>0 ? 'padding-bottom:90px' : ''">
-
-      <!-- Available Products -->
-      <div class="px-4 pt-4 pb-2">
-        <h3 class="font-bold text-xs uppercase tracking-wider" style="color:#6B7280">Available · <span class="font-mono" x-text="(window.allProducts||[]).filter(p=>!searchQuery||p.name.toLowerCase().includes(searchQuery.toLowerCase())).length"></span> products</h3>
+  <!-- ─── RIGHT: Cart & Payment Drawer ─── -->
+  <div class="cart-drawer"
+       :class="{ 
+         'mobile-open': mobileCartOpen || checkoutMode, 
+         'desktop-open': cart.length > 0 || checkoutMode 
+       }">
+    
+    <!-- Mobile close -->
+    <div class="lg:hidden p-2 flex justify-end border-b border-white/10 flex-shrink-0" x-show="mobileCartOpen">
+      <button @click="mobileCartOpen = false" class="text-white/70 hover:text-white font-bold text-sm bg-white/10 px-4 py-2 rounded-xl">✕ Close</button>
+    </div>
+    
+    <!-- 🟢 CART MODE 🟢 -->
+    <div x-show="!checkoutMode" class="flex flex-col" style="height:100%;min-height:0">
+      <!-- Cart Header -->
+      <div class="px-6 py-5 border-b flex items-center justify-between flex-shrink-0" style="border-color:rgba(255,255,255,0.06)">
+        <h2 class="font-extrabold text-xl text-white flex items-center gap-2">
+          🛒 Current Order
+          <span class="px-2 py-0.5 rounded-full text-xs bg-white/10" x-text="cart.length"></span>
+        </h2>
+        <button @click="clearCart()" class="text-sm font-bold opacity-60 hover:opacity-100 transition-opacity" style="color:#fca5a5" x-show="cart.length > 0">Clear All</button>
       </div>
-      <div class="divide-y" style="border-color:#E5E7EB">
-        <template x-for="prod in (window.allProducts||[]).filter(p=>!searchQuery||p.name.toLowerCase().includes(searchQuery.toLowerCase()))" :key="prod.id">
-          <div class="product-row flex items-center gap-3 px-4 py-3.5 bg-white cursor-pointer transition-colors"
-               @click="openDetail(prod)">
-            <div class="relative w-12 h-12 shrink-0 flex items-center justify-center text-2xl rounded-2xl" style="background:#e1b38215;border:1px solid #e1b38233">
-              <span x-text="prod.image"></span>
-              <template x-if="cart.items.some(i=>i.parent_product===prod.id||i.id===prod.id)">
-                <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full ring-2 ring-white" style="background:#e1b382"></div>
-              </template>
-            </div>
+      <!-- Cart Items (SCROLLS) -->
+      <div class="flex-1 overflow-y-auto px-6 py-4 overscroll-contain space-y-2" style="min-height:0">
+        <template x-for="(item, idx) in cart" :key="idx">
+          <div class="cart-item">
             <div class="flex-1 min-w-0">
-              <h3 class="text-sm font-semibold leading-tight truncate" style="color:#12343b" x-text="prod.name"></h3>
-              <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-xs" style="color:#9CA3AF" x-text="prod.stock_qty+' in stock'"></span>
+              <div class="font-semibold text-sm truncate text-white" x-text="item.name"></div>
+              <div class="text-[11px] mt-0.5" style="color:rgba(255,255,255,0.4)">
+                <span x-show="item.sell_mode==='whole'" x-text="'KES '+item.unit_price+' / '+(item.whole_unit_label||'Unit')"></span>
+                <span x-show="item.sell_mode==='fragment'" x-text="'KES '+item.unit_price+' / '+item.fragment_name"></span>
+                <span x-show="item.sell_mode==='split'" x-text="'KES '+item.unit_price+' / pc'"></span>
+                <span x-show="item.sell_mode==='weight'" x-text="item.weight_value+' '+item.weight_unit+' @ KES '+item.unit_price+'/'+item.weight_unit"></span>
+                <span x-show="item.sell_mode==='bundle'" x-text="'('+item.bundle_qty+' pcs each — '+(item.bundle_qty*item.quantity)+' pcs total)'"></span>
+              </div>
+              <div class="flex gap-1 mt-1.5" x-show="item.split_enabled || item.bundle_pricing_enabled">
+                <button x-show="!item.bundle_pricing_enabled" @click="setSellMode(idx,'whole')" class="text-[9px] font-bold px-2 py-0.5 rounded-md" :style="item.sell_mode==='whole'?'background:var(--accent);color:#0d1f2d':'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5)'" x-text="item.base_unit_label"></button>
+                <button x-show="item.split_enabled" @click="setSellMode(idx,'split')" class="text-[9px] font-bold px-2 py-0.5 rounded-md" :style="item.sell_mode==='split'?'background:#8b5cf6;color:white':'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5)'" x-text="item.split_unit_label||'Piece'"></button>
+                <button x-show="item.bundle_pricing_enabled" @click.stop="setSellMode(idx,'bundle')" class="text-[9px] font-bold px-2 py-0.5 rounded-md" :style="item.sell_mode==='bundle'?'background:#2563eb;color:white':'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5)'" x-text="'Bundle ('+item.bundle_qty+')'"></button>
+                <button x-show="item.bundle_pricing_enabled && item.allow_single_sale" @click.stop="setSellMode(idx,'single')" class="text-[9px] font-bold px-2 py-0.5 rounded-md" :style="item.sell_mode==='single'?'background:#eab308;color:white':'background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5)'" x-text="'Singles'"></button>
               </div>
             </div>
-            <div class="shrink-0 text-right">
-              <div class="text-base font-bold font-mono tabular" style="color:#2d545e" x-text="Number(prod.price).toLocaleString()"></div>
-              <div class="text-[10px]" style="color:#e1b382">KES</div>
+            <div class="flex items-center gap-1" x-show="item.sell_mode!=='weight'">
+              <button @click="updateQty(idx,-1)" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background:rgba(255,255,255,0.08);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)">-</button>
+              <span class="w-8 text-center font-mono font-bold text-sm text-white" x-text="item.quantity"></span>
+              <button @click="updateQty(idx,1)" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background:rgba(255,255,255,0.08);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)">+</button>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5" class="shrink-0"><path d="m9 18 6-6-6-6"/></svg>
+            <div class="text-right min-w-[70px]">
+              <div class="font-mono font-bold text-sm" style="color:var(--accent-glow)" x-text="'KES '+item.line_total.toFixed(0)"></div>
+            </div>
+            <button @click="removeItem(idx)" class="w-7 h-7 flex items-center justify-center rounded-lg" style="color:#f87171">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
           </div>
         </template>
+        <div x-show="cart.length===0" class="text-center py-10">
+          <div class="text-4xl mb-3 opacity-30">🛒</div>
+          <p class="text-sm font-medium" style="color:rgba(255,255,255,0.4)">Cart is empty</p>
+        </div>
+      </div>
+      <!-- Totals + Pay (PINNED) -->
+      <div class="flex-shrink-0 bg-[#0d1f2d] shadow-[0_-10px_30px_rgba(0,0,0,0.3)] z-10" x-show="cart.length > 0">
+        <div class="px-6 py-5 border-t border-white/10">
+          <div class="flex justify-between items-end mb-4">
+            <span class="text-white/60 font-medium text-sm uppercase tracking-wider">Total Amount</span>
+            <span class="font-mono text-3xl font-black" style="color:var(--accent-glow)" x-text="'KES '+cartTotal.toFixed(0)"></span>
+          </div>
+          <button @click="checkoutMode=true" class="w-full py-3.5 rounded-2xl font-extrabold text-lg active:scale-[0.97]" 
+                  style="background:linear-gradient(135deg,var(--accent, #d4a852),var(--accent-glow, #fde08b)); color:var(--primary-dark, #0f172a); box-shadow:0 6px 24px rgba(212,168,82,0.35);">
+            Pay — KES <span x-text="cartTotal.toFixed(0)"></span>
+          </button>
+        </div>
       </div>
     </div>
-    <!-- Mini cart bar -->
-    <div x-show="itemCount>0" x-cloak x-transition class="fixed bottom-[64px] left-0 right-0 z-[100]" style="box-shadow:0 -4px 20px rgba(0,0,0,0.08)">
-      <button @click="posView='payment'" class="w-full flex items-center justify-between px-5 py-4 active:scale-[0.99] transition-all" style="background:#2d545e;color:white">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold" style="background:rgba(255,255,255,0.2)"><span x-text="itemCount"></span></div>
-          <span class="font-semibold text-sm">View Cart & Pay</span>
+
+    <!-- 🟢 CHECKOUT MODE 🟢 -->
+    <div x-show="checkoutMode" class="flex flex-col" style="height:100%;min-height:0">
+      <!-- Header (PINNED) -->
+      <div class="px-6 py-5 border-b flex items-center gap-4 bg-black/20 flex-shrink-0" style="border-color:rgba(255,255,255,0.06)">
+        <button @click="checkoutMode=false" class="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors" style="color:var(--accent-glow)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="flex-1">
+          <h2 class="font-extrabold text-lg text-white leading-tight">Payment</h2>
+          <div class="font-mono text-xl font-black" style="color:var(--accent-glow)">KES <span x-text="cartTotal.toFixed(0)"></span></div>
         </div>
-        <span class="font-bold text-lg font-mono tabular" x-text="'KES '+cartTotal.toLocaleString()"></span>
-      </button>
+      </div>
+      <!-- Payment Tabs (PINNED) -->
+      <div class="flex p-3 gap-2 bg-black/10 flex-shrink-0 border-b border-white/5">
+        <button class="flex-1 py-3 rounded-xl font-bold text-sm transition-all" :class="paymentMethod==='cash' ? 'bg-white/20 text-white shadow-lg' : 'text-white/40 hover:bg-white/5'" @click="paymentMethod='cash'">💵 CASH</button>
+        <button class="flex-1 py-3 rounded-xl font-bold text-sm transition-all" :class="paymentMethod==='mpesa' ? 'bg-[#25D366]/20 text-[#25D366] shadow-lg' : 'text-white/40 hover:bg-white/5'" @click="paymentMethod='mpesa'">📱 M-PESA</button>
+        <button class="flex-1 py-3 rounded-xl font-bold text-sm transition-all" :class="paymentMethod==='split' ? 'bg-[#8b5cf6]/20 text-[#8b5cf6] shadow-lg' : 'text-white/40 hover:bg-white/5'" @click="paymentMethod='split'">💳 SPLIT</button>
+      </div>
+      <!-- Inputs + Numpad (SCROLLS) -->
+      <div class="flex-1 overflow-y-auto px-6 py-5 overscroll-contain flex flex-col" style="min-height:0">
+        <!-- Cash -->
+        <div x-show="paymentMethod==='cash'">
+          <label class="text-xs font-semibold uppercase mb-2 block" style="color:rgba(255,255,255,0.4)">Amount Tendered</label>
+          <input type="number" x-model.number="cashTendered" class="w-full px-4 py-3 rounded-xl border font-mono font-bold text-xl text-right focus:outline-none mb-3" placeholder="0" inputmode="numeric" id="cash-input">
+          <div class="grid grid-cols-4 gap-2 mb-3">
+            <button type="button" @click="cashTendered=cartTotal" class="numpad-btn text-xs font-bold bg-white/10">Exact</button>
+            <button type="button" @click="cashTendered=(cashTendered||0)+100" class="numpad-btn text-xs font-bold">+100</button>
+            <button type="button" @click="cashTendered=(cashTendered||0)+500" class="numpad-btn text-xs font-bold">+500</button>
+            <button type="button" @click="cashTendered=(cashTendered||0)+1000" class="numpad-btn text-xs font-bold">+1K</button>
+          </div>
+          <div class="flex justify-between items-center bg-black/20 p-3 rounded-xl" x-show="cashTendered!==null&&cashTendered>=cartTotal">
+            <span class="text-sm font-semibold" style="color:rgba(255,255,255,0.5)">Change Due</span>
+            <span class="font-mono font-bold text-xl" style="color:#34d399" x-text="'KES '+((cashTendered||0)-cartTotal).toFixed(0)"></span>
+          </div>
+          <div class="flex justify-between items-center bg-red-900/20 p-3 rounded-xl" x-show="cashTendered!==null&&cashTendered<cartTotal">
+            <span class="text-sm font-semibold" style="color:rgba(255,255,255,0.5)">Short By</span>
+            <span class="font-mono font-bold text-lg" style="color:#f87171" x-text="'KES '+Math.abs((cashTendered||0)-cartTotal).toFixed(0)"></span>
+          </div>
+        </div>
+        <!-- M-Pesa (Code Only) -->
+        <div x-show="paymentMethod==='mpesa'">
+          <label class="text-xs font-semibold uppercase mb-2 block" style="color:rgba(255,255,255,0.4)">M-Pesa Transaction Code</label>
+          <input type="text" x-model="mpesaCode" placeholder="e.g., QHX12345" class="w-full px-4 py-3 rounded-xl border text-lg font-mono font-bold uppercase focus:outline-none" id="mpesa-code">
+          <p class="text-[10px] mt-2" style="color:rgba(255,255,255,0.3)">Enter the M-Pesa confirmation code from customer's phone</p>
+        </div>
+        <!-- Split Pay -->
+        <div x-show="paymentMethod==='split'">
+          <div class="space-y-3">
+            <div>
+              <label class="text-xs font-semibold uppercase mb-1 block" style="color:rgba(255,255,255,0.4)">Cash Amount</label>
+              <input type="number" x-model.number="splitCash" placeholder="0" inputmode="numeric" class="w-full px-4 py-3 rounded-xl border font-mono font-bold text-lg text-right focus:outline-none" id="split-cash">
+            </div>
+            <div class="rounded-lg overflow-hidden h-5 flex text-[9px] font-bold" style="background:rgba(255,255,255,0.05)">
+              <div class="flex items-center justify-center transition-all" :style="'width:'+Math.min(100,((splitCash||0)/cartTotal*100))+'%;background:#34d399;color:#064e3b;'" x-text="'Cash '+Math.min(100,((splitCash||0)/cartTotal*100)).toFixed(0)+'%'"></div>
+              <div class="flex items-center justify-center flex-1" style="background:#0ea5e9;color:#0c4a6e" x-text="'M-Pesa '+Math.max(0,(100-(splitCash||0)/cartTotal*100)).toFixed(0)+'%'"></div>
+            </div>
+            <div class="flex justify-between items-center bg-black/20 p-3 rounded-xl text-sm">
+              <span class="text-white/50 font-semibold">M-Pesa Balance</span>
+              <span class="font-mono font-bold text-lg text-white" x-text="'KES '+Math.max(0,cartTotal-(splitCash||0)).toFixed(0)"></span>
+            </div>
+            <div>
+              <label class="text-xs font-semibold uppercase mb-1 block" style="color:rgba(255,255,255,0.4)">M-Pesa Code</label>
+              <input type="text" x-model="splitMpesaRef" placeholder="e.g., QHX12345" class="w-full px-4 py-3 rounded-xl border text-lg font-mono font-bold uppercase focus:outline-none" id="split-mpesa">
+            </div>
+          </div>
+        </div>
+        <!-- Numpad (Hidden for M-Pesa as it requires alphanumeric keyboard) -->
+        <div class="mt-auto pt-4" x-show="paymentMethod==='cash' || paymentMethod==='split'">
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('1')" class="numpad-btn">1</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('2')" class="numpad-btn">2</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('3')" class="numpad-btn">3</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('4')" class="numpad-btn">4</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('5')" class="numpad-btn">5</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('6')" class="numpad-btn">6</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('7')" class="numpad-btn">7</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('8')" class="numpad-btn">8</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('9')" class="numpad-btn">9</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('C')" class="numpad-btn" style="color:#fca5a5;background:rgba(239,68,68,0.1)">C</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('0')" class="numpad-btn">0</button>
+            <button type="button" @mousedown.prevent @touchstart.prevent @click="numpadPress('⌫')" class="numpad-btn" style="color:#fca5a5;background:rgba(239,68,68,0.1)">⌫</button>
+          </div>
+        </div>
+      </div>
+      <!-- Confirm Button (ALWAYS PINNED AT BOTTOM) -->
+      <div class="p-6 pb-[calc(24px+env(safe-area-inset-bottom,0px))] flex-shrink-0 border-t border-white/10 bg-[#0d1f2d] shadow-[0_-10px_30px_rgba(0,0,0,0.3)] z-10">
+        <button @click="processPayment()" :disabled="checkoutLoading||cart.length===0||(paymentMethod==='cash'&&(!cashTendered||cashTendered<cartTotal))" 
+                class="w-full py-3.5 rounded-2xl font-extrabold text-lg active:scale-[0.97] transition-all" 
+                style="background:linear-gradient(135deg, #A0522D, #8B4513); color:white; box-shadow:0 6px 24px rgba(139, 69, 19, 0.4);" 
+                :class="(checkoutLoading||cart.length===0||(paymentMethod==='cash'&&(!cashTendered||cashTendered<cartTotal))) ? 'opacity-40 cursor-not-allowed grayscale' : ''">
+          <span x-show="!checkoutLoading">✓ Confirm Payment</span>
+          <span x-show="checkoutLoading">⏳ Processing...</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- ═══════ VIEW 2: DETAIL (separate page) ═══════ -->
-  <div x-show="posView==='detail'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background:#F8F9FB">
-    <div class="flex-1 overflow-auto ns pb-6">
 
-      <!-- Product Hero -->
-      <div class="bg-white px-5 pt-5 pb-4 border-b" style="border-color:#E5E7EB">
-        <div class="flex items-center gap-4">
-          <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0" style="background:#e1b38215;border:1px solid #e1b38233">
-            <span x-text="activeProduct?.image||'📦'"></span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h2 class="text-lg font-bold leading-tight" style="color:#12343b" x-text="activeProduct?.name"></h2>
-            <span class="text-xs" style="color:#9CA3AF" x-text="(activeProduct?.stock_qty||0)+' in stock'"></span>
-          </div>
-        </div>
-      </div>
+  <!-- Mobile Cart Toggle (floating) -->
+  <button x-show="cart.length > 0" @click="mobileCartOpen = !mobileCartOpen"
+          class="fixed bottom-20 right-4 z-40 lg:hidden w-14 h-14 rounded-full shadow-xl flex items-center justify-center"
+          style="background: var(--primary); color: white">
+    <span class="text-lg">🛒</span>
+    <span class="absolute -top-1 -right-1 bg-accent text-primary-dark text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center"
+          x-text="cart.length"></span>
+  </button>
 
-          <!-- Choose Type (vertical radio) -->
-          <template x-if="activeProduct?.types && activeProduct.types.length > 0">
-            <div class="bg-white px-4 py-4 border-b" style="border-color:#E5E7EB">
-              <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
-                Choose Type
-                <template x-if="chosenType">
-                  <span class="ml-auto font-bold text-xs px-2 py-0.5 rounded-lg" style="background:#e1b38222;color:#c89666" x-text="chosenType"></span>
-                </template>
-              </p>
-              <div class="flex flex-col gap-2">
-                <template x-for="t in activeProduct.types" :key="t">
-                  <label class="flex items-center gap-3 cursor-pointer p-3 rounded-xl border transition-all active:scale-[0.98]"
-                         :style="chosenType===t ? 'background:#2d545e12;border-color:#2d545e' : 'background:white;border-color:#E5E7EB'">
-                    <input type="radio" name="choose_type" :value="t" @change="chosenType=t" :checked="chosenType===t"
-                           class="w-4 h-4 border-gray-300 focus:ring-[#2d545e]" style="color:#2d545e">
-                    <span class="font-semibold text-sm" style="color:#12343b" x-text="t"></span>
-                  </label>
-                </template>
-              </div>
-            </div>
-          </template>
-
-          <!-- Choose Variants (tabs) — always visible for variant products -->
-      <template x-if="activeProduct?.has_variants && activeProduct?.option_types?.length>0">
+  <!-- ─── UNIFIED MODAL SYSTEM (Based on working Weight Modal) ─── -->
+  <div x-show="activeModal" 
+       class="weight-modal-overlay" 
+       @click.self="activeModal = null" 
+       x-cloak 
+       style="display: flex; z-index: 9999">
+    
+    <div class="weight-modal" @click.stop :key="'modal-' + refreshCounter">
+      
+      <!-- ─── WEIGHT CONTENT ─── -->
+      <template x-if="activeModal === 'weight'">
         <div>
-          <div class="bg-white px-4 pt-4 pb-1 border-b" style="border-color:#E5E7EB">
-            <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
-                  Choose Variant
-                </p>
-              </div>
-              <!-- Tab Headers -->
-              <div class="flex bg-white border-b px-4 gap-1 pt-1 overflow-x-auto ns" style="border-color:#E5E7EB">
-                <template x-for="(ot, idx) in activeProduct.option_types" :key="ot.name">
-                  <button @click="selectTab(idx)"
-                          class="px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-t-xl border border-b-0 transition-all whitespace-nowrap"
-                          :class="activeTab===idx?'tab-active':''"
-                          :style="activeTab===idx?'':'background:white;border-color:#E5E7EB;color:#6B7280'">
-                    <span x-text="ot.name"></span>
-                    <template x-if="variantSelections[ot.name]">
-                      <span class="ml-1 text-[10px] opacity-80" x-text="'✓ '+variantSelections[ot.name]"></span>
-                    </template>
-                  </button>
-                </template>
-              </div>
-              <!-- Tab Content -->
-              <div class="bg-white px-4 py-4 border-b" style="border-color:#E5E7EB">
-                <template x-for="(ot, idx) in activeProduct.option_types" :key="ot.name+'_c'">
-                  <div x-show="activeTab===idx" x-transition.opacity class="flex flex-wrap gap-2">
-                    <template x-for="val in ot.values" :key="val">
-                      <button @click="pickValue(ot.name,val)"
-                              class="px-5 py-3 rounded-xl border text-sm font-bold transition-all active:scale-95"
-                              :class="variantSelections[ot.name]===val?'val-selected':''"
-                              :style="variantSelections[ot.name]===val?'':'background:#F8F9FB;border-color:#E5E7EB;color:#12343b'"
-                              x-text="val"></button>
-                    </template>
-                  </div>
-                </template>
-              </div>
-            </div>
-          </template>
-
-          <!-- Price + Qty (always visible) -->
-          <div class="bg-white px-4 py-4 border-b" style="border-color:#E5E7EB">
-            <p class="text-[10px] font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style="color:#6B7280">
-              Price & Quantity
-            </p>
-            <!-- Fixed + Adjustable side by side -->
-            <div class="flex items-stretch gap-3 mb-4">
-              <div class="flex-1 p-3 rounded-xl text-center" style="background:#F8F9FB;border:1px solid #E5E7EB">
-                <div class="text-[9px] font-bold uppercase tracking-wider mb-1" style="color:#9CA3AF">Fixed Price</div>
-                <div class="text-lg font-bold font-mono tabular" style="color:#9CA3AF" x-text="'KES '+Number(detailFixedPrice).toLocaleString()"></div>
-              </div>
-              <div class="flex-1 p-3 rounded-xl text-center" style="background:#e1b38210;border:2px solid #e1b382">
-                <div class="text-[9px] font-bold uppercase tracking-wider mb-1" style="color:#c89666">Sell Price</div>
-                <input type="number" x-model.number="detailSalePrice"
-                       class="w-full text-lg font-bold font-mono tabular text-center bg-transparent border-none outline-none focus:ring-0" style="color:#2d545e">
-              </div>
-            </div>
-            <!-- Quantity -->
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-semibold" style="color:#6B7280">Quantity</span>
-              <div class="flex items-center rounded-xl" style="background:#F8F9FB;border:1px solid #E5E7EB">
-                <button @click="detailQty=Math.max(1,detailQty-1)" class="w-10 h-10 flex items-center justify-center active:scale-90 text-lg font-bold" style="color:#6B7280">−</button>
-                <span class="w-10 text-center font-bold text-base tabular" style="color:#12343b" x-text="detailQty"></span>
-                <button @click="detailQty++" class="w-10 h-10 flex items-center justify-center active:scale-90 text-lg font-bold" style="color:#2d545e">+</button>
-              </div>
-            </div>
-            <!-- Dynamic Total -->
-            <div class="flex items-center justify-between pt-3 border-t" style="border-color:#E5E7EB">
-              <span class="text-sm font-semibold" style="color:#6B7280">Line Total</span>
-              <span class="text-xl font-bold font-mono tabular" style="color:#2d545e" x-text="'KES '+(detailSalePrice*detailQty).toLocaleString()"></span>
-            </div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-lg" x-text="activeProduct?.name || 'Weight Entry'"></h3>
+            <button @click="activeModal = null" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
           </div>
-
-          <!-- Add to Cart (only when type chosen + variants picked) -->
-          <div x-show="showPriceSection" x-transition class="px-4 py-4 bg-white border-b" style="border-color:#E5E7EB">
-            <template x-if="matchedVariant">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="text-[10px] font-bold uppercase" style="color:#6B7280">Selected:</span>
-                <span class="text-sm font-bold px-3 py-1 rounded-lg" style="background:#2d545e;color:#e1b382" x-text="chosenType + ' · ' + Object.values(variantSelections).join(' · ')"></span>
-              </div>
-            </template>
-            <template x-if="!activeProduct.has_variants && typeChosen">
-              <div class="flex items-center gap-2 mb-3">
-                <span class="text-[10px] font-bold uppercase" style="color:#6B7280">Selected:</span>
-                <span class="text-sm font-bold px-3 py-1 rounded-lg" style="background:#2d545e;color:#e1b382" x-text="chosenType"></span>
-              </div>
-            </template>
-            <button @click="addItemToCart()"
-                    class="w-full h-14 text-base font-semibold rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                    style="background:#2d545e;color:white">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              Add to Cart
+          
+          <div class="flex border-b border-border mb-4">
+            <button class="payment-tab" :class="{ active: weightMode === 'BY_WEIGHT' }" @click="weightMode = 'BY_WEIGHT'">
+              ⚖ Enter <span x-text="activeProduct?.weight_unit || 'kg'"></span>
+            </button>
+            <button class="payment-tab" :class="{ active: weightMode === 'BY_CASH' }" @click="weightMode = 'BY_CASH'">
+              💵 Enter KES
             </button>
           </div>
 
-      <!-- Not ready message -->
-      <div x-show="!showPriceSection" class="px-4 py-3 text-center" style="background:#F8F9FB">
-        <p class="text-xs font-medium" style="color:#9CA3AF">
-          <template x-if="!typeChosen">
-            <span>👆 Choose a type to continue</span>
-          </template>
-          <template x-if="typeChosen && !allTabsFilled">
-            <span>👆 Pick all variant options to continue</span>
-          </template>
-        </p>
-      </div>
+          <div x-show="weightMode === 'BY_WEIGHT'">
+            <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">
+              Weight (<span x-text="activeProduct?.weight_unit"></span>)
+            </label>
+            <input type="number" x-model.number="weightInput" step="0.001" min="0" inputmode="decimal"
+                   class="w-full px-4 py-3 rounded-xl border border-border font-mono font-bold text-2xl text-center focus:outline-none focus:ring-2 focus:ring-primary/20"
+                   @input="weightCashResult = (weightInput || 0) * (activeProduct?.price_per_weight_unit || 0)"
+                   id="weight-kg-input">
+            <div class="text-center mt-2 font-mono font-bold text-lg" style="color: var(--primary)">
+              = KES <span x-text="weightCashResult.toFixed(2)"></span>
+            </div>
+          </div>
 
-      <!-- Cart on detail page -->
-      <template x-if="itemCount>0">
-        <div class="px-4 pt-5 pb-4 fade-in">
-          <p class="text-[10px] font-bold uppercase tracking-wider mb-2" style="color:#6B7280">Cart · <span x-text="itemCount"></span> items</p>
-          <div class="bg-white border rounded-2xl overflow-hidden" style="border-color:#E5E7EB">
-            <template x-for="item in cart.items" :key="item.id">
-              <div class="flex items-center gap-2 px-3 py-2.5 border-b last:border-0" style="border-color:#F3F4F6">
-                <div class="flex-1 min-w-0"><div class="text-xs font-semibold truncate" style="color:#12343b" x-text="item.name"></div></div>
-                <span class="text-[10px] font-mono" style="color:#9CA3AF" x-text="'KES '+Number(item.price).toLocaleString()"></span>
-                <div class="flex flex-col items-center shrink-0">
-                  <span class="text-[8px] font-bold uppercase" style="color:#e1b382">Sell@</span>
-                  <input type="number" :value="item.sale_price||item.price" @change="setLinePrice(item.id,$event.target.value)"
-                         class="w-16 text-[11px] font-bold font-mono tabular rounded-lg px-1 py-0.5 text-center focus:outline-none" style="color:#2d545e;background:#F8F9FB;border:1px solid #E5E7EB">
+          <div x-show="weightMode === 'BY_CASH'">
+            <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Amount (KES)</label>
+            <input type="number" x-model.number="weightCashInput" step="1" min="0" inputmode="numeric"
+                   class="w-full px-4 py-3 rounded-xl border border-border font-mono font-bold text-2xl text-center focus:outline-none focus:ring-2 focus:ring-primary/20"
+                   @input="weightWeightResult = activeProduct?.price_per_weight_unit > 0 ? ((weightCashInput || 0) / activeProduct.price_per_weight_unit) : 0"
+                   id="weight-kes-input">
+            <div class="text-center mt-2 font-mono font-bold text-lg" style="color: var(--primary)">
+              = <span x-text="weightWeightResult.toFixed(3)"></span> <span x-text="activeProduct?.weight_unit"></span>
+            </div>
+          </div>
+
+          <button @click="confirmWeight()" class="w-full mt-4 py-3 rounded-xl font-bold text-base"
+                  style="background: var(--primary); color: white">
+            Add to Cart
+          </button>
+        </div>
+      </template>
+
+      <!-- ─── PIECES CONTENT ─── -->
+      <template x-if="activeModal === 'pieces'">
+        <div>
+          <div class="p-6 text-white flex items-center justify-between" style="background: #1a3a4a; border-radius: 24px 24px 0 0; margin: -28px -28px 20px -28px">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-xl">🛒</div>
+              <div>
+                <h3 class="font-bold text-base leading-tight">
+                  <span x-text="activeProduct?.name"></span>
+                  <span class="text-[8px] opacity-50 ml-1">v6.0</span>
+                </h3>
+                <p class="text-[10px] opacity-70 uppercase tracking-wider font-bold">Select Sell Mode</p>
+              </div>
+            </div>
+            <button @click="activeModal = null" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">✕</button>
+          </div>
+          
+          <div class="space-y-3">
+            <button @click="addProduct(activeProduct, 'whole'); activeModal = null" 
+                    class="w-full p-4 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-between group">
+              <div class="text-left">
+                <div class="font-bold text-sm group-hover:text-primary transition-colors">Whole <span x-text="activeProduct?.base_unit_label"></span></div>
+              </div>
+              <div class="text-right">
+                <div class="font-mono font-bold text-primary">KES <span x-text="activeProduct?.base_unit_price"></span></div>
+              </div>
+            </button>
+
+            <div class="flex items-center gap-2 py-1">
+              <div class="flex-1 h-px bg-border"></div>
+              <span class="text-[10px] font-bold text-text-secondary uppercase">Fragments</span>
+              <div class="flex-1 h-px bg-border"></div>
+            </div>
+
+            <template x-for="frag in activeProduct?.fragments" :key="frag.id">
+              <button @click="addProduct(activeProduct, 'fragment', frag); activeModal = null" 
+                      class="w-full p-4 rounded-2xl border-2 border-border hover:border-primary hover:bg-primary/5 transition-all flex items-center justify-between group">
+                <div class="text-left">
+                  <div class="font-bold text-sm group-hover:text-primary transition-colors" x-text="frag.name"></div>
                 </div>
-                <span class="text-[10px] font-mono" style="color:#6B7280" x-text="'×'+item.qty"></span>
-                <span class="text-xs font-bold font-mono tabular min-w-[50px] text-right" style="color:#2d545e" x-text="'KES '+((item.sale_price||item.price)*item.qty).toLocaleString()"></span>
-                <button @click="removeItem(item.id)" class="w-5 h-5 flex items-center justify-center rounded active:scale-90" style="color:#DC2626">✕</button>
-              </div>
+                <div class="text-right">
+                  <div class="font-mono font-bold text-primary">KES <span x-text="frag.fragment_price"></span></div>
+                </div>
+              </button>
             </template>
           </div>
-          <div class="mt-3 flex items-center justify-between">
+        </div>
+      </template>
+
+      <!-- ─── CUT CONTENT ─── -->
+      <template x-if="activeModal === 'cut'">
+        <div class="p-4 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">✂</div>
             <div>
-              <div class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Total</div>
-              <div class="font-bold text-xl font-mono tabular" style="color:#12343b" x-text="'KES '+cartTotal.toLocaleString()"></div>
+              <h3 class="font-bold text-lg leading-tight">Cut Required</h3>
+              <p class="text-xs text-text-secondary">Fragment pool is empty</p>
             </div>
           </div>
-          <button @click="posView='payment'"
-                  class="w-full h-14 mt-3 text-base font-semibold rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-3"
-                  style="background:#16A34A;color:white">
-            Proceed to Payment →
-          </button>
-        </div>
-      </template>
-
-    </div>
-  </div>
-
-  <!-- ═══════ VIEW: PAYMENT ═══════ -->
-  <div x-show="posView==='payment'" x-transition class="flex-1 flex flex-col overflow-hidden" style="background:#F8F9FB">
-    <div class="px-5 py-4 bg-white border-b flex items-center justify-between" style="border-color:#E5E7EB">
-      <div class="flex items-center gap-3">
-        <button @click="posView='shop'" class="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition-all">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12343b" stroke-width="2.5"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>
-        </button>
-        <h2 class="font-bold text-xl" style="color:#12343b">Complete Payment</h2>
-      </div>
-      <div class="text-right">
-        <div class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Grand Total</div>
-        <div class="font-bold text-2xl font-mono tabular leading-none" style="color:#12343b">KES <span x-text="cartTotal.toLocaleString()"></span></div>
-      </div>
-    </div>
-    <div class="flex-1 overflow-auto ns p-5 max-w-lg mx-auto w-full">
-      <p class="text-[10px] font-semibold uppercase tracking-wider mb-2" style="color:#6B7280">Order Summary</p>
-      <div class="bg-white border rounded-2xl overflow-hidden mb-6" style="border-color:#E5E7EB">
-        <template x-for="item in cart.items" :key="item.id">
-          <div class="flex items-center gap-2 px-3 py-3 border-b last:border-0" style="border-color:#F3F4F6">
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-semibold truncate" style="color:#12343b" x-text="item.name"></div>
-              <span class="text-[10px] font-mono" style="color:#9CA3AF" x-text="'Fixed: KES '+Number(item.price).toLocaleString()"></span>
-            </div>
-            <div class="flex flex-col items-center shrink-0">
-              <span class="text-[8px] font-bold uppercase" style="color:#e1b382">Sell@</span>
-              <input type="number" :value="item.sale_price||item.price" @change="setLinePrice(item.id,$event.target.value)"
-                     class="w-20 text-xs font-bold font-mono tabular rounded-lg px-1.5 py-1 text-center focus:outline-none" style="color:#2d545e;background:#F8F9FB;border:1px solid #E5E7EB">
-            </div>
-            <div class="flex items-center rounded-lg shrink-0" style="background:#F8F9FB;border:1px solid #E5E7EB">
-              <button @click="updateQty(item.id,-1)" class="w-7 h-7 flex items-center justify-center active:scale-90" style="color:#6B7280">−</button>
-              <span class="w-5 text-center font-bold text-xs tabular" style="color:#12343b" x-text="item.qty"></span>
-              <button @click="updateQty(item.id,1)" class="w-7 h-7 flex items-center justify-center active:scale-90" style="color:#2d545e">+</button>
-            </div>
-            <span class="font-bold text-xs font-mono tabular shrink-0 min-w-[55px] text-right" style="color:#2d545e" x-text="'KES '+((item.sale_price||item.price)*item.qty).toLocaleString()"></span>
-          </div>
-        </template>
-      </div>
-
-      <p class="text-[10px] font-semibold uppercase tracking-wider mb-2" style="color:#6B7280">Payment Method</p>
-      <div class="grid grid-cols-2 gap-3 mb-6">
-        <template x-for="m in [{key:'cash',icon:'💵',label:'Cash'},{key:'mpesa',icon:'📱',label:'M-Pesa'},{key:'card',icon:'💳',label:'Card'},{key:'split',icon:'✂️',label:'Split'}]" :key="m.key">
-          <button @click="payment=m.key;if(m.key==='split'&&splitPayments.length===0)splitPayments.push({method:'cash',amount:0})"
-                  class="flex flex-col items-center gap-2 p-4 border rounded-2xl transition-all min-h-[80px]"
-                  :style="payment===m.key?'background:#2d545e15;border-color:#2d545e;color:#12343b':'background:white;border-color:#E5E7EB;color:#6B7280'">
-            <span class="text-2xl" x-text="m.icon"></span>
-            <span class="font-semibold text-sm" x-text="m.label"></span>
-          </button>
-        </template>
-      </div>
-
-      <template x-if="payment==='split'">
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-[10px] font-semibold uppercase tracking-wider" style="color:#6B7280">Split Details</p>
-            <button @click="splitPayments.push({method:'cash',amount:0})" class="px-3 py-1.5 text-xs rounded-xl font-bold" style="background:#2d545e;color:white">+ Add</button>
-          </div>
-          <div class="space-y-2 mb-3">
-            <template x-for="(sp,idx) in splitPayments" :key="idx">
-              <div class="flex items-center gap-2 p-2 rounded-xl" style="background:white;border:1px solid #E5E7EB">
-                <select x-model="sp.method" class="text-sm font-semibold rounded-lg px-2 py-1.5 focus:outline-none" style="background:#F8F9FB;border:1px solid #E5E7EB;color:#12343b">
-                  <option value="cash">Cash</option><option value="mpesa">M-Pesa</option><option value="card">Card</option>
-                </select>
-                <input type="number" x-model.number="sp.amount" placeholder="0" class="flex-1 text-right font-bold text-sm font-mono rounded-lg px-2 py-1.5 focus:outline-none" style="background:#F8F9FB;border:1px solid #E5E7EB;color:#2d545e">
-                <button @click="splitPayments.splice(idx,1)" style="color:#DC2626" class="p-1 active:scale-90">✕</button>
-              </div>
-            </template>
-          </div>
-          <div class="p-4 rounded-xl" style="background:white;border:1px solid #E5E7EB">
-            <div class="flex justify-between text-sm font-semibold mb-2">
-              <span style="color:#6B7280">Collected</span>
-              <span class="font-mono tabular" :style="totalPaid>=cartTotal?'color:#16A34A':'color:#DC2626'" x-text="'KES '+totalPaid.toLocaleString()"></span>
-            </div>
-            <div class="w-full h-2 rounded-full overflow-hidden" style="background:#F8F9FB">
-              <div class="h-full transition-all duration-300 rounded-full" :style="`width:${Math.min(100,cartTotal>0?(totalPaid/cartTotal)*100:0)}%;background:${totalPaid>=cartTotal?'#16A34A':'#F59E0B'}`"></div>
-            </div>
+          <p class="text-sm">Cut one <span class="font-bold" x-text="activeProduct?.base_unit_label"></span> now?</p>
+          <div class="flex gap-3">
+            <button @click="activeModal = null" class="flex-1 py-3 rounded-xl border border-border font-bold">Cancel</button>
+            <button @click="confirmCut()" class="flex-1 py-3 rounded-xl text-white font-bold" style="background:#1a3a4a">✓ Cut & Add</button>
           </div>
         </div>
       </template>
-
-      <button @click="checkoutLoading=true;fetch('{% url 'pos:checkout' %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({items:cart.items.map(i=>({...i,sale_price:i.sale_price||i.price})),payment_method:payment,split_payments:payment==='split'?splitPayments:[],coupon_code:couponApplied?couponCode:''})}).then(r=>r.text()).then(html=>{document.getElementById('modal-container').innerHTML=html;checkoutLoading=false;clearCart();posView='shop'}).catch(()=>{checkoutLoading=false})"
-              :disabled="checkoutLoading||itemCount===0||(payment==='split'&&totalPaid<cartTotal)"
-              class="w-full h-14 text-base font-semibold rounded-2xl transition-all disabled:opacity-40 flex items-center justify-center gap-3"
-              style="background:#16A34A;color:white">
-        <span x-show="!checkoutLoading">Complete Sale →</span>
-        <span x-show="checkoutLoading" class="animate-pulse">Processing...</span>
-      </button>
     </div>
   </div>
 
+  <div id="receipt-container"></div>
 </div>
-<div id="modal-container"></div>
+
+<script>
+function posApp() {
+  return {
+    // ── State ──
+    cart: [],
+    searchQuery: '',
+    activeCategory: 'all',
+    paymentMethod: 'cash',
+    cashTendered: null,
+    mpesaPhone: '',
+    mpesaCode: '',
+    splitCash: null,
+    splitMpesaRef: '',
+    checkoutLoading: false,
+    checkoutMode: false,
+    mobileCartOpen: false,
+
+    // ── Unified Modal State ──
+    activeModal: null, // 'pieces', 'weight', 'cut'
+    activeProduct: null,
+    activeFragment: null,
+    refreshCounter: 0,
+
+    // ── Weight State ──
+    weightMode: 'BY_WEIGHT',
+    weightInput: null,
+    weightCashInput: null,
+    weightCashResult: 0,
+    weightWeightResult: 0,
+
+    // ── Computed ──
+    get cartTotal() {
+      return this.cart.reduce((sum, i) => sum + i.line_total, 0);
+    },
+    get changeDue() {
+      return (this.cashTendered || 0) - this.cartTotal;
+    },
+    get chargeLabel() {
+      if (this.paymentMethod === 'mpesa' && this.mpesaPhone) {
+        return `Send STK Push — KES ${this.cartTotal.toFixed(0)}`;
+      }
+      return `Charge KES ${this.cartTotal.toFixed(0)}`;
+    },
+
+    // ── Product Actions ──
+    handleProductClick(p) {
+      if (!p) return;
+      this.activeProduct = p;
+      this.refreshCounter++;
+
+      if (p.weight_sell_enabled) {
+        this.weightMode = p.weight_sell_mode || 'BY_WEIGHT';
+        this.activeModal = 'weight';
+        return;
+      }
+
+      if (p.is_kadogo) {
+        this.activeModal = 'pieces';
+        return;
+      }
+
+      // If neither, just add directly
+      this.addProduct(p);
+    },
+
+    addProduct(p, sellMode = 'whole', fragment = null) {
+      if (!p) return;
+      
+      let unitPrice = p.base_unit_price;
+      if (sellMode === 'fragment' && fragment) {
+        p.activeFragment = fragment;
+        unitPrice = fragment.fragment_price;
+      } else if (sellMode === 'bundle') {
+        unitPrice = p.bundle_price;
+      } else if (sellMode === 'single') {
+        unitPrice = p.single_unit_price || p.base_unit_price;
+      }
+
+      // Check existing
+      const existing = this.cart.find(i => 
+        i.product_id === p.id && 
+        i.sell_mode === sellMode && 
+        (sellMode !== 'fragment' || i.fragment_size_id === fragment?.id)
+      );
+      if (existing) {
+        existing.quantity += 1;
+        existing.line_total = existing.quantity * existing.unit_price;
+        showToast(`${p.name} × ${existing.quantity}`);
+        return;
+      }
+
+      this.cart.push({
+        product_id: p.id,
+        name: p.name,
+        sell_mode: sellMode,
+        quantity: 1,
+        unit_price: unitPrice,
+        line_total: unitPrice,
+        base_unit_price: p.base_unit_price,
+        base_unit_label: p.base_unit_label,
+        cost_price: p.cost_price,
+        is_kadogo: p.is_kadogo || false,
+        fragment_size_id: fragment ? fragment.id : null,
+        fragment_name: fragment ? fragment.name : null,
+        stock_qty: p.stock_qty,
+        is_free: false,
+        discount_amount: 0,
+        promo: p.promo || null,
+        // Metadata for mode switching
+        split_enabled: p.split_enabled,
+        split_unit_price: p.split_unit_price,
+        split_unit_label: p.split_unit_label,
+        bundle_pricing_enabled: p.bundle_pricing_enabled,
+        bundle_qty: p.bundle_qty,
+        bundle_price: p.bundle_price,
+        allow_single_sale: p.allow_single_sale,
+        single_unit_price: p.single_unit_price,
+      });
+      showToast(`${p.name} added`);
+    },
+
+    confirmCut() {
+      // Execute the cut in the UI first, then add to cart
+      const p = this.activeProduct;
+      const frag = this.activeFragment;
+      // In a real app, this should probably be a backend call, but for the POS state:
+      frag.fragment_pool += frag.fragment_count;
+      p.stock_qty -= 1;
+      
+      this.activeModal = null;
+      this.addProduct(p, 'fragment');
+    },
+
+    confirmWeight() {
+      const p = this.activeProduct;
+      if (!p) return;
+
+      let weightVal, cashVal;
+      if (this.weightMode === 'BY_WEIGHT') {
+        weightVal = this.weightInput || 0;
+        cashVal = weightVal * p.price_per_weight_unit;
+      } else {
+        cashVal = this.weightCashInput || 0;
+        weightVal = p.price_per_weight_unit > 0 ? cashVal / p.price_per_weight_unit : 0;
+      }
+
+      if (weightVal <= 0) return;
+
+      this.cart.push({
+        product_id: p.id,
+        name: p.name,
+        image: '',
+        sell_mode: 'weight',
+        quantity: 1,
+        unit_price: p.price_per_weight_unit,
+        line_total: Math.round(cashVal * 100) / 100,
+        weight_value: Math.round(weightVal * 1000) / 1000,
+        weight_unit: p.weight_unit,
+        base_unit_price: p.base_unit_price,
+        base_unit_label: p.base_unit_label,
+        cost_price: p.cost_price,
+        stock_qty: p.stock_in_weight_unit,
+        bundle_pricing_enabled: false,
+        bundle_qty: 1,
+        bundle_price: 0,
+        single_unit_price: 0,
+        allow_single_sale: false,
+        is_free: false,
+        discount_amount: 0,
+      });
+
+      this.activeModal = null;
+      showToast(`${p.name} — ${weightVal.toFixed(3)} ${p.weight_unit}`);
+    },
+
+    updateQty(idx, delta) {
+      const item = this.cart[idx];
+      const newQty = item.quantity + delta;
+      if (newQty <= 0) {
+        this.cart.splice(idx, 1);
+        return;
+      }
+      item.quantity = newQty;
+      item.line_total = newQty * item.unit_price;
+    },
+
+    setSellMode(idx, mode) {
+      const item = this.cart[idx];
+      if (item.sell_mode === mode) return;
+      
+      const oldMode = item.sell_mode;
+      item.sell_mode = mode;
+
+      // PRD Requirement: Convert quantities when toggling modes
+      if (oldMode === 'bundle' && mode === 'single') {
+        item.quantity = item.quantity * (item.bundle_qty || 1);
+      } else if (oldMode === 'single' && mode === 'bundle') {
+        item.quantity = Math.floor(item.quantity / (item.bundle_qty || 1)) || 1;
+      } else if (mode === 'whole' || mode === 'split' || mode === 'bundle' || mode === 'single') {
+        // Reset to 1 if we can't do a clean conversion
+        if (oldMode !== 'bundle' && oldMode !== 'single') {
+           item.quantity = 1;
+        }
+      }
+
+      item.unit_price = item.base_unit_price;
+      if (mode === 'bundle') {
+        item.unit_price = item.bundle_price || item.base_unit_price;
+      } else if (mode === 'single') {
+        item.unit_price = item.single_unit_price || item.base_unit_price;
+      } else if (mode === 'split') {
+        item.unit_price = item.split_unit_price || item.base_unit_price;
+      }
+
+      item.line_total = item.quantity * item.unit_price;
+    },
+
+    // Keep old name for compatibility
+    toggleSellMode(idx) {
+      const item = this.cart[idx];
+      if (item.sell_mode === 'whole' && item.split_enabled) {
+        this.setSellMode(idx, 'split');
+      } else if (item.sell_mode === 'split' && item.bundle_pricing_enabled) {
+        this.setSellMode(idx, 'bundle');
+      } else if (item.sell_mode === 'whole' && item.bundle_pricing_enabled) {
+        this.setSellMode(idx, 'bundle');
+      } else if (item.sell_mode === 'bundle' && item.allow_single_sale) {
+        this.setSellMode(idx, 'single');
+      } else {
+        this.setSellMode(idx, 'whole');
+      }
+    },
+
+    removeItem(idx) {
+      this.cart.splice(idx, 1);
+    },
+
+    clearCart() {
+      this.cart = [];
+      this.cashTendered = null;
+      this.mpesaPhone = '';
+      this.mpesaCode = '';
+      this.splitCash = null;
+      this.splitMpesaRef = '';
+      this.checkoutMode = false;
+    },
+
+    // ── Numpad ──
+    numpadPress(key) {
+      // Find the active input, if none default to appropriate based on payment method
+      let focused = document.activeElement;
+      if (!focused || !focused.tagName || focused.tagName !== 'INPUT') {
+        if (this.paymentMethod === 'cash') focused = document.getElementById('cash-input');
+        else if (this.paymentMethod === 'mpesa') focused = document.getElementById('mpesa-phone') || document.getElementById('mpesa-code');
+        else if (this.paymentMethod === 'split') focused = document.getElementById('split-cash');
+      }
+      if (!focused) return;
+
+      if (key === '⌫') {
+        focused.value = focused.value.slice(0, -1);
+      } else if (key === 'C') {
+        focused.value = '';
+      } else if (key === '+' || key === '✓') {
+        // Confirm / next action
+        return;
+      } else {
+        focused.value += key;
+      }
+      focused.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+
+    // ── Search ──
+    handleBarcodeScan() {
+      // On Enter, do an exact barcode lookup via API
+      if (!this.searchQuery || this.searchQuery.length < 2) return;
+      const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+      fetch(`/procurement/api/product-search/?q=${encodeURIComponent(this.searchQuery)}`)
+        .then(r => r.json())
+        .then(results => {
+          if (results.length === 1) {
+            // Exact match — auto-add to cart
+            const p = results[0];
+            // Need to fetch full product data from the grid
+            const tile = document.querySelector(`[data-barcode='${this.searchQuery}']`);
+            if (tile) { tile.click(); }
+            else {
+              // Fallback: add via basic data
+              this.addProduct({
+                id: p.id, name: p.name,
+                base_unit_price: parseFloat(p.sell_price), base_unit_label: 'Unit',
+                cost_price: parseFloat(p.cost_price), stock_qty: parseFloat(p.stock_qty),
+                split_enabled: false, split_unit_price: 0, pieces_per_base: 1,
+                weight_sell_enabled: false, bundle_pricing_enabled: false,
+                bundle_qty: 1, bundle_price: 0, single_unit_price: 0, allow_single_sale: false,
+                weight_unit: 'kg', price_per_weight_unit: 0, stock_in_weight_unit: 0,
+                split_unit_label: 'Piece', split_inventory_mode: 'FIXED_CUT',
+                weight_sell_mode: 'BY_WEIGHT', image: '',
+              });
+            }
+            this.searchQuery = '';
+            document.getElementById('pos-search').focus();
+          } else {
+            // Multiple or no results — just do normal search
+            this.searchProducts();
+          }
+        })
+        .catch(() => this.searchProducts());
+    },
+
+    searchProducts() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('q', this.searchQuery);
+      if (this.activeCategory !== 'all') {
+        url.searchParams.set('category', this.activeCategory);
+      } else {
+        url.searchParams.delete('category');
+      }
+      htmx.ajax('GET', url.toString(), { target: '#product-grid', swap: 'innerHTML' });
+    },
+
+    filterCategory(catId) {
+      this.activeCategory = catId;
+      this.searchProducts();
+    },
+
+    // ── Payment ──
+    async processPayment() {
+      if (this.cart.length === 0 || this.checkoutLoading) return;
+      this.checkoutLoading = true;
+
+      const payload = {
+        items: this.cart.map(item => ({
+          product_id: item.product_id,
+          sell_mode: item.sell_mode,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          line_total: item.line_total,
+          weight_value: item.weight_value,
+          weight_unit: item.weight_unit || '',
+          discount_amount: item.discount_amount || 0,
+          is_free_item: item.is_free || false,
+          fragment_size_id: item.fragment_size_id,
+        })),
+        payment_method: this.paymentMethod,
+      };
+
+      if (this.paymentMethod === 'cash') {
+        payload.cash_tendered = this.cashTendered || this.cartTotal;
+      } else if (this.paymentMethod === 'mpesa') {
+        payload.mpesa_phone = this.mpesaPhone;
+        payload.mpesa_reference = this.mpesaCode;
+      } else if (this.paymentMethod === 'split') {
+        payload.cash_amount = this.splitCash || 0;
+        payload.cash_tendered = this.splitCash || 0;
+        payload.mpesa_reference = this.splitMpesaRef;
+      }
+
+      try {
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        const resp = await fetch('/pos/checkout/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+          body: JSON.stringify(payload),
+        });
+
+        if (resp.ok) {
+          const html = await resp.text();
+          document.getElementById('receipt-container').innerHTML = html;
+          this.clearCart();
+          this.checkoutMode = false;
+          showToast('✅ Sale completed!');
+        } else {
+          const err = await resp.text();
+          alert('Error: ' + err);
+        }
+      } catch (e) {
+        alert('Network error: ' + e.message);
+      } finally {
+        this.checkoutLoading = false;
+      }
+    },
+
+    numpadPress(val) {
+      let targetField = this.paymentMethod === 'split' ? 'splitCash' : 'cashTendered';
+      let currentStr = (this[targetField] || '').toString();
+      
+      if (val === 'C') {
+        this[targetField] = null;
+      } else if (val === '⌫') {
+        currentStr = currentStr.slice(0, -1);
+        this[targetField] = currentStr ? parseInt(currentStr, 10) : null;
+      } else {
+        currentStr += val;
+        this[targetField] = parseInt(currentStr, 10);
+      }
+    },
+  };
+}
+</script>
 {% endblock %}

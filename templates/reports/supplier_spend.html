@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-bold mb-4" style="color: var(--primary-dark)">Supplier Spend</h1>
+  <div class="bg-white rounded-2xl border border-border overflow-hidden">
+    <table class="w-full text-sm"><thead><tr class="border-b border-border"><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-left">Supplier</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Total Spend</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Line Items</th></tr></thead>
+    <tbody>{% for d in data %}<tr class="border-b border-border/50"><td class="px-4 py-3 font-medium">{{ d.po__supplier__name }}</td><td class="px-4 py-3 text-right font-mono font-bold">KES {{ d.total_spend|floatformat:0 }}</td><td class="px-4 py-3 text-right font-mono">{{ d.item_count }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

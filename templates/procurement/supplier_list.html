@@ -1,117 +1,113 @@
 {% extends 'base.html' %}
-{% load static %}
-
 {% block content %}
-<div class="px-4 py-6 max-w-4xl mx-auto" x-data="{ 
-    supplierModal: false, 
-    isEdit: false,
-    form: { id: '', name: '', phone: '', email: '', address: '' },
-    openCreate() {
-        this.isEdit = false;
-        this.form = { id: '', name: '', phone: '', email: '', address: '' };
-        this.supplierModal = true;
-    },
-    openEdit(id, name, phone, email, address) {
-        this.isEdit = true;
-        this.form = { id, name, phone, email, address };
-        this.supplierModal = true;
-    }
-}">
+<div class="max-w-6xl mx-auto px-4 py-6 pb-24">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-xl font-bold" style="color: #12343b">Suppliers</h1>
-            <p class="text-sm" style="color: #6B7280">Manage your supply partners</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{% url 'procurement:po_list' %}" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center no-underline active:scale-95 transition-all"
-               style="background: #F8F9FB; color: #2d545e; border: 1px solid #E5E7EB">Orders</a>
-            <button @click="openCreate()" class="h-10 px-4 rounded-xl font-semibold text-sm flex items-center gap-2 active:scale-95 transition-all shadow-md"
-               style="background: #2d545e; color: #e1b382; border: none">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-                Add Supplier
-            </button>
-        </div>
+  <!-- Page Header -->
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Procurement</h1>
+      <p class="text-xs text-text-secondary font-medium mt-0.5">Purchase orders &amp; supplier management</p>
     </div>
+    <button onclick="document.getElementById('supplier-modal').style.display='flex'" class="btn btn-accent text-sm" id="add-supplier-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      Add Supplier
+    </button>
+  </div>
 
-    <!-- Supplier List -->
-    <div class="space-y-3 pb-20">
-        {% for s in suppliers %}
-        <div class="rounded-2xl p-4 transition-all" style="background: white; border: 1px solid #E5E7EB">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3 min-w-0">
-                    <div class="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center font-bold text-lg"
-                         style="background: #e1b38222; color: #c89666">
-                        {{ s.name|slice:":1" }}
-                    </div>
-                    <div class="min-w-0">
-                        <h3 class="font-bold text-base truncate" style="color: #12343b">{{ s.name }}</h3>
-                        <div class="flex items-center gap-3 text-xs" style="color: #6B7280">
-                            <span>{{ s.phone|default:"No phone" }}</span>
-                            {% if s.email %}<span>· {{ s.email }}</span>{% endif %}
-                        </div>
-                    </div>
-                </div>
+  <!-- Navigation Tabs -->
+  <div class="proc-tabs mb-6">
+    <a href="{% url 'procurement:po_list' %}" class="proc-tab" id="tab-purchase-orders">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+      Purchase Orders
+    </a>
+    <a href="{% url 'procurement:supplier_list' %}" class="proc-tab active" id="tab-suppliers">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Suppliers
+    </a>
+  </div>
 
-                <div class="flex items-center gap-2 shrink-0">
-                    {% if s.phone %}
-                    <a href="tel:{{ s.phone }}" class="w-9 h-9 rounded-xl flex items-center justify-center no-underline active:scale-90 transition-all"
-                       style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #2d545e">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    </a>
-                    {% endif %}
-                    <button @click="openEdit('{{ s.id }}', '{{ s.name|escapejs }}', '{{ s.phone|escapejs }}', '{{ s.email|escapejs }}', '{{ s.address|escapejs }}')"
-                            class="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-all"
-                            style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #6B7280">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                    </button>
-                </div>
-            </div>
+  <div class="mb-4">
+    <p class="text-sm text-text-secondary font-semibold">{{ suppliers|length }} supplier{{ suppliers|length|pluralize }}</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    {% for item in supplier_data %}
+    <div class="supplier-card" id="supplier-{{ item.supplier.pk }}">
+      <div class="flex items-start gap-4">
+        <div class="supplier-avatar">{{ item.supplier.name|first }}</div>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-sm">{{ item.supplier.name }}</h3>
+          {% if item.supplier.contact_person %}<p class="text-xs text-text-secondary mt-0.5">{{ item.supplier.contact_person }}</p>{% endif %}
+          <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+            {% if item.supplier.phone %}<span class="text-xs text-text-secondary">📞 {{ item.supplier.phone }}</span>{% endif %}
+            {% if item.supplier.email %}<span class="text-xs text-text-secondary">✉ {{ item.supplier.email }}</span>{% endif %}
+            {% if item.supplier.payment_terms %}<span class="text-xs text-text-secondary">💳 {{ item.supplier.payment_terms }}</span>{% endif %}
+          </div>
+          {% if item.supplier.kra_pin %}<p class="text-xs text-text-secondary font-mono mt-1">KRA: {{ item.supplier.kra_pin }}</p>{% endif %}
+          <div class="flex gap-3 mt-3">
+            <span class="text-xs font-semibold px-2 py-1 rounded-lg" style="background: rgba(26,58,74,0.06); color: var(--primary)">{{ item.po_count }} POs</span>
+            {% if item.active_pos > 0 %}
+            <span class="text-xs font-semibold px-2 py-1 rounded-lg" style="background: rgba(245,158,11,0.1); color: #b45309">{{ item.active_pos }} active</span>
+            {% endif %}
+          </div>
         </div>
-        {% empty %}
-        <div class="flex flex-col items-center justify-center py-20 rounded-2xl" style="background: white; border: 2px dashed #E5E7EB">
-            <div class="text-4xl mb-4 opacity-30">👥</div>
-            <p class="font-semibold" style="color: #6B7280">No suppliers yet</p>
-            <p class="text-xs mt-1" style="color: #9CA3AF">Add your first supplier to start buying stock</p>
-        </div>
-        {% endfor %}
+      </div>
+      {% if request.user.role == 'admin' %}
+      <div class="flex gap-2 mt-3 pt-3 border-t border-border">
+        <form method="POST" action="{% url 'procurement:supplier_delete' item.supplier.pk %}" onsubmit="return confirm('Delete this supplier?')">
+          {% csrf_token %}<button class="text-xs text-danger font-semibold hover:underline">Delete</button>
+        </form>
+      </div>
+      {% endif %}
     </div>
-
-    <!-- Supplier Modal -->
-    <div x-show="supplierModal" x-cloak class="fixed inset-0 z-[600] flex items-end sm:items-center justify-center p-0 sm:p-6">
-        <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="supplierModal = false"></div>
-        <div x-transition class="relative w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-modal p-6">
-            <h2 class="text-lg font-bold mb-5" style="color: #12343b" x-text="isEdit ? 'Edit Supplier' : 'New Supplier'"></h2>
-            <form :action="isEdit ? '{% url 'procurement:supplier_edit' '00000000-0000-0000-0000-000000000000' %}'.replace('00000000-0000-0000-0000-000000000000', form.id) : '{% url 'procurement:supplier_create' %}'" 
-                  method="POST" class="space-y-4">
-                {% csrf_token %}
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Name</label>
-                    <input type="text" name="name" x-model="form.name" required placeholder="Supplier name"
-                           class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
-                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Phone</label>
-                    <input type="text" name="phone" x-model="form.phone" placeholder="Phone number"
-                           class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
-                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase tracking-wider mb-1.5" style="color: #6B7280">Email</label>
-                    <input type="email" name="email" x-model="form.email" placeholder="Email (optional)"
-                           class="w-full rounded-xl px-4 py-3 text-base font-medium focus:outline-none"
-                           style="background: #F8F9FB; border: 1px solid #E5E7EB; color: #12343b">
-                </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="button" @click="supplierModal = false" class="flex-1 py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all"
-                            style="background: #F8F9FB; color: #6B7280; border: 1px solid #E5E7EB">Cancel</button>
-                    <button type="submit" class="flex-[2] py-3.5 rounded-xl font-semibold text-sm active:scale-95 transition-all shadow-md"
-                            style="background: #2d545e; color: #e1b382" x-text="isEdit ? 'Save Changes' : 'Create Supplier'"></button>
-                </div>
-            </form>
-        </div>
+    {% empty %}
+    <div class="text-center py-16 col-span-2">
+      <div class="text-5xl mb-4 opacity-30">🏭</div>
+      <p class="text-lg font-bold text-text-secondary">No suppliers yet</p>
+      <p class="text-sm text-text-secondary mt-1">Add your first supplier to get started</p>
     </div>
+    {% endfor %}
+  </div>
 </div>
+
+<!-- Add Supplier Modal -->
+<div id="supplier-modal" class="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+  <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div class="p-6 border-b border-border flex items-center justify-between">
+      <h2 class="text-lg font-bold" style="color: var(--primary-dark)">Add Supplier</h2>
+      <button onclick="document.getElementById('supplier-modal').style.display='none'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
+    </div>
+    <form method="POST" action="{% url 'procurement:supplier_create' %}" class="p-6 space-y-3">
+      {% csrf_token %}
+      <div><label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Name *</label><input type="text" name="name" required class="w-full px-4 py-2.5 rounded-xl border border-border text-sm"></div>
+      <div><label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Contact Person</label><input type="text" name="contact_person" class="w-full px-4 py-2.5 rounded-xl border border-border text-sm"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Phone</label><input type="text" name="phone" class="w-full px-4 py-2.5 rounded-xl border border-border text-sm"></div>
+        <div><label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Email</label><input type="email" name="email" class="w-full px-4 py-2.5 rounded-xl border border-border text-sm"></div>
+      </div>
+      <div><label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Payment Terms</label><input type="text" name="payment_terms" placeholder="e.g., Net 30, COD" class="w-full px-4 py-2.5 rounded-xl border border-border text-sm"></div>
+      <div><label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">KRA PIN</label><input type="text" name="kra_pin" class="w-full px-4 py-2.5 rounded-xl border border-border text-sm font-mono"></div>
+      <div><label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Notes</label><textarea name="notes" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-border text-sm"></textarea></div>
+      <button type="submit" class="btn btn-primary w-full text-sm">Save Supplier</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  .proc-tabs { display: flex; gap: 2px; background: var(--bg-main); border-radius: 14px; padding: 3px; border: 1px solid var(--border); }
+  .proc-tab { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 11px; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-decoration: none; transition: all 0.2s; flex: 1; justify-content: center; }
+  .proc-tab:hover { color: var(--text-primary); background: rgba(255,255,255,0.6); }
+  .proc-tab.active { background: white; color: var(--primary-dark); box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+  .supplier-card {
+    background: white; border: 1px solid var(--border); border-radius: 16px; padding: 20px;
+    transition: all 0.2s;
+  }
+  .supplier-card:hover { border-color: var(--primary-light); box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+  .supplier-avatar {
+    width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white;
+  }
+</style>
 {% endblock %}

@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<style>
+  .trail-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700; padding: 4px 10px;
+    border-radius: 8px; letter-spacing: 0.3px;
+  }
+  .trail-row { transition: all 0.15s; }
+  .trail-row:hover { background: rgba(26,58,74,0.03); }
+  .filter-input {
+    width: 100%; padding: 10px 14px; border-radius: 12px;
+    border: 1.5px solid var(--border); font-size: 13px; font-weight: 500;
+    background: white; transition: all 0.2s;
+  }
+  .filter-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26,58,74,0.08); }
+  .stat-card {
+    background: white; border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 20px; text-align: center;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 lg:py-8">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Audit Trail</h1>
+      <p class="text-sm mt-1" style="color: var(--text-secondary)">Immutable system activity log — every action is recorded</p>
+    </div>
+    <a href="{% url 'core:audit_trail_export' %}?{{ request.GET.urlencode }}" class="btn btn-outline text-sm gap-2">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export CSV
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-5 mb-5">
+    <form class="flex gap-3 items-end flex-wrap" method="GET" action="{% url 'core:audit_trail' %}">
+      <div class="w-44">
+        <label class="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5 block">Action Type</label>
+        <select name="action" class="filter-input">
+          <option value="">All Actions</option>
+          {% for val, label in action_choices %}<option value="{{ val }}" {% if active_action == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="w-44">
+        <label class="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5 block">User</label>
+        <select name="user" class="filter-input">
+          <option value="">All Users</option>
+          {% for u in users %}<option value="{{ u.pk }}" {% if active_user == u.pk|slugify %}selected{% endif %}>{{ u.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="w-40">
+        <label class="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5 block">From</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="filter-input">
+      </div>
+      <div class="w-40">
+        <label class="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-1.5 block">To</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="filter-input">
+      </div>
+      <button type="submit" class="btn btn-primary text-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        Filter
+      </button>
+    </form>
+  </div>
+
+  <!-- Trail Table -->
+  <div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="background: var(--bg-main)">
+            <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Timestamp</th>
+            <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Action</th>
+            <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">User</th>
+            <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Description</th>
+            <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Entity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+          <tr class="trail-row border-b" style="border-color: #f1f3f5">
+            <td class="px-5 py-3.5 font-mono text-xs whitespace-nowrap" style="color: var(--text-secondary)">{{ e.created_at|date:"d M, H:i:s" }}</td>
+            <td class="px-5 py-3.5">
+              <span class="trail-badge
+                {% if 'sale' in e.action and 'void' not in e.action %}bg-emerald-50 text-emerald-700
+                {% elif 'void' in e.action %}bg-red-50 text-red-700
+                {% elif 'price' in e.action %}bg-amber-50 text-amber-700
+                {% elif 'po' in e.action or 'goods' in e.action %}bg-blue-50 text-blue-700
+                {% elif 'audit' in e.action %}bg-violet-50 text-violet-700
+                {% elif 'login' in e.action or 'logout' in e.action %}bg-slate-100 text-slate-600
+                {% elif 'promotion' in e.action %}bg-pink-50 text-pink-700
+                {% else %}bg-orange-50 text-orange-700{% endif %}
+              ">{{ e.get_action_display }}</span>
+            </td>
+            <td class="px-5 py-3.5 text-xs font-semibold">{{ e.user.name|default:"System" }}</td>
+            <td class="px-5 py-3.5 text-xs" style="color: var(--text-secondary); max-width: 320px;">{{ e.description|truncatechars:100 }}</td>
+            <td class="px-5 py-3.5 text-xs font-mono" style="color: var(--text-secondary)">{{ e.entity_type }} #{{ e.entity_id|truncatechars:8 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-5 py-12 text-center text-text-secondary">
+            <div class="text-3xl mb-2 opacity-30">📋</div>
+            <p class="font-semibold">No entries found</p>
+            <p class="text-xs mt-1">Adjust your filters or check back later</p>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
