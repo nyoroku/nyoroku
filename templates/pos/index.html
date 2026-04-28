@@ -157,7 +157,7 @@
     
     <!-- Search Bar with Barcode Scanner Support -->
     <div class="relative mb-3">
-      <div class="absolute -top-6 right-0 text-[10px] text-green-500 font-bold font-mono">v7.0.CLEAN_BREAK</div>
+      <div class="absolute -top-6 right-0 text-[10px] text-green-500 font-bold font-mono">v8.0.STABLE</div>
       <input type="text" x-model="searchQuery" @input.debounce.300ms="searchProducts()"
              @keydown.enter.prevent="handleBarcodeScan()"
              placeholder="Search products, SKU, or scan barcode..."
@@ -481,7 +481,7 @@
               <div>
                 <h3 class="font-bold text-base leading-tight">
                   <span x-text="activeProduct?.name"></span>
-                  <span class="text-[8px] opacity-50 ml-1">v6.0</span>
+                  <span class="text-[8px] opacity-50 ml-1">v8.0</span>
                 </h3>
                 <p class="text-[10px] opacity-70 uppercase tracking-wider font-bold">Select Sell Mode</p>
               </div>
@@ -591,7 +591,8 @@ function posApp() {
     // ── Product Actions ──
     handleProductClick(p) {
       if (!p) return;
-      this.activeProduct = p;
+      // Deep clone to prevent reactive data leaks between cart items
+      this.activeProduct = JSON.parse(JSON.stringify(p));
       this.refreshCounter++;
 
       if (p.weight_sell_enabled) {
@@ -792,27 +793,30 @@ function posApp() {
     },
 
     // ── Numpad ──
-    numpadPress(key) {
-      // Find the active input, if none default to appropriate based on payment method
-      let focused = document.activeElement;
-      if (!focused || !focused.tagName || focused.tagName !== 'INPUT') {
-        if (this.paymentMethod === 'cash') focused = document.getElementById('cash-input');
-        else if (this.paymentMethod === 'mpesa') focused = document.getElementById('mpesa-phone') || document.getElementById('mpesa-code');
-        else if (this.paymentMethod === 'split') focused = document.getElementById('split-cash');
-      }
-      if (!focused) return;
-
-      if (key === '⌫') {
-        focused.value = focused.value.slice(0, -1);
-      } else if (key === 'C') {
-        focused.value = '';
-      } else if (key === '+' || key === '✓') {
-        // Confirm / next action
-        return;
+    numpadPress(val) {
+      if (this.checkoutMode) {
+        let targetField = this.paymentMethod === 'split' ? 'splitCash' : 'cashTendered';
+        let currentStr = (this[targetField] || '').toString();
+        
+        if (val === 'C') {
+          this[targetField] = null;
+        } else if (val === '⌫') {
+          currentStr = currentStr.slice(0, -1);
+          this[targetField] = currentStr ? parseInt(currentStr, 10) : null;
+        } else {
+          currentStr += val;
+          this[targetField] = parseInt(currentStr, 10);
+        }
       } else {
-        focused.value += key;
+        // Fallback for modals (like weight entry)
+        let focused = document.activeElement;
+        if (focused && focused.tagName === 'INPUT') {
+          if (val === '⌫') focused.value = focused.value.slice(0, -1);
+          else if (val === 'C') focused.value = '';
+          else if (val !== '✓' && val !== '+') focused.value += val;
+          focused.dispatchEvent(new Event('input', { bubbles: true }));
+        }
       }
-      focused.dispatchEvent(new Event('input', { bubbles: true }));
     },
 
     // ── Search ──
@@ -926,20 +930,7 @@ function posApp() {
       }
     },
 
-    numpadPress(val) {
-      let targetField = this.paymentMethod === 'split' ? 'splitCash' : 'cashTendered';
-      let currentStr = (this[targetField] || '').toString();
-      
-      if (val === 'C') {
-        this[targetField] = null;
-      } else if (val === '⌫') {
-        currentStr = currentStr.slice(0, -1);
-        this[targetField] = currentStr ? parseInt(currentStr, 10) : null;
-      } else {
-        currentStr += val;
-        this[targetField] = parseInt(currentStr, 10);
-      }
-    },
+
   };
 }
 </script>

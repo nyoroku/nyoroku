@@ -71,7 +71,7 @@ def inventory_list(request):
         
         products_data.append({
             'product': product,
-            'fragments': fragments,
+            'fragments': json.dumps(fragments),
         })
 
     context = {
