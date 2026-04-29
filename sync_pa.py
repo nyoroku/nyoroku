@@ -11,26 +11,24 @@ headers = {'Authorization': f'Token {TOKEN}'}
 def run_sync():
     print("--- Starting Sync (v4) ---")
     
-    # 1. List existing consoles
-    print("Checking for existing consoles...")
+    # 1. List and delete all existing consoles to avoid state issues
+    print("Cleaning up existing consoles...")
     resp = requests.get(api_base + 'consoles/', headers=headers)
     if resp.status_code == 200:
         consoles = resp.json()
-        print(f"Found {len(consoles)} consoles.")
-        if len(consoles) >= 2:
-            print("Deleting old console to free up space...")
-            requests.delete(api_base + f'consoles/{consoles[0]["id"]}/', headers=headers)
+        for c in consoles:
+            print(f"Deleting console {c['id']}...")
+            requests.delete(api_base + f'consoles/{c["id"]}/', headers=headers)
     
-    # 2. Create a console
-    print(f"Creating console at {api_base}consoles/...")
+    # 2. Create a fresh console
+    print(f"Creating fresh console at {api_base}consoles/...")
     resp = requests.post(api_base + 'consoles/', headers=headers, data={'executable': 'bash'})
     if resp.status_code not in [200, 201]:
         print(f"Failed to create console: {resp.status_code}")
         return False
-
     c_id = resp.json()['id']
-    print(f"Console created, ID: {c_id}. Waiting 5s for init...")
-    time.sleep(5)
+    print(f"Console created, ID: {c_id}. Waiting 30s for full initialization...")
+    time.sleep(30)
 
     # 3. Send the sync command
     cmd = (
@@ -48,6 +46,7 @@ def run_sync():
     resp = requests.post(api_base + f'consoles/{c_id}/send_input/', headers=headers, data={'input': cmd})
     if resp.status_code != 200:
         print(f"Failed to send command: {resp.status_code}")
+        print(f"Response: {resp.text}")
         return False
 
     print("Sync command sent successfully.")
