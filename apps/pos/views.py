@@ -104,11 +104,20 @@ def index(request):
             'total_fragments': total_fragments,
         }
         
+        total_pieces = 0
+        bundles_per_packet = 0
+        if product.split_enabled and product.bundle_pricing_enabled:
+            total_pieces = int(product.stock_qty * product.pieces_per_base)
+            if product.bundle_qty and product.bundle_qty > 0:
+                bundles_per_packet = int(product.pieces_per_base / product.bundle_qty)
+                
         products_data.append({
             'product': product,
             'promo': promo,
             'product_json': json.dumps(product_json_data),
             'total_fragments': total_fragments,
+            'total_pieces': total_pieces,
+            'bundles_per_packet': bundles_per_packet,
         })
 
     categories = Category.objects.all().order_by('order', 'name')
