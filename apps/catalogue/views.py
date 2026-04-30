@@ -460,7 +460,8 @@ def add_subcategory(request):
     if cat_id and name:
         category = get_object_or_404(Category, pk=cat_id)
         SubCategory.objects.get_or_create(category=category, name=name)
-    return redirect('catalogue:category_list')
+    from django.urls import reverse
+    return redirect(f"{reverse('catalogue:category_list')}?expanded={cat_id or ''}")
 
 
 @login_required
@@ -469,8 +470,10 @@ def delete_subcategory(request, pk):
     if request.user.role != 'admin':
         return HttpResponse('Unauthorized', status=403)
     subcat = get_object_or_404(SubCategory, pk=pk)
+    cat_id = subcat.category.pk
     subcat.delete()
-    return redirect('catalogue:category_list')
+    from django.urls import reverse
+    return redirect(f"{reverse('catalogue:category_list')}?expanded={cat_id}")
 
 
 # ── Batch Management ──
