@@ -1,9 +1,9 @@
 from django.contrib import admin
 from .models import User
 
-admin.site.site_header = "Eli Collection Management"
-admin.site.site_title = "Eli Collection"
-admin.site.index_title = "Welcome to Eli Collection POS Portal"
+admin.site.site_header = "Jimmy Mini Mart Management"
+admin.site.site_title = "Jimmy Mini Mart"
+admin.site.index_title = "Welcome to Jimmy Mini Mart POS Portal"
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):

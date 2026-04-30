@@ -25,9 +25,21 @@ def run_sync():
     resp = requests.post(api_base + 'consoles/', headers=headers, data={'executable': 'bash'})
     if resp.status_code not in [200, 201]:
         print(f"Failed to create console: {resp.status_code}")
+        print(f"Response: {resp.text}")
         return False
-    c_id = resp.json()['id']
-    print(f"Console created, ID: {c_id}. Waiting 30s for full initialization...")
+    
+    c_data = resp.json()
+    c_id = c_data.get('id')
+    c_url = c_data.get('url')
+    
+    if not c_id:
+        print(f"No ID in console data: {c_data}")
+        return False
+        
+    print(f"Console created, ID: {c_id}. Waking up via GET...")
+    if c_url:
+        requests.get(c_url, headers=headers)
+    print("Waiting 30s for full initialization...")
     time.sleep(30)
 
     # 3. Send the sync command

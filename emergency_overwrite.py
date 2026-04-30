@@ -32,7 +32,7 @@ login_html_content = """{% extends 'base.html' %}
      }">
   
   <div class="text-center mb-8">
-    <h1 class="font-display font-extrabold text-[42px] tracking-tight text-brand-green leading-none">Eli Collection</h1>
+    <h1 class="font-display font-extrabold text-[42px] tracking-tight text-brand-green leading-none">Jimmy Mini Mart</h1>
     <p class="text-text-muted mt-2 font-medium uppercase tracking-[0.2em] text-[10px]">Point of Sale</p>
   </div>
 
