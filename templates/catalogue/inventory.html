@@ -246,17 +246,35 @@
           <input type="text" name="sku" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
         </div>
       </div>
-      <div>
-        <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Category *</label>
-        <select name="subcategory_id" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none">
-          {% for cat in categories %}
-            <optgroup label="{{ cat.name }}">
+      <div class="grid grid-cols-2 gap-3" x-data="{ 
+          selectedCat: '',
+          categories: {
+            {% for cat in categories %}
+            '{{ cat.pk }}': [
               {% for sub in cat.subcategories.all %}
-              <option value="{{ sub.pk }}">{{ sub.name }}</option>
+              { id: '{{ sub.pk }}', name: '{{ sub.name|escapejs }}' },
               {% endfor %}
-            </optgroup>
-          {% endfor %}
-        </select>
+            ],
+            {% endfor %}
+          }
+      }">
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Category *</label>
+          <select x-model="selectedCat" @change="$refs.subcat.value = (categories[selectedCat] && categories[selectedCat].length > 0) ? categories[selectedCat][0].id : ''" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <option value="" disabled selected>Select Category...</option>
+            {% for cat in categories %}
+            <option value="{{ cat.pk }}">{{ cat.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sub-Category *</label>
+          <select name="subcategory_id" x-ref="subcat" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" :disabled="!selectedCat">
+            <template x-for="sub in categories[selectedCat] || []" :key="sub.id">
+              <option :value="sub.id" x-text="sub.name"></option>
+            </template>
+          </select>
+        </div>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div>
