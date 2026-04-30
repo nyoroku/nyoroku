@@ -26,8 +26,8 @@
       
       <!-- Category Header (Accordion Toggle) -->
       <div class="p-5 flex items-center justify-between cursor-pointer" 
-           @click="expandedCat === {{ cat.pk }} ? expandedCat = null : expandedCat = {{ cat.pk }}"
-           :class="expandedCat === {{ cat.pk }} ? 'bg-gray-50/50' : ''">
+           @click="expandedCat === '{{ cat.pk }}' ? expandedCat = null : expandedCat = '{{ cat.pk }}'"
+           :class="expandedCat === '{{ cat.pk }}' ? 'bg-gray-50/50' : ''">
         <div class="flex items-center gap-4">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg" style="background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: white;">
             {{ cat.name|slice:":1"|upper }}
@@ -45,14 +45,14 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
             </button>
           </form>
-          <div class="text-text-secondary transition-transform duration-200" :class="expandedCat === {{ cat.pk }} ? 'rotate-180' : ''">
+          <div class="text-text-secondary transition-transform duration-200" :class="expandedCat === '{{ cat.pk }}' ? 'rotate-180' : ''">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </div>
         </div>
       </div>
 
       <!-- Category Body (Subcategories) -->
-      <div x-show="expandedCat === {{ cat.pk }}" x-collapse x-cloak>
+      <div x-show="expandedCat === '{{ cat.pk }}'" x-collapse x-cloak>
         <div class="p-5 pt-0 border-t border-border/50 bg-gray-50/30">
           
           <!-- Add sub-category -->
