@@ -217,12 +217,19 @@ def checkout(request):
                 # Whole unit, bundle, or single
                 stock_deduct = quantity
                 if sell_mode == 'bundle' and product.bundle_pricing_enabled:
-                    stock_deduct = quantity * Decimal(str(product.bundle_qty))
+                    bundle_pieces = quantity * Decimal(str(product.bundle_qty))
+                    if product.split_enabled:
+                        stock_deduct = bundle_pieces / Decimal(str(product.pieces_per_base))
+                    else:
+                        stock_deduct = bundle_pieces
                     bundle_qty_sold = int(quantity)
                     bundle_size = product.bundle_qty
                     bundle_price = product.bundle_price
                 elif sell_mode == 'single':
-                    stock_deduct = quantity
+                    if product.split_enabled:
+                        stock_deduct = quantity / Decimal(str(product.pieces_per_base))
+                    else:
+                        stock_deduct = quantity
                     is_singles_sale = True
 
                 # Special case for Kadogo whole units (ignore stock_qty, use whole_unit_stock for all whole-based modes)
@@ -315,7 +322,8 @@ def checkout(request):
                 batch_used = active_batches.first()
 
             # Store ledger data to create after sale object exists
-            if sell_mode != 'weight' and sell_mode != 'split' and sell_mode != 'fragment' and not (sell_mode == 'whole' and product.is_kadogo):
+            is_fractional_sale = (sell_mode in ('bundle', 'single') and product.split_enabled)
+            if sell_mode != 'weight' and sell_mode != 'split' and sell_mode != 'fragment' and not (sell_mode == 'whole' and product.is_kadogo) and not is_fractional_sale:
                 ledger_data.append({
                     'product': product,
                     'qty_delta': -base_qty_deducted,
@@ -590,19 +598,33 @@ def void_sale(request, pk):
             product.save(update_fields=['stock_qty'])
         else:
             stock_revert = li.quantity
+            is_fractional_revert = False
             if li.sell_mode == 'bundle' and product.bundle_pricing_enabled:
-                stock_revert = li.quantity * Decimal(str(product.bundle_qty))
+                bundle_pieces = li.quantity * Decimal(str(product.bundle_qty))
+                if product.split_enabled:
+                    stock_revert = bundle_pieces / Decimal(str(product.pieces_per_base))
+                    is_fractional_revert = True
+                else:
+                    stock_revert = bundle_pieces
+            elif li.sell_mode == 'single':
+                if product.split_enabled:
+                    stock_revert = li.quantity / Decimal(str(product.pieces_per_base))
+                    is_fractional_revert = True
+                else:
+                    stock_revert = li.quantity
+            
             product.stock_qty += stock_revert
             product.save(update_fields=['stock_qty'])
             
-            from catalogue.models import StockLedger
-            StockLedger.objects.create(
-                product=product,
-                entry_type='VOID',
-                qty_delta=int(stock_revert),
-                reference_id=sale.receipt_number,
-                created_by=request.user
-            )
+            if not is_fractional_revert:
+                from catalogue.models import StockLedger
+                StockLedger.objects.create(
+                    product=product,
+                    entry_type='VOID',
+                    qty_delta=int(stock_revert),
+                    reference_id=sale.receipt_number,
+                    created_by=request.user
+                )
 
     sale.status = 'voided'
     sale.void_reason = reason
