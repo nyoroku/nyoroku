@@ -200,6 +200,18 @@ class Product(models.Model):
         return self.stock_qty <= self.reorder_threshold
 
     @property
+    def total_pieces(self):
+        if self.split_enabled:
+            return int(self.stock_qty * self.pieces_per_base)
+        return int(self.stock_qty)
+        
+    @property
+    def bundles_per_packet(self):
+        if self.split_enabled and self.bundle_pricing_enabled and self.bundle_qty > 0:
+            return int(self.pieces_per_base / self.bundle_qty)
+        return 0
+
+    @property
     def gross_margin_pct(self):
         """Current gross margin based on base_unit_price and cost_price."""
         if self.base_unit_price and self.cost_price and self.base_unit_price > 0:

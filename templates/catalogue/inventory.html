@@ -97,8 +97,15 @@
               </div>
             </td>
             <td class="px-4 py-3 text-right">
-              <div class="font-mono font-bold">KES {{ product.base_unit_price|floatformat:0 }}</div>
-              {% if product.cost_price %}<div class="text-xs text-text-secondary font-mono">Cost: {{ product.cost_price|floatformat:0 }}</div>{% endif %}
+              {% if product.bundle_pricing_enabled %}
+                <div class="font-mono font-bold text-primary">KES {{ product.bundle_price|floatformat:0 }} <span class="text-[10px] font-normal text-text-secondary">({{ product.bundle_qty }} pcs)</span></div>
+                {% if product.allow_single_sale %}
+                  <div class="text-[10px] text-text-secondary font-mono">KES {{ product.single_unit_price|floatformat:0 }} / pc</div>
+                {% endif %}
+              {% else %}
+                <div class="font-mono font-bold">KES {{ product.base_unit_price|floatformat:0 }}</div>
+              {% endif %}
+              {% if product.cost_price %}<div class="text-xs text-text-secondary font-mono mt-0.5">Cost: {{ product.cost_price|floatformat:0 }}</div>{% endif %}
             </td>
             <td class="px-4 py-3 text-right">
                {% if product.is_kadogo %}
@@ -121,7 +128,14 @@
                 <span class="font-mono font-semibold {% if product.stock_in_weight_unit <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_in_weight_unit }} {{ product.weight_unit }}</span>
               {% else %}
                 <div class="flex flex-col items-end">
-                  {% if product.bundle_pricing_enabled and product.units_per_purchase > 1 %}
+                  {% if product.bundle_pricing_enabled and product.split_enabled %}
+                    <span class="font-mono font-bold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
+                      {{ product.total_pieces }} pcs
+                    </span>
+                    <span class="text-[10px] text-text-secondary font-mono mt-0.5">
+                      {{ product.bundles_per_packet }} bundles / {{ product.base_unit_label }}
+                    </span>
+                  {% elif product.bundle_pricing_enabled and product.units_per_purchase > 1 %}
                     <span class="font-mono font-bold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
                       {% widthratio product.stock_qty product.units_per_purchase 1 %} {{ product.purchase_unit_label }}s
                     </span>

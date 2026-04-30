@@ -232,10 +232,18 @@
           {% if p.split_enabled %}<span class="sell-badge sell-badge-split">{{ p.pieces_per_base }}pc/{{ p.base_unit_label }} @ {{ p.split_unit_price }}/pc</span>{% endif %}
           {% if p.weight_sell_enabled %}<span class="sell-badge sell-badge-weight">per {{ p.weight_unit }}</span>{% endif %}
           {% if p.bundle_pricing_enabled %}
-            <button @click.stop="addProduct(JSON.parse($el.closest('.product-tile').getAttribute('data-product-json')), 'bundle')" 
-                    class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold hover:bg-amber-100 border border-amber-200 transition-colors">
-              +Bundle (KES {{ p.bundle_price|floatformat:0 }})
-            </button>
+            <div class="flex gap-1 w-full mt-1">
+              <button @click.stop="addProduct(JSON.parse($el.closest('.product-tile').getAttribute('data-product-json')), 'bundle')" 
+                      class="flex-1 px-2 py-1 rounded bg-amber-50 text-amber-700 text-[10px] font-bold hover:bg-amber-100 border border-amber-200 transition-colors text-center">
+                +Bundle
+              </button>
+              {% if p.allow_single_sale %}
+              <button @click.stop="addProduct(JSON.parse($el.closest('.product-tile').getAttribute('data-product-json')), 'single')" 
+                      class="flex-1 px-2 py-1 rounded bg-blue-50 text-blue-700 text-[10px] font-bold hover:bg-blue-100 border border-blue-200 transition-colors text-center">
+                +Single
+              </button>
+              {% endif %}
+            </div>
           {% endif %}
         </div>
       </div>
