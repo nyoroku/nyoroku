@@ -38,7 +38,7 @@
       <a href="{% url 'catalogue:inventory' %}" class="inv-pill {% if not active_category %}active{% endif %}">All</a>
       {% for cat in categories %}
       <a href="{% url 'catalogue:inventory' %}?category={{ cat.pk }}" 
-         class="inv-pill {% if active_category == cat.pk|slugify %}active{% endif %}">{{ cat.name }}</a>
+         class="inv-pill {% if active_category == cat.pk|stringformat:'s' %}active{% endif %}">{{ cat.name }}</a>
       {% endfor %}
     </div>
 
@@ -250,9 +250,11 @@
         <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Category *</label>
         <select name="subcategory_id" required class="w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none">
           {% for cat in categories %}
-            {% for sub in cat.subcategories.all %}
-            <option value="{{ sub.pk }}">{{ cat.name }} &rsaquo; {{ sub.name }}</option>
-            {% endfor %}
+            <optgroup label="{{ cat.name }}">
+              {% for sub in cat.subcategories.all %}
+              <option value="{{ sub.pk }}">{{ sub.name }}</option>
+              {% endfor %}
+            </optgroup>
           {% endfor %}
         </select>
       </div>

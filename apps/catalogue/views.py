@@ -54,7 +54,7 @@ def inventory_list(request):
         products = products.filter(stock_qty__lte=0, weight_sell_enabled=False) | \
                    products.filter(stock_in_weight_unit__lte=0, weight_sell_enabled=True)
 
-    categories = Category.objects.all().order_by('order', 'name')
+    categories = Category.objects.all().prefetch_related('subcategories').order_by('order', 'name')
     subcategories = SubCategory.objects.all().order_by('order', 'name')
 
     # Prepare rich data for modals
@@ -395,7 +395,7 @@ def edit_product_form(request, pk):
         return HttpResponse(f'Unauthorized: {user_role} role not allowed', status=403)
     
     product = get_object_or_404(Product, pk=pk)
-    categories = Category.objects.all().order_by('order', 'name')
+    categories = Category.objects.all().prefetch_related('subcategories').order_by('order', 'name')
     return render(request, 'catalogue/partials/edit_product_modal.html', {
         'product': product,
         'categories': categories,
@@ -420,7 +420,9 @@ def add_category(request):
     name = request.POST.get('name', '').strip()
     icon = request.POST.get('icon', '📦')
     if name:
-        Category.objects.get_or_create(name=name, defaults={'icon': icon})
+        cat, created = Category.objects.get_or_create(name=name, defaults={'icon': icon})
+        if created:
+            SubCategory.objects.create(category=cat, name='General')
     return redirect('catalogue:category_list')
 
 
