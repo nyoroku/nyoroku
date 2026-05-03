@@ -4,10 +4,10 @@ from accounts.models import User
 from decimal import Decimal
 
 class Command(BaseCommand):
-    help = 'Seeds the database with Jimmy Supermarket items (Comprehensive list)'
+    help = 'Seeds the database with Jimmy Mini Mart items (Comprehensive Retail List)'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write("Starting Jimmy Supermarket seed...")
+        self.stdout.write("Starting Jimmy Mini Mart seed...")
         
         # Ensure admin user exists for 'created_by'
         admin = User.objects.filter(is_superuser=True).first()
@@ -19,44 +19,44 @@ class Command(BaseCommand):
 
         # 1. Categories
         categories_data = [
-            {'name': 'Groceries', 'icon': '🥬'},
+            {'name': 'Food Staples', 'icon': '🍚'},
+            {'name': 'Beverages', 'icon': '🥤'},
+            {'name': 'Snacks & Biscuits', 'icon': '🍪'},
+            {'name': 'Dairy & Bakery', 'icon': '🍞'},
             {'name': 'Personal Care', 'icon': '🧴'},
             {'name': 'Household', 'icon': '🏠'},
-            {'name': 'Meat & Poultry', 'icon': '🥩'},
-            {'name': 'Bakery', 'icon': '🍞'},
-            {'name': 'Fresh Produce', 'icon': '🍎'},
-            {'name': 'Soft Drinks', 'icon': '🥤'},
-            {'name': 'Beers & Ciders', 'icon': '🍺'},
-            {'name': 'Spirits', 'icon': '🥃'},
-            {'name': 'Wines', 'icon': '🍷'},
+            {'name': 'Stationery', 'icon': '✏️'},
+            {'name': 'Medicines', 'icon': '💊'},
+            {'name': 'Airtime', 'icon': '📱'},
+            {'name': 'Bags & Packaging', 'icon': '🛍️'},
         ]
 
         categories = {}
         for cat_data in categories_data:
             cat, created = Category.objects.get_or_create(name=cat_data['name'], defaults={'icon': cat_data['icon']})
             categories[cat_data['name']] = cat
-            if created:
-                self.stdout.write(f"Created Category: {cat.name}")
 
         # 2. Subcategories
         subcategories_data = [
-            ('Groceries', 'Staples'),
-            ('Groceries', 'Dairy'),
-            ('Groceries', 'Cooking Oil'),
+            ('Food Staples', 'Flour & Grain'),
+            ('Food Staples', 'Cooking Oil & Fat'),
+            ('Food Staples', 'Sugar & Salt'),
+            ('Food Staples', 'Seasoning'),
+            ('Beverages', 'Tea & Coffee'),
+            ('Beverages', 'Soda & Juice'),
+            ('Beverages', 'Water'),
+            ('Snacks & Biscuits', 'Biscuits'),
+            ('Snacks & Biscuits', 'Candy'),
+            ('Dairy & Bakery', 'Milk'),
+            ('Dairy & Bakery', 'Bread & Bakery'),
             ('Personal Care', 'Soap & Wash'),
-            ('Personal Care', 'Toothpaste'),
-            ('Household', 'Cleaning'),
-            ('Household', 'General'),
-            ('Meat & Poultry', 'Beef'),
-            ('Meat & Poultry', 'Chicken'),
-            ('Bakery', 'Bread'),
-            ('Fresh Produce', 'Vegetables'),
-            ('Soft Drinks', 'Soda'),
-            ('Soft Drinks', 'Water'),
-            ('Beers & Ciders', 'Beers'),
-            ('Spirits', 'Gin'),
-            ('Spirits', 'Whiskey'),
-            ('Wines', 'Red Wine'),
+            ('Personal Care', 'Baby Care'),
+            ('Personal Care', 'Hair & Beauty'),
+            ('Household', 'Lighting & Power'),
+            ('Household', 'Cleaning Supplies'),
+            ('Household', 'General Household'),
+            ('Stationery', 'Books'),
+            ('Stationery', 'Writing & Other'),
         ]
 
         subcats = {}
@@ -64,90 +64,67 @@ class Command(BaseCommand):
             cat = categories[cat_name]
             sub, created = SubCategory.objects.get_or_create(category=cat, name=sub_name)
             subcats[sub_name] = sub
-            if created:
-                self.stdout.write(f"Created SubCategory: {sub_name} under {cat_name}")
 
-        # 3. Products - Expanded Supermarket Selection
+        # 3. Products Data
         products_list = [
-            # STAPLES & DAIRY
-            {'name': 'Supa Loaf Bread 400g', 'sub': 'Bread', 'price': 65, 'cost': 50, 'sku': 'JS-001', 'img': '🍞'},
-            {'name': 'KCC Milk 500ml', 'sub': 'Dairy', 'price': 60, 'cost': 45, 'sku': 'JS-002', 'img': '🥛'},
-            {'name': 'Kabras Sugar 1kg', 'sub': 'Staples', 'price': 180, 'cost': 150, 'sku': 'JS-003', 'img': '🍚', 'weight': True},
-            {'name': 'Ajab Wheat Flour 2kg', 'sub': 'Staples', 'price': 210, 'cost': 180, 'sku': 'JS-004', 'img': '🌾'},
-            {'name': 'Pwani Fresh Fri 1L', 'sub': 'Cooking Oil', 'price': 320, 'cost': 270, 'sku': 'JS-005', 'img': '🛢️'},
-            
-            # PERSONAL CARE & HOUSEHOLD
-            {'name': 'Geisha Soap (Pack of 4)', 'sub': 'Soap & Wash', 'price': 500, 'cost': 400, 'sku': 'JS-006', 'img': '🧼', 'split': True, 'pieces': 4, 'split_price': 135},
-            {'name': 'Colgate Toothpaste 100ml', 'sub': 'Toothpaste', 'price': 150, 'cost': 120, 'sku': 'JS-007', 'img': '🪥'},
-            {'name': 'JIK Bleach 500ml', 'sub': 'Cleaning', 'price': 180, 'cost': 140, 'sku': 'JS-008', 'img': '🧴'},
-            {'name': 'Hanan Tissues (Pack of 4)', 'sub': 'General', 'price': 250, 'cost': 190, 'sku': 'JS-009', 'img': '🧻'},
-            
-            # MEAT & PRODUCE
-            {'name': 'Premium Beef Steak', 'sub': 'Beef', 'price': 600, 'cost': 450, 'sku': 'JS-010', 'img': '🥩', 'weight': True},
-            {'name': 'Onions 1kg', 'sub': 'Vegetables', 'price': 120, 'cost': 80, 'sku': 'JS-011', 'img': '🧅', 'weight': True},
-            {'name': 'Tomatoes 1kg', 'sub': 'Vegetables', 'price': 150, 'cost': 100, 'sku': 'JS-012', 'img': '🍅', 'weight': True},
-
-            # LIQUOR & DRINKS (Matching previous list)
-            {'name': 'Tusker Lager 500ml', 'sub': 'Beers', 'price': 250, 'cost': 190, 'sku': 'JS-L001', 'img': '🍺'},
-            {'name': "Gilbey's Gin 750ml", 'sub': 'Gin', 'price': 1250, 'cost': 950, 'sku': 'JS-L002', 'img': '🍸', 'kadogo': True},
-            {'name': 'Jameson 750ml', 'sub': 'Whiskey', 'price': 2500, 'cost': 1900, 'sku': 'JS-L003', 'img': '🥃', 'kadogo': True},
-            {'name': 'Coke 500ml', 'sub': 'Soda', 'price': 70, 'cost': 55, 'sku': 'JS-S001', 'img': '🥤'},
-            {'name': 'Keringet Water 500ml', 'sub': 'Water', 'price': 50, 'cost': 35, 'sku': 'JS-S002', 'img': '💧'},
+            ('Airtime Airtel 10', 'Writing & Other', 10, '📱', 'JM-A001'),
+            ('Airtime Airtel 20', 'Writing & Other', 20, '📱', 'JM-A002'),
+            ('Airtime Safaricom 50', 'Writing & Other', 50, '📱', 'JM-A003'),
+            ('Airtime Safaricom 100', 'Writing & Other', 100, '📱', 'JM-A004'),
+            ('Supa Loaf Bread 400g', 'Bread & Bakery', 70, '🍞', 'JM-B001'),
+            ('Ajab Wheat Flour 2kg', 'Flour & Grain', 195, '🌾', 'JM-F001'),
+            ('Kabras Sugar 1kg', 'Sugar & Salt', 160, '🍚', 'JM-S001'),
+            ('KCC Fresh Milk 500ml', 'Milk', 60, '🥛', 'JM-M001'),
+            ('Blueband 250g', 'Bread & Bakery', 180, '🧈', 'JM-D001'),
+            ('Salit Cooking Oil 1L', 'Cooking Oil & Fat', 300, '🛢️', 'JM-O001'),
+            ('Happy Happy Biscuits', 'Biscuits', 5, '🍪', 'JM-BS001'),
+            ('Nuvita Milk Biscuits', 'Biscuits', 5, '🍪', 'JM-BS002'),
+            ('Tropical Mints', 'Candy', 5, '🍬', 'JM-C001', 3, 10),
+            ('PK Pack', 'Candy', 25, '🍬', 'JM-C004'),
+            ('Nescafe 3-in-1', 'Tea & Coffee', 25, '☕', 'JM-BV001'),
+            ('Eden Tea 50g', 'Tea & Coffee', 20, '🍵', 'JM-BV002'),
+            ('Coca Cola 500ml PET', 'Soda & Juice', 80, '🥤', 'JM-BV003'),
+            ('Dasani Water 500ml', 'Water', 45, '💧', 'JM-BV004'),
+            ('Geisha Soap 200g', 'Soap & Wash', 130, '🧼', 'JM-PC001'),
+            ('Arimis Jelly 200ml', 'Baby Care', 130, '🧴', 'JM-PC002'),
+            ('Always Pads', 'Baby Care', 80, '🩸', 'JM-PC003'),
+            ('Eveready AA Battery', 'Lighting & Power', 80, '🔋', 'JM-H001'),
+            ('Matchbox', 'General Household', 5, '🔥', 'JM-H003'),
+            ('Toilex Tissue', 'Cleaning Supplies', 40, '🧻', 'JM-H005'),
+            ('Ex. Book A5 80pg', 'Books', 40, '📓', 'JM-ST001'),
+            ('Biro Pen BIC', 'Writing & Other', 25, '🖊️', 'JM-ST002'),
+            ('Panadol Extra', 'Writing & Other', 20, '💊', 'JM-MD001'),
         ]
 
         for p_data in products_list:
-            sub = subcats[p_data['sub']]
-            is_kadogo = p_data.get('kadogo', False)
-            is_weight = p_data.get('weight', False)
-            is_split = p_data.get('split', False)
+            name = p_data[0]
+            sub_name = p_data[1]
+            price = Decimal(str(p_data[2]))
+            icon = p_data[3]
+            sku = p_data[4]
+            bundle_qty = p_data[5] if len(p_data) > 5 else 1
+            bundle_price = Decimal(str(p_data[6])) if len(p_data) > 6 else Decimal('0.00')
 
-            defaults = {
-                'subcategory': sub,
-                'base_unit_price': Decimal(str(p_data['price'])),
-                'cost_price': Decimal(str(p_data['cost'])),
-                'sku': p_data['sku'],
-                'image': p_data['img'],
-                'created_by': admin,
-                'base_unit_label': 'Unit'
-            }
-
-            if is_weight:
-                defaults.update({
-                    'weight_sell_enabled': True,
-                    'weight_unit': 'kg',
-                    'price_per_weight_unit': Decimal(str(p_data['price'])),
-                    'stock_in_weight_unit': Decimal('20.0'),
-                    'weight_sell_mode': 'BY_WEIGHT'
-                })
-            elif is_split:
-                defaults.update({
-                    'split_enabled': True,
-                    'split_unit_label': 'Piece',
-                    'split_unit_price': Decimal(str(p_data['split_price'])),
-                    'pieces_per_base': p_data['pieces'],
-                    'stock_qty': Decimal('10')
-                })
-            elif is_kadogo:
-                defaults.update({
-                    'is_kadogo': True,
-                    'whole_unit_stock': 12,
-                    'whole_unit_label': 'Bottle'
-                })
-            else:
-                defaults['stock_qty'] = Decimal('24')
-
-            prod, created = Product.objects.get_or_create(name=p_data['name'], defaults=defaults)
+            sub = subcats.get(sub_name)
             
-            if created and is_kadogo:
-                FragmentSize.objects.create(
-                    product=prod,
-                    name='Peg (30ml)',
-                    fragment_count=25,
-                    fragment_price=Decimal(str(round(p_data['price'] / 20))),
-                    is_default=True
-                )
-            
-            if created:
-                self.stdout.write(f"Created Product: {prod.name}")
+            # Using name for lookup to avoid UniqueConstraint errors with existing data
+            Product.objects.update_or_create(
+                name=name,
+                defaults={
+                    'subcategory': sub,
+                    'base_unit_price': price,
+                    'cost_price': price * Decimal('0.8'),
+                    'sku': sku,
+                    'image': icon,
+                    'created_by': admin,
+                    'stock_qty': Decimal('50'),
+                    'bundle_pricing_enabled': (bundle_qty > 1),
+                    'bundle_qty': bundle_qty,
+                    'bundle_price': bundle_price,
+                    'allow_single_sale': True,
+                    'single_unit_price': price
+                }
+            )
+            self.stdout.write(f"Processed Product: {name}")
 
-        self.stdout.write(self.style.SUCCESS("Jimmy Supermarket Seed completed successfully."))
+        self.stdout.write(self.style.SUCCESS("Jimmy Mini Mart Seed completed successfully."))
