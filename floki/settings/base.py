@@ -111,10 +111,10 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Custom settings
-TAILWIND_CLI_PATH = os.path.join(BASE_DIR, 'tailwind.exe')
+TAILWIND_CLI_PATH = os.path.join(BASE_DIR, 'tailwind.exe', 'tailwindcss-windows-x64-4.2.4.exe')
 
 # ── Floki Store Settings ──
-STORE_NAME = config('STORE_NAME', default='Floki Minimart')
+STORE_NAME = config('STORE_NAME', default='Jimmy Mini Mart')
 STORE_ADDRESS = config('STORE_ADDRESS', default='Nairobi, Kenya')
 STORE_PHONE = config('STORE_PHONE', default='+254 700 000 000')
 STORE_KRA_PIN = config('STORE_KRA_PIN', default='')
