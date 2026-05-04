@@ -52,6 +52,14 @@ class AuditSession(models.Model):
     def match_count(self):
         return self.items.filter(variance=Decimal('0')).count()
 
+    @property
+    def total_variance_value(self):
+        """Total monetary value of all variances in this session."""
+        total = Decimal('0')
+        for item in self.items.all():
+            total += item.variance_value
+        return total
+
     def __str__(self):
         return f"Audit #{str(self.id)[:8]} — {self.get_scope_display()} ({self.get_status_display()})"
 
@@ -71,6 +79,18 @@ class AuditItem(models.Model):
 
     class Meta:
         ordering = ['product__name']
+
+    @property
+    def variance_value(self):
+        """Monetary value of the variance based on selling price."""
+        if self.variance is None:
+            return Decimal('0')
+        
+        price = self.product.base_unit_price
+        if self.product.weight_sell_enabled and self.product.price_per_weight_unit:
+            price = self.product.price_per_weight_unit
+            
+        return self.variance * price
 
     @property
     def status_icon(self):

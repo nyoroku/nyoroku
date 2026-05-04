@@ -58,6 +58,7 @@
           <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">System Qty</th>
           <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Physical Qty</th>
           <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Variance</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Variance Value</th>
           <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Note</th>
         </tr>
       </thead>
@@ -81,6 +82,15 @@
             {% if item.variance is not None %}
             <span class="variance-cell {% if item.variance == 0 %}text-emerald-600{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
               {{ item.status_icon }} {{ item.variance }}
+            </span>
+            {% else %}
+            <span class="text-text-secondary">—</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3.5 text-right font-mono font-bold text-sm">
+            {% if item.variance is not None %}
+            <span class="{% if item.variance == 0 %}text-text-secondary{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
+              {{ item.variance_value|floatformat:2 }}
             </span>
             {% else %}
             <span class="text-text-secondary">—</span>
@@ -114,18 +124,22 @@
   {% if session.status == 'completed' %}
   <div class="mt-5 card p-5">
     <h3 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Audit Summary</h3>
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="p-4 rounded-xl bg-emerald-50 text-center">
-        <div class="text-3xl font-extrabold text-emerald-600 font-mono">{{ session.match_count }}</div>
-        <div class="text-xs font-bold text-emerald-700 mt-1">Matched</div>
+        <div class="text-2xl font-extrabold text-emerald-600 font-mono">{{ session.match_count }}</div>
+        <div class="text-[10px] font-bold text-emerald-700 uppercase mt-1">Matched</div>
       </div>
-      <div class="p-4 rounded-xl bg-red-50 text-center">
-        <div class="text-3xl font-extrabold text-red-600 font-mono">{{ session.variance_count }}</div>
-        <div class="text-xs font-bold text-red-700 mt-1">Variances</div>
+      <div class="p-4 rounded-xl bg-red-50 text-center border border-red-100">
+        <div class="text-2xl font-extrabold text-red-600 font-mono">{{ session.variance_count }}</div>
+        <div class="text-[10px] font-bold text-red-700 uppercase mt-1">Variances</div>
       </div>
-      <div class="p-4 rounded-xl text-center" style="background: rgba(26,58,74,0.04)">
-        <div class="text-3xl font-extrabold font-mono" style="color: var(--primary)">{{ session.total_items }}</div>
-        <div class="text-xs font-bold" style="color: var(--text-secondary)">Total Items</div>
+      <div class="p-4 rounded-xl text-center bg-gray-50 border border-gray-100">
+        <div class="text-2xl font-extrabold text-gray-900 font-mono">{{ session.total_items }}</div>
+        <div class="text-[10px] font-bold text-gray-500 uppercase mt-1">Total Items</div>
+      </div>
+      <div class="p-4 rounded-xl text-center {% if session.total_variance_value < 0 %}bg-red-600 text-white shadow-lg shadow-red-200{% else %}bg-emerald-600 text-white shadow-lg shadow-emerald-200{% endif %}">
+        <div class="text-2xl font-extrabold font-mono">{{ session.total_variance_value|floatformat:2 }}</div>
+        <div class="text-[10px] font-bold uppercase mt-1">Total Variance Value</div>
       </div>
     </div>
     {% if session.notes %}<p class="text-sm mt-4" style="color: var(--text-secondary)">{{ session.notes }}</p>{% endif %}

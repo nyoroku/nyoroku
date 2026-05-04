@@ -1,6 +1,7 @@
 import random
 from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
@@ -154,5 +155,5 @@ def audit_print(request, pk):
     return render(request, 'audit_module/print_sheet.html', {
         'session': session,
         'items': items,
-        'store_name': 'Floki Minimart',
+        'store_name': getattr(settings, 'STORE_NAME', 'Jimmy Mini Mart'),
     })

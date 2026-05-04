@@ -38,6 +38,7 @@
         <th class="right">System Qty</th>
         <th class="physical-col right">Physical Qty</th>
         <th class="physical-col right">Variance</th>
+        <th class="physical-col right">Value</th>
         <th class="note-col">Note</th>
       </tr>
     </thead>
@@ -49,12 +50,22 @@
         <td>{{ item.product.subcategory.category.name }} › {{ item.product.subcategory.name }}</td>
         <td class="mono">{{ item.product.sku }}</td>
         <td class="right mono"><strong>{{ item.system_qty }}</strong></td>
-        <td class="physical-col right" style="min-height: 24px;">&nbsp;</td>
-        <td class="physical-col right">&nbsp;</td>
-        <td class="note-col">&nbsp;</td>
+        <td class="physical-col right mono"><strong>{{ item.physical_qty|default:"&nbsp;" }}</strong></td>
+        <td class="physical-col right mono">{{ item.variance|default:"&nbsp;" }}</td>
+        <td class="physical-col right mono">{{ item.variance_value|floatformat:2|default:"&nbsp;" }}</td>
+        <td class="note-col">{{ item.note|default:"&nbsp;" }}</td>
       </tr>
       {% endfor %}
     </tbody>
+    {% if session.status == 'completed' %}
+    <tfoot>
+      <tr>
+        <th colspan="6" class="right">Total Variance Value</th>
+        <th class="right mono">{{ session.total_variance_value|floatformat:2 }}</th>
+        <th></th>
+      </tr>
+    </tfoot>
+    {% endif %}
   </table>
 
   <div style="margin-top: 20px; font-size: 11px; color: #666">
