@@ -87,9 +87,14 @@
       <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Base Unit Label</label>
       <input type="text" name="base_unit_label" value="{{ product.base_unit_label }}" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
     </div>
+  <div class="grid grid-cols-2 gap-3">
     <div>
-      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Base Price (KES) *</label>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sell Price (KES) *</label>
       <input type="number" name="base_unit_price" value="{{ product.base_unit_price|unlocalize }}" step="0.01" required class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Cost Price (KES)</label>
+      <input type="number" name="cost_price" value="{{ product.cost_price|default:0|unlocalize }}" step="0.01" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
     </div>
   </div>
 
