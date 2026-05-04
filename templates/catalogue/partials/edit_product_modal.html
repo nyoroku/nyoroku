@@ -93,6 +93,19 @@
     </div>
   </div>
 
+  {% if request.user.role == 'admin' %}
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">On-hand Stock (Base Units)</label>
+      <input type="number" name="stock_qty" value="{{ product.stock_qty|unlocalize }}" step="0.001" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20 bg-amber-50/30">
+    </div>
+    <div>
+      <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Reorder Threshold</label>
+      <input type="number" name="reorder_threshold" value="{{ product.reorder_threshold }}" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/20">
+    </div>
+  </div>
+  {% endif %}
+
   <div class="space-y-3 pt-2">
     <div class="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Advanced Configurations</div>
     
@@ -157,7 +170,7 @@
         <div class="grid grid-cols-3 gap-2">
           <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Weight Unit</label><select name="weight_unit" class="w-full px-3 py-2 rounded-lg border border-border text-xs"><option value="kg" {% if product.weight_unit == 'kg' %}selected{% endif %}>kg</option><option value="g" {% if product.weight_unit == 'g' %}selected{% endif %}>g</option><option value="litre" {% if product.weight_unit == 'litre' %}selected{% endif %}>litre</option><option value="ml" {% if product.weight_unit == 'ml' %}selected{% endif %}>ml</option></select></div>
           <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Price/Unit</label><input type="number" name="price_per_weight_unit" value="{{ product.price_per_weight_unit|default:''|unlocalize }}" step="0.01" class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono"></div>
-          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Stock (weight)</label><input type="number" name="stock_in_weight_unit" value="{{ product.stock_in_weight_unit|default:0|unlocalize }}" step="0.001" readonly class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono bg-gray-50 opacity-70"></div>
+          <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Stock (weight)</label><input type="number" name="stock_in_weight_unit" value="{{ product.stock_in_weight_unit|default:0|unlocalize }}" step="0.001" {% if request.user.role != 'admin' %}readonly{% endif %} class="w-full px-3 py-2 rounded-lg border border-border text-xs font-mono {% if request.user.role != 'admin' %}bg-gray-50 opacity-70{% else %}bg-amber-50/30{% endif %}"></div>
         </div>
         <div><label class="text-[10px] font-semibold text-text-secondary uppercase block">Sell Mode</label><select name="weight_sell_mode" class="w-full px-3 py-2 rounded-lg border border-border text-xs"><option value="BY_WEIGHT" {% if product.weight_sell_mode == 'BY_WEIGHT' %}selected{% endif %}>By Weight</option><option value="BY_CASH" {% if product.weight_sell_mode == 'BY_CASH' %}selected{% endif %}>By Cash</option></select></div>
       </div>

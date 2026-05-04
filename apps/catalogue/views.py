@@ -266,6 +266,12 @@ def edit_product(request):
         product.single_unit_price = _dec_or_none(request.POST.get('single_unit_price'))
 
     # Stock
+    if request.user.role == 'admin':
+        if 'stock_qty' in request.POST:
+            product.stock_qty = _dec_or_none(request.POST.get('stock_qty')) or Decimal('0')
+        if 'stock_in_weight_unit' in request.POST:
+            product.stock_in_weight_unit = _dec_or_none(request.POST.get('stock_in_weight_unit')) or Decimal('0')
+
     product.reorder_threshold = _int_or_default(request.POST.get('reorder_threshold'), product.reorder_threshold)
     product.reorder_qty = _int_or_default(request.POST.get('reorder_qty'), product.reorder_qty)
 
