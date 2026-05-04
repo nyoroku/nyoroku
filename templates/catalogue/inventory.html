@@ -98,14 +98,14 @@
             </td>
             <td class="px-4 py-3 text-right">
               {% if product.bundle_pricing_enabled %}
-                <div class="font-mono font-bold text-primary">KES {{ product.bundle_price|floatformat:0 }} <span class="text-[10px] font-normal text-text-secondary">({{ product.bundle_qty }} pcs)</span></div>
+                <div class="font-mono font-bold text-primary">KES {{ product.bundle_price|floatformat:2 }} <span class="text-[10px] font-normal text-text-secondary">({{ product.bundle_qty }} pcs)</span></div>
                 {% if product.allow_single_sale %}
-                  <div class="text-[10px] text-text-secondary font-mono">KES {{ product.single_unit_price|floatformat:0 }} / pc</div>
+                  <div class="text-[10px] text-text-secondary font-mono">KES {{ product.single_unit_price|floatformat:2 }} / pc</div>
                 {% endif %}
               {% else %}
-                <div class="font-mono font-bold">KES {{ product.base_unit_price|floatformat:0 }}</div>
+                <div class="font-mono font-bold">KES {{ product.base_unit_price|floatformat:2 }}</div>
               {% endif %}
-              {% if product.cost_price %}<div class="text-xs text-text-secondary font-mono mt-0.5">Cost: {{ product.cost_price|floatformat:0 }}</div>{% endif %}
+              {% if product.cost_price %}<div class="text-xs text-text-secondary font-mono mt-0.5">Cost: {{ product.cost_price|floatformat:2 }}</div>{% endif %}
             </td>
             <td class="px-4 py-3 text-right">
                {% if product.is_kadogo %}

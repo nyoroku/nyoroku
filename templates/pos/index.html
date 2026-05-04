@@ -195,9 +195,9 @@
         
         <div class="font-semibold text-sm leading-tight truncate">{{ p.name }}</div>
         {% if p.bundle_pricing_enabled %}
-          <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.bundle_price|floatformat:0 }} <span class="text-[10px] font-normal text-text-secondary">({{ p.bundle_qty }} pcs)</span></div>
+          <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.bundle_price|floatformat:2 }} <span class="text-[10px] font-normal text-text-secondary">({{ p.bundle_qty }} pcs)</span></div>
         {% else %}
-          <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.base_unit_price|floatformat:0 }}</div>
+          <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.base_unit_price|floatformat:2 }}</div>
         {% endif %}
         {% if p.barcode %}<div class="text-[9px] text-text-secondary font-mono truncate mt-0.5">{{ p.barcode }}</div>{% endif %}
         
