@@ -1,0 +1,158 @@
+{% for pd in products_data %}
+{% with product=pd.product %}
+<tr class="hover:bg-gray-50/50 transition-colors">
+  <td class="px-4 py-3">
+    <div class="flex flex-col">
+      <span class="font-bold text-sm" style="color: var(--primary-dark)">{{ product.name }}</span>
+      <span class="text-xs text-text-secondary font-mono">{{ product.sku }}</span>
+    </div>
+  </td>
+  <td class="px-4 py-3 text-text-secondary text-xs">
+    {{ product.subcategory.category.name }} &rsaquo; {{ product.subcategory.name }}
+  </td>
+  <td class="px-4 py-3">
+    <div class="flex flex-col gap-0.5">
+      {% if product.barcode %}
+      <span class="text-xs font-mono font-semibold" style="color: var(--primary)">{{ product.barcode }}</span>
+      {% endif %}
+    </div>
+  </td>
+  <td class="px-4 py-3 text-right">
+    {% if product.bundle_pricing_enabled %}
+      <div class="font-mono font-bold text-primary">KES {{ product.bundle_price|floatformat:2 }} <span class="text-[10px] font-normal text-text-secondary">({{ product.bundle_qty }} pcs)</span></div>
+      {% if product.allow_single_sale %}
+        <div class="text-[10px] text-text-secondary font-mono">KES {{ product.single_unit_price|floatformat:2 }} / pc</div>
+      {% endif %}
+    {% else %}
+      <div class="font-mono font-bold">KES {{ product.base_unit_price|floatformat:2 }}</div>
+    {% endif %}
+    {% if product.cost_price %}<div class="text-xs text-text-secondary font-mono mt-0.5">Cost: {{ product.cost_price|floatformat:2 }}</div>{% endif %}
+  </td>
+  <td class="px-4 py-3 text-right">
+     {% if product.is_kadogo %}
+      <div class="flex flex-col items-end">
+        <span class="font-mono font-bold {% if product.whole_unit_stock <= 0 %}text-danger{% else %}text-primary{% endif %}">
+          {{ product.whole_unit_stock }} {{ product.whole_unit_label }}s
+        </span>
+         {% for frag in product.fragment_sizes.all %}
+         <div class="flex flex-col items-end mt-1">
+           <span class="text-[10px] font-bold text-primary">
+             {% widthratio product.whole_unit_stock 1 frag.fragment_count %} {{ frag.name }}s potential
+           </span>
+           <span class="text-[9px] text-text-secondary font-mono opacity-70">
+             + {{ frag.fragment_pool }} {{ frag.name }}s in pool
+           </span>
+         </div>
+         {% endfor %}
+      </div>
+    {% elif product.weight_sell_enabled %}
+      <span class="font-mono font-semibold {% if product.stock_in_weight_unit <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_in_weight_unit }} {{ product.weight_unit }}</span>
+    {% else %}
+      <div class="flex flex-col items-end">
+        {% if product.bundle_pricing_enabled and product.split_enabled %}
+          <span class="font-mono font-bold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
+            {{ product.total_pieces }} pcs
+          </span>
+          <span class="text-[10px] text-text-secondary font-mono mt-0.5">
+            {{ product.bundles_per_packet }} bundles / {{ product.base_unit_label }}
+          </span>
+        {% elif product.bundle_pricing_enabled and product.units_per_purchase > 1 %}
+          <span class="font-mono font-bold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
+            {% widthratio product.stock_qty product.units_per_purchase 1 %} {{ product.purchase_unit_label }}s
+          </span>
+          <span class="text-[10px] text-text-secondary font-mono mt-0.5">
+            ({{ product.stock_qty|floatformat:0 }} {{ product.base_unit_label }}s)
+          </span>
+        {% else %}
+          <span class="font-mono font-semibold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_qty|floatformat:0 }} {{ product.base_unit_label }}s</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </td>
+  <td class="px-4 py-3">
+    <div class="flex gap-1 flex-wrap">
+      <span class="inv-badge badge-base">{{ product.base_unit_label }}</span>
+      {% if product.split_enabled %}<span class="inv-badge badge-split">{{ product.split_unit_label }}</span>{% endif %}
+      {% if product.weight_sell_enabled %}<span class="inv-badge badge-weight">{{ product.weight_unit }}</span>{% endif %}
+      {% if product.bundle_pricing_enabled %}<span class="inv-badge badge-bunch">Bundle</span>{% endif %}
+    </div>
+  </td>
+  <td class="px-4 py-3">
+    {% with batch_count=product.batches.count %}
+    {% if batch_count > 0 %}
+      <button onclick="toggleBatches('{{ product.pk }}')" class="text-xs font-semibold px-2 py-1 rounded-lg transition-colors hover:bg-blue-50" style="color: var(--primary)">
+        {{ batch_count }} batch{{ batch_count|pluralize:"es" }}
+      </button>
+    {% else %}
+      <span class="text-xs text-text-secondary">--</span>
+    {% endif %}
+    {% endwith %}
+  </td>
+  <td class="px-4 py-3 text-right">
+    {% if product.gross_margin_pct is not None %}
+      <span class="font-mono text-xs font-bold {% if product.gross_margin_pct >= 20 %}text-success{% elif product.gross_margin_pct >= 10 %}text-warning{% else %}text-danger{% endif %}">{{ product.gross_margin_pct }}%</span>
+    {% else %}
+      <span class="text-xs text-text-secondary">--</span>
+    {% endif %}
+  </td>
+  <td class="px-4 py-3 text-right">
+    <div class="flex items-center justify-end gap-1">
+      {% if product.is_kadogo %}
+      <button onclick="openCutModal('{{ product.pk }}', '{{ product.name|escapejs }}', '{{ product.whole_unit_label|escapejs }}', {{ product.whole_unit_stock }}, {{ pd.fragments|safe }}, {{ product.total_kadogo_pieces }})" 
+              class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-primary transition-colors" title="Manual Cut">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 15L12 9L18 15"/><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg>
+      </button>
+      {% endif %}
+      <button onclick="openAdjustModal('{{ product.pk }}', '{{ product.name|escapejs }}', {{ product.units_per_purchase }}, '{{ product.base_unit_label|escapejs }}', '{{ product.purchase_unit_label|escapejs }}', '{{ product.bundle_pricing_enabled|yesno:'true,false' }}')" 
+              class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-success transition-colors" title="Adjust Stock">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button hx-get="{% url 'catalogue:edit_product_form' product.pk %}" 
+              hx-target="#edit-modal-body" 
+              hx-swap="innerHTML"
+              onclick="document.getElementById('edit-product-modal').style.display='flex'"
+              class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-text-secondary transition-colors" 
+              title="Edit Product">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      {% if request.user.role == 'admin' %}
+      <button hx-post="{% url 'catalogue:delete_product' product.pk %}" hx-confirm="Delete {{ product.name }}?"
+              hx-target="closest tr" hx-swap="outerHTML"
+              class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-danger transition-colors">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+      {% endif %}
+    </div>
+  </td>
+</tr>
+
+<!-- Batch detail row (hidden) -->
+<tr id="batch-row-{{ product.pk }}" class="batch-detail-row" style="display:none">
+  <td colspan="9" class="px-6 py-3" style="background: #f8fafc">
+    <div class="text-xs font-bold text-text-secondary uppercase mb-2">Batches for {{ product.name }}</div>
+    <div hx-get="{% url 'catalogue:batch_list' product.pk %}" hx-trigger="revealed" hx-swap="innerHTML" class="batch-container">
+      <span class="text-xs text-text-secondary">Loading...</span>
+    </div>
+  </td>
+</tr>
+
+{% if forloop.last and page_obj.has_next %}
+<tr hx-get="{% url 'catalogue:inventory' %}?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if active_category %}&category={{ active_category }}{% endif %}{% if stock_filter %}&stock={{ stock_filter }}{% endif %}"
+    hx-trigger="revealed"
+    hx-swap="afterend">
+  <td colspan="9" class="p-10 text-center text-xs text-text-secondary font-bold">
+    <div class="flex items-center justify-center gap-2">
+      <span class="animate-spin text-primary">⏳</span>
+      <span>Loading more products...</span>
+    </div>
+  </td>
+</tr>
+{% endif %}
+
+{% endwith %}
+{% empty %}
+<tr><td colspan="9" class="px-4 py-12 text-center">
+  <div class="text-4xl mb-3 opacity-20">📦</div>
+  <p class="text-sm text-text-secondary font-semibold">No products found</p>
+</td></tr>
+{% endfor %}

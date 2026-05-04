@@ -5,6 +5,8 @@ from django.db import transaction as db_transaction
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.views.decorators.http import require_http_methods
+from django.db.models import Q
+from django.core.paginator import Paginator
 from .models import Product, Category, SubCategory, Batch, FragmentSize
 from core.models import log_audit
 
@@ -48,26 +50,41 @@ def inventory_list(request):
         products = products.filter(subcategory__category_id=cat_id)
     if subcat_id:
         products = products.filter(subcategory_id=subcat_id)
+    
+    # Optimization: Use select_related and prefetch_related to avoid N+1 queries
+    products = products.select_related('subcategory__category').prefetch_related('fragment_sizes')
+
     if stock_filter == 'low':
+        # Need to cast to list because is_low_stock is a property
         products = [p for p in products if p.is_low_stock]
     elif stock_filter == 'out':
-        products = products.filter(stock_qty__lte=0, weight_sell_enabled=False) | \
-                   products.filter(stock_in_weight_unit__lte=0, weight_sell_enabled=True)
+        products = products.filter(Q(stock_qty__lte=0, weight_sell_enabled=False) | 
+                                 Q(stock_in_weight_unit__lte=0, weight_sell_enabled=True))
+
+    # Pagination
+    page_number = request.GET.get('page', 1)
+    paginator = Paginator(products, 50)  # Show 50 products per page
+    page_obj = paginator.get_page(page_number)
 
     categories = Category.objects.all().prefetch_related('subcategories').order_by('order', 'name')
     subcategories = SubCategory.objects.all().order_by('order', 'name')
 
     # Prepare rich data for modals
     products_data = []
-    for product in products:
+    
+    for product in page_obj:
         fragments = []
         if product.is_kadogo:
-            fragments = list(product.fragment_sizes.filter(is_active=True).values(
-                'id', 'name', 'fragment_count', 'fragment_price'
-            ))
-            # Rename fragment_count to count for JS compatibility
-            for f in fragments:
-                f['count'] = f.pop('fragment_count')
+            # We already prefetched fragment_sizes, so we can filter in memory or use the cache
+            # Filter active ones from the prefetched set
+            active_fragments = [f for f in product.fragment_sizes.all() if f.is_active]
+            for f in active_fragments:
+                fragments.append({
+                    'id': str(f.id),
+                    'name': f.name,
+                    'count': f.fragment_count,
+                    'fragment_price': float(f.fragment_price)
+                })
         
         products_data.append({
             'product': product,
@@ -76,17 +93,18 @@ def inventory_list(request):
 
     context = {
         'products_data': products_data,
+        'page_obj': page_obj,
         'categories': categories,
         'subcategories': subcategories,
         'query': query,
         'active_category': cat_id,
         'active_subcategory': subcat_id,
         'stock_filter': stock_filter,
-        'product_count': len(products),
+        'product_count': paginator.count,
     }
 
     if request.headers.get('HX-Request'):
-        return render(request, 'catalogue/partials/product_list.html', context)
+        return render(request, 'catalogue/partials/inventory_rows.html', context)
     return render(request, 'catalogue/inventory.html', context)
 
 
