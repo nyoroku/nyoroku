@@ -33,6 +33,7 @@ class Command(BaseCommand):
             'Cigarettes': ('🚬', ['Dunhill', 'Pallmall', 'Rooster', 'Rothmans', 'Safari']),
             'Clothing & Access.': ('👕', ['Socks', 'Handkerchief', 'Earrings', 'Hair Band', 'Hair Cap']),
             'Toys & Games': ('🧸', ['Toy Car', 'Balls', 'Baloons']),
+            'Medicines': ('💊', ['General', 'Actal', 'Cetrizine', 'Diclofenac', 'ENO', 'Panadol', 'Maramoja']),
             'Bags & Packaging': ('🛍️', ['General']),
             'Miscellaneous': ('📦', ['Miscellaneous', 'Phone Charging', 'Pressure', 'Jerry Can']),
         }
