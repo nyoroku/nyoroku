@@ -33,6 +33,7 @@ class Command(BaseCommand):
             'Cigarettes': ('🚬', ['Dunhill', 'Pallmall', 'Rooster', 'Rothmans', 'Safari']),
             'Clothing & Access.': ('👕', ['Socks', 'Handkerchief', 'Earrings', 'Hair Band', 'Hair Cap']),
             'Toys & Games': ('🧸', ['Toy Car', 'Balls', 'Baloons']),
+            'Bags & Packaging': ('🛍️', ['General']),
             'Miscellaneous': ('📦', ['Miscellaneous', 'Phone Charging', 'Pressure', 'Jerry Can']),
         }
 
@@ -778,7 +779,7 @@ class Command(BaseCommand):
                         'base_unit_price': price,
                         'cost_price': price * Decimal('0.85'),
                         'sku': sku,
-                        'image': cats[cat_name].icon,
+                        'image': cats.get(cat_name, cats['Miscellaneous']).icon,
                         'created_by': admin,
                         'stock_qty': Decimal('100'),
                         'bundle_pricing_enabled': (bundle_qty > 1),
@@ -799,7 +800,7 @@ class Command(BaseCommand):
                         'subcategory': sub,
                         'base_unit_price': price,
                         'cost_price': price * Decimal('0.85'),
-                        'image': cats[cat_name].icon,
+                        'image': cats.get(cat_name, cats['Miscellaneous']).icon,
                         'created_by': admin,
                         'stock_qty': Decimal('100'),
                         'bundle_pricing_enabled': (bundle_qty > 1),
