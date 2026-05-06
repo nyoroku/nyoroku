@@ -939,7 +939,14 @@ function posApp() {
     },
 
     async searchProductsOffline() {
-      this.offlineProducts = await FlokiOffline.searchProductsOffline(this.searchQuery, this.activeCategory);
+      try {
+        if (typeof FlokiOffline !== 'undefined') {
+          this.offlineProducts = await FlokiOffline.searchProductsOffline(this.searchQuery, this.activeCategory);
+        }
+      } catch (e) {
+        console.error('[POS] searchProductsOffline failed:', e);
+        this.offlineProducts = [];
+      }
     },
 
     filterCategory(catId) {
@@ -1026,36 +1033,63 @@ function posApp() {
     },
 
     async initOffline() {
+      if (typeof FlokiOffline === 'undefined') {
+        console.error('[POS] FlokiOffline module not loaded!');
+        return;
+      }
+
       // Fetch and cache products if online
       if (Alpine.store('network').online) {
         try {
           const resp = await fetch('/pos/api/products/');
           if (resp.ok) {
             const products = await resp.json();
+            console.log('[POS] API returned', products.length, 'products');
             await FlokiOffline.cacheProducts(products);
-            console.log('Product cache updated');
-            showToast('✅ Product cache updated');
+            showToast('✅ ' + products.length + ' products cached');
+          } else {
+            console.error('[POS] API products response not OK:', resp.status);
           }
         } catch (e) {
-          console.warn('Failed to update product cache:', e);
+          console.warn('[POS] Failed to update product cache:', e);
         }
       }
-      await this.searchProductsOffline();
+
+      // Load cached products into Alpine state
+      try {
+        this.offlineProducts = await FlokiOffline.searchProductsOffline(this.searchQuery, this.activeCategory);
+        console.log('[POS] Loaded', this.offlineProducts.length, 'offline products');
+      } catch (e) {
+        console.error('[POS] Failed to load offline products:', e);
+        this.offlineProducts = [];
+      }
+
       this.updatePendingSyncCount();
 
       // Listen for sync completion from SW
-      const channel = new BroadcastChannel('floki-sync');
-      channel.onmessage = (event) => {
-        if (event.data.type === 'SYNC_COMPLETE') {
-          this.updatePendingSyncCount();
-          showToast('🔄 Transactions Synced!');
-        }
-      };
+      try {
+        const channel = new BroadcastChannel('floki-sync');
+        channel.onmessage = (event) => {
+          if (event.data.type === 'SYNC_COMPLETE') {
+            this.updatePendingSyncCount();
+            showToast('🔄 Transactions Synced!');
+          }
+        };
+      } catch (e) {
+        console.warn('[POS] BroadcastChannel not supported');
+      }
     },
 
     async updatePendingSyncCount() {
-      const unsynced = await FlokiOffline.getUnsyncedSales();
-      this.pendingSyncCount = unsynced.length;
+      try {
+        if (typeof FlokiOffline !== 'undefined') {
+          const unsynced = await FlokiOffline.getUnsyncedSales();
+          this.pendingSyncCount = unsynced.length;
+        }
+      } catch (e) {
+        console.error('[POS] Failed to get pending sync count:', e);
+        this.pendingSyncCount = 0;
+      }
     },
 
 
