@@ -14,4 +14,7 @@ urlpatterns = [
     path('parked/', views.parked_sales_list, name='parked_list'),
     path('resume/<uuid:pk>/', views.resume_sale, name='resume'),
     path('history/', views.sale_history, name='history'),
+    # Offline API
+    path('api/products/', views.api_products, name='api_products'),
+    path('api/sync/', views.api_sync, name='api_sync'),
 ]

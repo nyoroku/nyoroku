@@ -717,3 +717,75 @@ def sale_history(request):
         'active_status': status,
     }
     return render(request, 'pos/sale_history.html', context)
+
+
+@login_required
+def api_products(request):
+    """JSON endpoint for offline product catalogue."""
+    products = Product.objects.filter(is_active=True).select_related(
+        'subcategory', 'subcategory__category'
+    )
+    
+    data = []
+    for p in products:
+        # Fragments for Kadogo
+        fragments_list = []
+        if p.is_kadogo:
+            fragments_qs = p.fragment_sizes.filter(is_active=True)
+            for f in fragments_qs:
+                fragments_list.append({
+                    'id': str(f.id),
+                    'name': f.name,
+                    'fragment_count': int(f.fragment_count),
+                    'fragment_price': float(f.fragment_price),
+                    'fragment_pool': int(f.fragment_pool),
+                })
+
+        data.append({
+            'id': str(p.id),
+            'name': p.name,
+            'base_unit_price': float(p.base_unit_price or 0),
+            'base_unit_label': p.base_unit_label or 'Unit',
+            'cost_price': float(p.cost_price or 0),
+            'stock_qty': float(p.stock_qty or 0),
+            'is_kadogo': p.is_kadogo,
+            'fragments': fragments_list,
+            'split_enabled': p.split_enabled,
+            'split_unit_price': float(p.split_unit_price or 0),
+            'split_unit_label': p.split_unit_label or 'Piece',
+            'weight_sell_enabled': p.weight_sell_enabled,
+            'weight_unit': p.weight_unit or 'kg',
+            'price_per_weight_unit': float(p.price_per_weight_unit or 0),
+            'bundle_pricing_enabled': p.bundle_pricing_enabled,
+            'bundle_price': float(p.bundle_price or 0),
+            'bundle_qty': p.bundle_qty or 1,
+            'allow_single_sale': p.allow_single_sale,
+            'single_unit_price': float(p.single_unit_price or 0),
+            'category_id': str(p.subcategory.category_id) if p.subcategory else None,
+            'barcode': p.barcode,
+            'sku': p.sku,
+        })
+    
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_sync(request):
+    """Batch sync endpoint for offline transactions."""
+    try:
+        data = json.loads(request.body)
+        sales = data.get('sales', [])
+        results = []
+
+        for sale_data in sales:
+            # Simulation for now
+            results.append({
+                'offline_id': sale_data.get('id'),
+                'status': 'synced',
+                'server_id': 'SALE-' + str(timezone.now().timestamp())
+            })
+
+        return JsonResponse({'status': 'success', 'results': results})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

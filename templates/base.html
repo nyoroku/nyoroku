@@ -10,12 +10,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="manifest" href="{% url 'manifest_json' %}">
+  <meta name="theme-color" content="#1A1A2E">
   
   {% tailwind_css %}
   
   <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
   <script defer src="https://unpkg.com/@alpinejs/collapse@3.14.3/dist/cdn.min.js"></script>
   <script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+  <script src="https://unpkg.com/idb/build/iife/index-min.js"></script>
+  <script src="{% static 'js/offline.js' %}"></script>
   
   {% block extra_head %}{% endblock %}
   
@@ -385,6 +389,32 @@
     document.body.addEventListener('htmx:configRequest', (event) => {
       event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
     });
+
+    // Network Status Store
+    document.addEventListener('alpine:init', () => {
+      Alpine.store('network', {
+        online: navigator.onLine,
+        init() {
+          window.addEventListener('online', () => {
+            this.online = true;
+            showToast('✅ Back Online! Syncing...');
+          });
+          window.addEventListener('offline', () => {
+            this.online = false;
+            showToast('⚠️ Offline Mode Active');
+          });
+        }
+      });
+    });
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('{% url "sw_js" %}')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.error('SW registration failed:', err));
+      });
+    }
     
     function showToast(message) {
       const t = document.createElement('div');
@@ -402,7 +432,20 @@
           setTimeout(() => showToast("{{ message|escapejs }}"), {{ forloop.counter0 }} * 500);
         {% endfor %}
       });
-    {% endif %}
+    // Handle Offline PIN Auth storage
+    document.addEventListener('loginSuccess', async (event) => {
+      const data = event.detail.value || event.detail;
+      const db = await idb.openDB('floki_db', 1);
+      const tx = db.transaction('auth', 'readwrite');
+      await tx.objectStore('auth').put({
+        id: 'current_user',
+        username: data.username,
+        token: data.token,
+        pin_hash: data.pin_hash,
+        timestamp: new Date().toISOString()
+      });
+      await tx.done;
+    });
   </script>
 </body>
 </html>

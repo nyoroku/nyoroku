@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floki POS - Offline</title>
+    <style>
+        body {
+            background-color: #1A1A2E;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #6EE7B7;
+            margin-bottom: 1rem;
+        }
+        .status {
+            color: #FBBF24;
+            font-weight: bold;
+            margin-bottom: 2rem;
+        }
+        .instructions {
+            opacity: 0.8;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">FLOKI</div>
+    <div class="status">You are currently offline</div>
+    <div class="instructions">
+        The POS shell is cached and will load even without internet.
+        Please reconnect to sync your transactions and fetch the latest stock levels.
+    </div>
+</body>
+</html>

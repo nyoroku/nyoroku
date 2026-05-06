@@ -53,8 +53,21 @@ def pin_auth(request):
         user.locked_until = None
         user.save(update_fields=['failed_pin_attempts', 'locked_until'])
         
+        # Generate device token (Phase 5)
+        import secrets
+        device_token = secrets.token_hex(16)
+        # In a real impl, this would be signed (e.g. JWT)
+        
         response = HttpResponse(status=200)
         response['HX-Redirect'] = '/pos/'
+        # Trigger event for frontend to store the hash + token
+        response['HX-Trigger'] = json.dumps({
+            "loginSuccess": {
+                "username": user.username,
+                "token": device_token,
+                "pin_hash": user.pin_hash # Assuming it's already a hash
+            }
+        })
         return response
     else:
         user.failed_pin_attempts += 1

@@ -150,7 +150,12 @@
 {% endblock %}
 
 {% block content %}
-<div class="pos-container" x-data="posApp()" x-init="window.posAppInstance = $data">
+<div class="pos-container" x-data="posApp()" x-init="window.posAppInstance = $data; initOffline()">
+  
+  <!-- Offline Status Banner -->
+  <div x-show="!$store.network.online" class="bg-amber-500 text-primary-dark px-4 py-2 text-center text-xs font-bold animate-pulse no-print" x-cloak>
+    ⚠️ OFFLINE MODE — Transactions will be queued and synced automatically when back online.
+  </div>
   
   <!-- ─── LEFT: Product Grid ─── -->
   <div class="product-grid-area p-3 lg:p-4 pb-16 lg:pb-4" :class="{ 'desktop-open': cart.length > 0 || checkoutMode }">
@@ -182,8 +187,8 @@
       {% endfor %}
     </div>
 
-    <!-- Product Grid -->
-    <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3">
+    <!-- Product Grid (Server Rendered - Online Only) -->
+    <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3" x-show="$store.network.online">
       {% for pd in products_data %}
       {% with p=pd.product promo=pd.promo %}
       <div class="product-tile {% if p.effective_stock <= 0 %}out-of-stock{% elif p.is_low_stock %}low-stock{% endif %}"
@@ -255,6 +260,24 @@
       </div>
       {% endfor %}
     </div>
+
+    <!-- Product Grid (Alpine Rendered - Offline Only) -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3" x-show="!$store.network.online" x-cloak>
+      <template x-for="p in offlineProducts" :key="p.id">
+        <div class="product-tile" @click="handleProductClick(p)">
+          <div class="font-semibold text-sm leading-tight truncate" x-text="p.name"></div>
+          <div class="font-mono font-bold text-sm" style="color: var(--primary)" x-text="'KES ' + (p.bundle_pricing_enabled ? p.bundle_price : p.base_unit_price).toFixed(2)"></div>
+          <div class="text-[9px] text-text-secondary font-mono truncate mt-0.5" x-text="p.barcode"></div>
+          <div class="flex items-center gap-1 mt-auto flex-wrap">
+            <span class="text-[10px] text-text-secondary font-medium" x-text="p.stock_qty + ' avail (cached)'"></span>
+          </div>
+        </div>
+      </template>
+      <div x-show="offlineProducts.length === 0" class="col-span-full text-center py-12 text-text-secondary">
+        <p class="text-lg font-semibold">No products in cache</p>
+        <p class="text-sm mt-1">Products are cached when you log in online</p>
+      </div>
+    </div>
   </div>
 
   <!-- ─── RIGHT: Cart & Payment Drawer ─── -->
@@ -277,7 +300,13 @@
           🛒 Current Order
           <span class="px-2 py-0.5 rounded-full text-xs bg-white/10" x-text="cart.length"></span>
         </h2>
-        <button @click="clearCart()" class="text-sm font-bold opacity-60 hover:opacity-100 transition-opacity" style="color:#fca5a5" x-show="cart.length > 0">Clear All</button>
+        <div class="flex items-center gap-3">
+          <div x-show="pendingSyncCount > 0" class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/20 text-amber-500 text-[10px] font-bold border border-amber-500/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+            <span x-text="pendingSyncCount"></span> QUEUED
+          </div>
+          <button @click="clearCart()" class="text-sm font-bold opacity-60 hover:opacity-100 transition-opacity" style="color:#fca5a5" x-show="cart.length > 0">Clear All</button>
+        </div>
       </div>
       <!-- Cart Items (SCROLLS) -->
       <div class="flex-1 overflow-y-auto px-6 py-4 overscroll-contain space-y-2" style="min-height:0">
@@ -347,7 +376,10 @@
       <!-- Payment Tabs (PINNED) -->
       <div class="flex p-3 gap-2 bg-black/10 flex-shrink-0 border-b border-white/5">
         <button class="flex-1 py-3 rounded-xl font-bold text-sm transition-all" :class="paymentMethod==='cash' ? 'bg-white/20 text-white shadow-lg' : 'text-white/40 hover:bg-white/5'" @click="paymentMethod='cash'">💵 CASH</button>
-        <button class="flex-1 py-3 rounded-xl font-bold text-sm transition-all" :class="paymentMethod==='mpesa' ? 'bg-[#25D366]/20 text-[#25D366] shadow-lg' : 'text-white/40 hover:bg-white/5'" @click="paymentMethod='mpesa'">📱 M-PESA</button>
+        <button class="flex-1 py-3 rounded-xl font-bold text-sm transition-all" :class="paymentMethod==='mpesa' ? 'bg-[#25D366]/20 text-[#25D366] shadow-lg' : 'text-white/40 hover:bg-white/5'" @click="paymentMethod='mpesa'" :disabled="!$store.network.online">
+          📱 M-PESA
+          <div x-show="!$store.network.online" class="text-[8px] opacity-60">Online Only</div>
+        </button>
         <button class="flex-1 py-3 rounded-xl font-bold text-sm transition-all" :class="paymentMethod==='split' ? 'bg-[#8b5cf6]/20 text-[#8b5cf6] shadow-lg' : 'text-white/40 hover:bg-white/5'" @click="paymentMethod='split'">💳 SPLIT</button>
       </div>
       <!-- Inputs + Numpad (SCROLLS) -->
@@ -584,6 +616,8 @@ function posApp() {
     checkoutLoading: false,
     checkoutMode: false,
     mobileCartOpen: false,
+    pendingSyncCount: 0,
+    offlineProducts: [],
 
     // ── Unified Modal State ──
     activeModal: null, // 'pieces', 'weight', 'cut'
@@ -886,6 +920,10 @@ function posApp() {
     },
 
     searchProducts() {
+      if (!Alpine.store('network').online) {
+        this.searchProductsOffline();
+        return;
+      }
       const url = new URL(window.location.href);
       url.searchParams.set('q', this.searchQuery);
       if (this.activeCategory !== 'all') {
@@ -894,6 +932,10 @@ function posApp() {
         url.searchParams.delete('category');
       }
       htmx.ajax('GET', url.toString(), { target: '#product-grid', swap: 'innerHTML' });
+    },
+
+    async searchProductsOffline() {
+      this.offlineProducts = await FlokiOffline.searchProductsOffline(this.searchQuery, this.activeCategory);
     },
 
     filterCategory(catId) {
@@ -934,6 +976,17 @@ function posApp() {
       }
 
       try {
+        if (!Alpine.store('network').online) {
+          // Offline Flow
+          payload.id = Date.now(); // Temp ID for tracking
+          await FlokiOffline.queueSale(payload);
+          this.clearCart();
+          this.checkoutMode = false;
+          this.updatePendingSyncCount();
+          showToast('📥 Sale queued offline!');
+          return;
+        }
+
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
         const resp = await fetch('/pos/checkout/', {
           method: 'POST',
@@ -952,10 +1005,52 @@ function posApp() {
           alert('Error: ' + err);
         }
       } catch (e) {
-        alert('Network error: ' + e.message);
+        if (e.name === 'TypeError') { // Likely network error
+           // Fallback to offline queue
+           payload.id = Date.now();
+           await FlokiOffline.queueSale(payload);
+           this.clearCart();
+           this.checkoutMode = false;
+           this.updatePendingSyncCount();
+           showToast('📥 Sale queued (network fail)!');
+        } else {
+          alert('Error: ' + e.message);
+        }
       } finally {
         this.checkoutLoading = false;
       }
+    },
+
+    async initOffline() {
+      // Fetch and cache products if online
+      if (Alpine.store('network').online) {
+        try {
+          const resp = await fetch('/pos/api/products/');
+          if (resp.ok) {
+            const products = await resp.json();
+            await FlokiOffline.cacheProducts(products);
+            console.log('Product cache updated');
+          }
+        } catch (e) {
+          console.warn('Failed to update product cache:', e);
+        }
+      }
+      await this.searchProductsOffline();
+      this.updatePendingSyncCount();
+
+      // Listen for sync completion from SW
+      const channel = new BroadcastChannel('floki-sync');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'SYNC_COMPLETE') {
+          this.updatePendingSyncCount();
+          showToast('🔄 Transactions Synced!');
+        }
+      };
+    },
+
+    async updatePendingSyncCount() {
+      const unsynced = await FlokiOffline.getUnsyncedSales();
+      this.pendingSyncCount = unsynced.length;
     },
 
 
