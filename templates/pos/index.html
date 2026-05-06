@@ -275,7 +275,11 @@
       </template>
       <div x-show="offlineProducts.length === 0" class="col-span-full text-center py-12 text-text-secondary">
         <p class="text-lg font-semibold">No products in cache</p>
-        <p class="text-sm mt-1">Products are cached when you log in online</p>
+        <p class="text-sm mt-1 mb-4">Products are cached when you log in online</p>
+        <button @click="initOffline()" x-show="$store.network.online" 
+                class="px-4 py-2 bg-primary text-white rounded-lg font-bold text-xs hover:bg-primary-light transition-all">
+          🔄 Sync Products Now
+        </button>
       </div>
     </div>
   </div>

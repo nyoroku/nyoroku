@@ -28,6 +28,7 @@ async function initDB() {
 
 // Product Cache Logic
 async function cacheProducts(products) {
+    console.log(`Caching ${products.length} products...`);
     const db = await initDB();
     const tx = db.transaction('products', 'readwrite');
     await tx.objectStore('products').clear();
@@ -35,11 +36,19 @@ async function cacheProducts(products) {
         await tx.objectStore('products').put(p);
     }
     await tx.done;
+    console.log('Cache update complete');
 }
 
 async function getProductsFromCache() {
-    const db = await initDB();
-    return db.getAll('products');
+    try {
+        const db = await initDB();
+        const products = await db.getAll('products');
+        console.log(`Retrieved ${products.length} products from IndexedDB`);
+        return products;
+    } catch (e) {
+        console.error('Failed to get products from IndexedDB:', e);
+        return [];
+    }
 }
 
 async function searchProductsOffline(query, categoryId = 'all') {
@@ -50,7 +59,7 @@ async function searchProductsOffline(query, categoryId = 'all') {
             (p.barcode && p.barcode.includes(query)) ||
             (p.sku && p.sku.toLowerCase().includes(query.toLowerCase()));
         
-        const matchesCategory = categoryId === 'all' || p.category_id === categoryId;
+        const matchesCategory = categoryId === 'all' || String(p.category_id) === String(categoryId);
         
         return matchesQuery && matchesCategory;
     });
