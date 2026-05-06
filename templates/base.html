@@ -398,11 +398,31 @@
           window.addEventListener('online', () => {
             this.online = true;
             showToast('✅ Back Online! Syncing...');
+            if (!('SyncManager' in window)) this.triggerManualSync();
           });
           window.addEventListener('offline', () => {
             this.online = false;
             showToast('⚠️ Offline Mode Active');
           });
+        },
+        async triggerManualSync() {
+          if (!window.FlokiOffline) return;
+          const unsynced = await window.FlokiOffline.getUnsyncedSales();
+          if (unsynced.length === 0) return;
+          try {
+            const resp = await fetch('/pos/api/sync/', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ sales: unsynced })
+            });
+            if (resp.ok) {
+              const result = await resp.json();
+              for (const res of result.results) {
+                if (res.status === 'synced') await window.FlokiOffline.markSaleSynced(res.offline_id, res);
+              }
+              new BroadcastChannel('floki-sync').postMessage({ type: 'SYNC_COMPLETE' });
+            }
+          } catch (e) { console.error('Manual sync failed:', e); }
         }
       });
     });
