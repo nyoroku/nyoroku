@@ -432,6 +432,8 @@
           setTimeout(() => showToast("{{ message|escapejs }}"), {{ forloop.counter0 }} * 500);
         {% endfor %}
       });
+    {% endif %}
+
     // Handle Offline PIN Auth storage
     document.addEventListener('loginSuccess', async (event) => {
       const data = event.detail.value || event.detail;
