@@ -1030,6 +1030,7 @@ function posApp() {
             const products = await resp.json();
             await FlokiOffline.cacheProducts(products);
             console.log('Product cache updated');
+            showToast('✅ Product cache updated');
           }
         } catch (e) {
           console.warn('Failed to update product cache:', e);
