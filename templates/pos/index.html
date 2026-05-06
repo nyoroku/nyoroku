@@ -274,7 +274,8 @@
         </div>
       </template>
       <div x-show="offlineProducts.length === 0" class="col-span-full text-center py-12 text-text-secondary">
-        <p class="text-lg font-semibold">No products in cache</p>
+        <p class="text-lg font-semibold">No products in cache (Debug: length 0)</p>
+        <p class="text-xs text-brand-red mt-2" x-text="offlineDebugMessage || ''"></p>
         <p class="text-sm mt-1 mb-4">Products are cached when you log in online</p>
         <button @click="initOffline()" x-show="$store.network.online" 
                 class="px-4 py-2 bg-primary text-white rounded-lg font-bold text-xs hover:bg-primary-light transition-all">
@@ -622,6 +623,7 @@ function posApp() {
     mobileCartOpen: false,
     pendingSyncCount: 0,
     offlineProducts: [],
+    offlineDebugMessage: '',
 
     // ── Unified Modal State ──
     activeModal: null, // 'pieces', 'weight', 'cut'
@@ -941,10 +943,16 @@ function posApp() {
     async searchProductsOffline() {
       try {
         if (typeof FlokiOffline !== 'undefined') {
+          const rawProducts = await FlokiOffline.getProductsFromCache();
+          this.offlineDebugMessage = 'DB holds ' + rawProducts.length + ' items. ';
           this.offlineProducts = await FlokiOffline.searchProductsOffline(this.searchQuery, this.activeCategory);
+          this.offlineDebugMessage += 'Filter matched ' + this.offlineProducts.length + '.';
+        } else {
+          this.offlineDebugMessage = 'FlokiOffline module is undefined.';
         }
       } catch (e) {
         console.error('[POS] searchProductsOffline failed:', e);
+        this.offlineDebugMessage = 'Error: ' + e.message;
         this.offlineProducts = [];
       }
     },

@@ -5,10 +5,9 @@ if (workbox) {
 
   // Precache critical assets (these MUST work offline)
   workbox.precaching.precacheAndRoute([
-    { url: '/pos/', revision: 'v4' },
     { url: '/offline.html', revision: 'v2' },
     { url: '{% static "js/idb.min.js" %}', revision: 'v1' },
-    { url: '{% static "js/offline.js" %}', revision: 'v4' },
+    { url: '{% static "js/offline.js" %}', revision: 'v5' },
   ]);
 
   // Cache static assets (CSS, JS, Fonts, Images) — CacheFirst
