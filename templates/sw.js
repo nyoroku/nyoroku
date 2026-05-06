@@ -2,12 +2,16 @@
 
 if (workbox) {
   console.log('Workbox is loaded');
+  
+  // Force instant activation of new service workers
+  workbox.core.skipWaiting();
+  workbox.core.clientsClaim();
 
   // Precache critical assets (these MUST work offline)
   workbox.precaching.precacheAndRoute([
     { url: '/offline.html', revision: 'v2' },
     { url: '{% static "js/idb.min.js" %}', revision: 'v1' },
-    { url: '{% static "js/offline.js" %}', revision: 'v5' },
+    { url: '{% static "js/offline.js" %}', revision: 'v6' },
   ]);
 
   // Cache static assets (CSS, JS, Fonts, Images) — CacheFirst
