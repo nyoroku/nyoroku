@@ -155,5 +155,5 @@ def audit_print(request, pk):
     return render(request, 'audit_module/print_sheet.html', {
         'session': session,
         'items': items,
-        'store_name': getattr(settings, 'STORE_NAME', 'Jimmy Mini Mart'),
+        'store_name': getattr(settings, 'STORE_NAME', "Jimmy's Mini Mart"),
     })

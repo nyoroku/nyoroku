@@ -152,10 +152,7 @@
 {% block content %}
 <div class="pos-container" x-data="posApp()" x-init="window.posAppInstance = $data; initOffline()">
   
-  <!-- Offline Status Banner -->
-  <div x-show="!$store.network.online" class="bg-amber-500 text-primary-dark px-4 py-2 text-center text-xs font-bold animate-pulse no-print" x-cloak>
-    ⚠️ OFFLINE MODE — Transactions will be queued and synced automatically when back online.
-  </div>
+  <!-- Offline Status Banner (Moved) -->
   
   <!-- ─── LEFT: Product Grid ─── -->
   <div class="product-grid-area p-3 lg:p-4 pb-16 lg:pb-4" :class="{ 'desktop-open': cart.length > 0 || checkoutMode }">
@@ -262,25 +259,91 @@
     </div>
 
     <!-- Product Grid (Alpine Rendered - Offline Only) -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3" x-show="!$store.network.online" x-cloak>
-      <template x-for="p in offlineProducts" :key="p.id">
-        <div class="product-tile" @click="handleProductClick(p)">
-          <div class="font-semibold text-sm leading-tight truncate" x-text="p.name"></div>
-          <div class="font-mono font-bold text-sm" style="color: var(--primary)" x-text="'KES ' + (p.bundle_pricing_enabled ? p.bundle_price : p.base_unit_price).toFixed(2)"></div>
-          <div class="text-[9px] text-text-secondary font-mono truncate mt-0.5" x-text="p.barcode"></div>
-          <div class="flex items-center gap-1 mt-auto flex-wrap">
-            <span class="text-[10px] text-text-secondary font-medium" x-text="p.stock_qty + ' avail (cached)'"></span>
+    <div x-show="!$store.network.online" x-cloak class="w-full">
+      <div class="bg-amber-500 text-primary-dark px-4 py-2 mb-3 rounded-lg text-sm font-bold no-print shadow-sm flex items-center justify-center gap-2">
+        ⚠️ OFFLINE MODE — Transactions will be queued and synced automatically.
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3">
+        <template x-for="p in offlineProducts" :key="p.id">
+          <div class="product-tile"
+               :class="{ 'out-of-stock': p.stock_qty <= 0, 'low-stock': p.stock_qty > 0 && p.stock_qty < 5 }"
+               @click="handleProductClick(p)">
+            
+            <div class="font-semibold text-sm leading-tight truncate" x-text="p.name"></div>
+            
+            <template x-if="p.bundle_pricing_enabled">
+              <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES <span x-text="p.bundle_price.toFixed(2)"></span> <span class="text-[10px] font-normal text-text-secondary" x-text="'(' + p.bundle_qty + ' pcs)'"></span></div>
+            </template>
+            <template x-if="!p.bundle_pricing_enabled">
+              <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES <span x-text="p.base_unit_price.toFixed(2)"></span></div>
+            </template>
+            
+            <template x-if="p.barcode">
+              <div class="text-[9px] text-text-secondary font-mono truncate mt-0.5" x-text="p.barcode"></div>
+            </template>
+            
+            <div class="flex items-center gap-1 mt-auto flex-wrap">
+              <template x-if="p.stock_qty <= 0">
+                <span class="sell-badge" style="background:#FEE2E2; color:#DC2626">OUT</span>
+              </template>
+              <template x-if="p.stock_qty > 0 && p.stock_qty < 5">
+                <span class="sell-badge" style="background:#FEF3C7; color:#D97706" x-text="Math.floor(p.stock_qty) + ' left'"></span>
+              </template>
+              <template x-if="p.stock_qty >= 5">
+                <span class="text-[10px] text-text-secondary font-medium" x-text="Math.floor(p.stock_qty) + ' avail'"></span>
+              </template>
+              
+              <template x-if="p.bundle_pricing_enabled && p.split_enabled">
+                <div class="w-full mt-1.5 mb-0.5 space-y-0.5">
+                  <div class="text-[10px] text-text-secondary font-medium">
+                    Total Pieces: <span class="font-bold text-text-primary" x-text="Math.floor(p.stock_qty * (p.pieces_per_base || 1)) + ' pcs'"></span>
+                  </div>
+                  <div class="text-[10px] text-text-secondary font-medium" x-show="p.bundle_qty > 0">
+                    Bundles per pkt: <span class="font-bold text-text-primary" x-text="Math.floor((p.pieces_per_base || 1) / p.bundle_qty)"></span>
+                  </div>
+                </div>
+              </template>
+              
+              <template x-if="p.is_kadogo">
+                <div class="w-full mt-2 flex items-center justify-between">
+                  <span class="sell-badge" style="background:#E0F2FE; color:#0369A1" x-text="Math.floor(p.total_fragments || 0) + ' pieces tot.'"></span>
+                  <div class="text-[9px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/5">KADOGO</div>
+                </div>
+              </template>
+              
+              <template x-if="p.split_enabled">
+                <span class="sell-badge sell-badge-split" x-text="(p.pieces_per_base || 1) + 'pc/' + p.base_unit_label + ' @ ' + p.split_unit_price + '/pc'"></span>
+              </template>
+              
+              <template x-if="p.weight_sell_enabled">
+                <span class="sell-badge sell-badge-weight" x-text="'per ' + p.weight_unit"></span>
+              </template>
+              
+              <template x-if="p.bundle_pricing_enabled">
+                <div class="flex gap-1 w-full mt-1">
+                  <button @click.stop="addProduct(p, 'bundle')" 
+                          class="flex-1 px-2 py-1 rounded bg-amber-50 text-amber-700 text-[10px] font-bold hover:bg-amber-100 border border-amber-200 transition-colors text-center">
+                    +Bundle
+                  </button>
+                  <template x-if="p.allow_single_sale">
+                    <button @click.stop="addProduct(p, 'single')" 
+                            class="flex-1 px-2 py-1 rounded bg-blue-50 text-blue-700 text-[10px] font-bold hover:bg-blue-100 border border-blue-200 transition-colors text-center">
+                      +Single
+                    </button>
+                  </template>
+                </div>
+              </template>
+            </div>
           </div>
+        </template>
+        <div x-show="offlineProducts.length === 0" class="col-span-full text-center py-12 text-text-secondary">
+          <p class="text-lg font-semibold">No products in cache</p>
+          <p class="text-sm mt-1 mb-4">Products are cached when you log in online</p>
+          <button @click="initOffline()" x-show="$store.network.online" 
+                  class="px-4 py-2 bg-primary text-white rounded-lg font-bold text-xs hover:bg-primary-light transition-all">
+            🔄 Sync Products Now
+          </button>
         </div>
-      </template>
-      <div x-show="offlineProducts.length === 0" class="col-span-full text-center py-12 text-text-secondary">
-        <p class="text-lg font-semibold">No products in cache (Debug: length 0)</p>
-        <p class="text-xs text-brand-red mt-2" x-text="offlineDebugMessage || ''"></p>
-        <p class="text-sm mt-1 mb-4">Products are cached when you log in online</p>
-        <button @click="initOffline()" x-show="$store.network.online" 
-                class="px-4 py-2 bg-primary text-white rounded-lg font-bold text-xs hover:bg-primary-light transition-all">
-          🔄 Sync Products Now
-        </button>
       </div>
     </div>
   </div>

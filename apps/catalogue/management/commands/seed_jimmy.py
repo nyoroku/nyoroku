@@ -6,10 +6,10 @@ import re
 from django.db import IntegrityError
 
 class Command(BaseCommand):
-    help = 'Seeds the database with ALL 500+ Jimmy Mini Mart items'
+    help = "Seeds the database with ALL 500+ Jimmy's Mini Mart items"
 
     def handle(self, *args, **kwargs):
-        self.stdout.write("Starting Comprehensive Jimmy Mini Mart seed (500+ items)...")
+        self.stdout.write("Starting Comprehensive Jimmy's Mini Mart seed (500+ items)...")
         
         admin = User.objects.filter(is_superuser=True).first() or User.objects.first()
         if not admin:
@@ -812,4 +812,4 @@ class Command(BaseCommand):
                     }
                 )
 
-        self.stdout.write(self.style.SUCCESS(f"Successfully seeded {len(items_data)} items for Jimmy Mini Mart."))
+        self.stdout.write(self.style.SUCCESS(f"Successfully seeded {len(items_data)} items for Jimmy's Mini Mart."))
