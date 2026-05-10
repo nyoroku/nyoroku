@@ -189,6 +189,13 @@
         {{ cat.name }}
       </button>
       {% endfor %}
+      <div class="w-px h-6 bg-border mx-1 self-center shrink-0"></div>
+      <button class="category-pill shrink-0" style="color: #D97706; border-color: #fde68a; background: #fffbeb;" :class="{ 'ring-2 ring-amber-400': activeCategory === 'low_stock' }" @click="filterCategory('low_stock')">
+        Low Stock
+      </button>
+      <button class="category-pill shrink-0" style="color: #DC2626; border-color: #fca5a5; background: #fef2f2;" :class="{ 'ring-2 ring-red-400': activeCategory === 'out_of_stock' }" @click="filterCategory('out_of_stock')">
+        Out of Stock
+      </button>
     </div>
 
     <!-- Product Grid (Server Rendered - Online Only) -->

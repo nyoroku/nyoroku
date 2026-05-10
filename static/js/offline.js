@@ -132,7 +132,14 @@ async function searchProductsOffline(query, categoryId = 'all') {
             );
         }
 
-        const matchesCategory = categoryId === 'all' || String(p.category_id) === String(categoryId);
+        let matchesCategory = true;
+        if (categoryId === 'low_stock') {
+            matchesCategory = p.is_low_stock === true;
+        } else if (categoryId === 'out_of_stock') {
+            matchesCategory = p.is_out_of_stock === true;
+        } else {
+            matchesCategory = categoryId === 'all' || String(p.category_id) === String(categoryId);
+        }
 
         return matchesQuery && matchesCategory;
     });

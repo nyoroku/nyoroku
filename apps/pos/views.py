@@ -32,7 +32,11 @@ def index(request):
             qs = qs.filter(
                 Q(name__icontains=token) | Q(sku__icontains=token) | Q(barcode__icontains=token)
             )
-    if cat_id and cat_id != 'all':
+    if cat_id == 'low_stock':
+        qs = [p for p in qs if p.is_low_stock]
+    elif cat_id == 'out_of_stock':
+        qs = [p for p in qs if p.is_out_of_stock]
+    elif cat_id and cat_id != 'all':
         try:
             qs = qs.filter(subcategory__category_id=cat_id)
         except (ValueError,):
@@ -89,6 +93,8 @@ def index(request):
             'fragments': fragments_list,
             'cost_price': float(product.cost_price or 0),
             'stock_qty': float(product.effective_stock or 0),
+            'is_low_stock': product.is_low_stock,
+            'is_out_of_stock': product.is_out_of_stock,
             'split_enabled': product.split_enabled,
             'split_unit_price': float(product.split_unit_price or 0),
             'split_unit_label': product.split_unit_label or 'Piece',
@@ -750,6 +756,8 @@ def api_products(request):
             'base_unit_label': p.base_unit_label or 'Unit',
             'cost_price': float(p.cost_price or 0),
             'stock_qty': float(p.effective_stock or 0),
+            'is_low_stock': p.is_low_stock,
+            'is_out_of_stock': p.is_out_of_stock,
             'is_kadogo': p.is_kadogo,
             'fragments': fragments_list,
             'total_fragments': sum(f['fragment_pool'] for f in fragments_list) + (p.whole_unit_stock * (fragments_list[0]['fragment_count'] if fragments_list else 1) if p.is_kadogo else 0),

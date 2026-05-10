@@ -66,6 +66,20 @@
          hx-get="{% url 'catalogue:inventory' %}?stock=out" hx-target="#inventory-tbody"
          class="stock-pill danger {% if stock_filter == 'out' %}active{% endif %}">Out of Stock</a>
     </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const updateActive = (selector) => {
+          document.querySelectorAll(selector).forEach(el => {
+            el.addEventListener('click', function() {
+              document.querySelectorAll(selector).forEach(p => p.classList.remove('active'));
+              this.classList.add('active');
+            });
+          });
+        };
+        updateActive('.stock-pill');
+        updateActive('.inv-pill');
+      });
+    </script>
   </div>
 
   <!-- Product Table -->
