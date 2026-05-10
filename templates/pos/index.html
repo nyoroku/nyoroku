@@ -153,6 +153,9 @@
     0% { background: rgba(212,168,82,0.25); box-shadow: 0 0 12px rgba(212,168,82,0.3); }
     100% { background: transparent; box-shadow: none; }
   }
+
+  /* Alpine x-cloak: hide elements until Alpine initialises */
+  [x-cloak] { display: none !important; }
 </style>
 {% endblock %}
 
@@ -557,8 +560,8 @@
   <div x-show="activeModal" 
        class="weight-modal-overlay" 
        @click.self="activeModal = null" 
-       x-cloak 
-       style="display: flex; z-index: 9999">
+       x-cloak
+       style="z-index: 9999">
     
     <div class="weight-modal" @click.stop :key="'modal-' + refreshCounter">
       
