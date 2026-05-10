@@ -1,26 +1,64 @@
 {% for pd in products_data %}
 {% with p=pd.product promo=pd.promo %}
-<div class="product-tile {% if p.effective_stock <= 0 %}out-of-stock{% elif p.is_low_stock %}low-stock{% endif %}"
+<div class="product-tile {% if p.is_out_of_stock %}out-of-stock{% elif p.is_low_stock %}low-stock{% endif %}"
      data-product-json="{{ pd.product_json|escape }}"
      @click="handleProductClick(JSON.parse($el.getAttribute('data-product-json')))"
-     data-category="{{ p.subcategory.category_id }}">
+     data-category="{{ p.subcategory.category_id }}" data-barcode="{{ p.barcode }}">
   
   {% if promo %}<div class="promo-badge">{{ promo.badge_text }}</div>{% endif %}
   
   <div class="font-semibold text-sm leading-tight truncate">{{ p.name }}</div>
-  <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.base_unit_price }}</div>
+  {% if p.bundle_pricing_enabled %}
+    <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.bundle_price|floatformat:2 }} <span class="text-[10px] font-normal text-text-secondary">({{ p.bundle_qty }} pcs)</span></div>
+  {% else %}
+    <div class="font-mono font-bold text-sm" style="color: var(--primary)">KES {{ p.base_unit_price|floatformat:2 }}</div>
+  {% endif %}
+  {% if p.barcode %}<div class="text-[9px] text-text-secondary font-mono truncate mt-0.5">{{ p.barcode }}</div>{% endif %}
   
   <div class="flex items-center gap-1 mt-auto flex-wrap">
-    {% if p.effective_stock <= 0 %}
+    {% if p.is_out_of_stock %}
       <span class="sell-badge" style="background:#FEE2E2; color:#DC2626">OUT</span>
     {% elif p.is_low_stock %}
       <span class="sell-badge" style="background:#FEF3C7; color:#D97706">{{ p.effective_stock|floatformat:0 }} left</span>
     {% else %}
       <span class="text-[10px] text-text-secondary font-medium">{{ p.effective_stock|floatformat:0 }} avail</span>
     {% endif %}
-    {% if p.split_enabled %}<span class="sell-badge sell-badge-split">✂ {{ p.pieces_per_base }}pc/{{ p.base_unit_label }}</span>{% endif %}
-    {% if p.weight_sell_enabled %}<span class="sell-badge sell-badge-weight">⚖ {{ p.weight_unit }}</span>{% endif %}
-    {% if p.bundle_pricing_enabled %}<span class="sell-badge sell-badge-bunch">{{ p.bundle_qty }} for {{ p.bundle_price }}</span>{% endif %}
+    
+    {% if p.bundle_pricing_enabled and p.split_enabled %}
+      <div class="w-full mt-1.5 mb-0.5 space-y-0.5">
+        <div class="text-[10px] text-text-secondary font-medium">
+          Total Pieces: <span class="font-bold text-text-primary">{{ pd.total_pieces }} pcs</span>
+        </div>
+        <div class="text-[10px] text-text-secondary font-medium">
+          Bundles per pkt: <span class="font-bold text-text-primary">{{ pd.bundles_per_packet }}</span>
+        </div>
+      </div>
+    {% endif %}
+    
+    {% if p.is_kadogo %}
+      <div class="w-full mt-2 flex items-center justify-between">
+        <span class="sell-badge" style="background:#E0F2FE; color:#0369A1">
+          {{ pd.total_fragments|floatformat:0 }} pieces tot.
+        </span>
+        <div class="text-[9px] font-bold text-primary px-1.5 py-0.5 rounded bg-primary/5">KADOGO</div>
+      </div>
+    {% endif %}
+    {% if p.split_enabled %}<span class="sell-badge sell-badge-split">{{ p.pieces_per_base }}pc/{{ p.base_unit_label }} @ {{ p.split_unit_price }}/pc</span>{% endif %}
+    {% if p.weight_sell_enabled %}<span class="sell-badge sell-badge-weight">per {{ p.weight_unit }}</span>{% endif %}
+    {% if p.bundle_pricing_enabled %}
+      <div class="flex gap-1 w-full mt-1">
+        <button @click.stop="addProduct(JSON.parse($el.closest('.product-tile').getAttribute('data-product-json')), 'bundle')" 
+                class="flex-1 px-2 py-1 rounded bg-amber-50 text-amber-700 text-[10px] font-bold hover:bg-amber-100 border border-amber-200 transition-colors text-center">
+          +Bundle
+        </button>
+        {% if p.allow_single_sale %}
+        <button @click.stop="addProduct(JSON.parse($el.closest('.product-tile').getAttribute('data-product-json')), 'single')" 
+                class="flex-1 px-2 py-1 rounded bg-blue-50 text-blue-700 text-[10px] font-bold hover:bg-blue-100 border border-blue-200 transition-colors text-center">
+          +Single
+        </button>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 </div>
 {% endwith %}
