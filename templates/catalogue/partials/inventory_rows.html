@@ -31,7 +31,7 @@
   <td class="px-4 py-3 text-right">
      {% if product.is_kadogo %}
       <div class="flex flex-col items-end">
-        <span class="font-mono font-bold {% if product.whole_unit_stock <= 0 %}text-danger{% else %}text-primary{% endif %}">
+        <span class="font-mono font-bold {% if product.is_out_of_stock %}text-danger{% else %}text-primary{% endif %}">
           {{ product.whole_unit_stock }} {{ product.whole_unit_label }}s
         </span>
          {% for frag in product.fragment_sizes.all %}
@@ -46,25 +46,25 @@
          {% endfor %}
       </div>
     {% elif product.weight_sell_enabled %}
-      <span class="font-mono font-semibold {% if product.stock_in_weight_unit <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_in_weight_unit }} {{ product.weight_unit }}</span>
+      <span class="font-mono font-semibold {% if product.is_out_of_stock %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_in_weight_unit }} {{ product.weight_unit }}</span>
     {% else %}
       <div class="flex flex-col items-end">
         {% if product.bundle_pricing_enabled and product.split_enabled %}
-          <span class="font-mono font-bold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
+          <span class="font-mono font-bold {% if product.is_out_of_stock %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
             {{ product.total_pieces }} pcs
           </span>
           <span class="text-[10px] text-text-secondary font-mono mt-0.5">
             {{ product.bundles_per_packet }} bundles / {{ product.base_unit_label }}
           </span>
         {% elif product.bundle_pricing_enabled and product.units_per_purchase > 1 %}
-          <span class="font-mono font-bold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
+          <span class="font-mono font-bold {% if product.is_out_of_stock %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">
             {% widthratio product.stock_qty product.units_per_purchase 1 %} {{ product.purchase_unit_label }}s
           </span>
           <span class="text-[10px] text-text-secondary font-mono mt-0.5">
             ({{ product.stock_qty|floatformat:0 }} {{ product.base_unit_label }}s)
           </span>
         {% else %}
-          <span class="font-mono font-semibold {% if product.stock_qty <= 0 %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_qty|floatformat:0 }} {{ product.base_unit_label }}s</span>
+          <span class="font-mono font-semibold {% if product.is_out_of_stock %}text-danger{% elif product.is_low_stock %}text-warning{% else %}text-text-primary{% endif %}">{{ product.stock_qty|floatformat:0 }} {{ product.base_unit_label }}s</span>
         {% endif %}
       </div>
     {% endif %}

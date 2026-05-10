@@ -60,8 +60,7 @@ def inventory_list(request):
         # Need to cast to list because is_low_stock is a property
         products = [p for p in products if p.is_low_stock]
     elif stock_filter == 'out':
-        products = products.filter(Q(stock_qty__lte=0, weight_sell_enabled=False) | 
-                                 Q(stock_in_weight_unit__lte=0, weight_sell_enabled=True))
+        products = [p for p in products if p.is_out_of_stock]
 
     # Pagination
     page_number = request.GET.get('page', 1)

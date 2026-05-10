@@ -48,7 +48,7 @@
   .product-tile:hover { border-color: var(--accent); box-shadow: 0 6px 24px rgba(212,168,82,0.12); transform: translateY(-2px); }
   .product-tile:active { transform: scale(0.97) translateY(0); }
   .product-tile.low-stock { border-color: #fbbf24; background: #fffbeb; }
-  .product-tile.out-of-stock { opacity: 0.4; pointer-events: none; filter: grayscale(0.5); }
+  .product-tile.out-of-stock { opacity: 0.6; }
 
   .sell-badge {
     display: inline-flex; align-items: center; gap: 2px;
@@ -195,7 +195,7 @@
     <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-3" x-show="$store.network.online">
       {% for pd in products_data %}
       {% with p=pd.product promo=pd.promo %}
-      <div class="product-tile {% if p.effective_stock <= 0 %}out-of-stock{% elif p.is_low_stock %}low-stock{% endif %}"
+      <div class="product-tile {% if p.is_out_of_stock %}out-of-stock{% elif p.is_low_stock %}low-stock{% endif %}"
            data-product-json="{{ pd.product_json|escape }}"
            @click="handleProductClick(JSON.parse($el.getAttribute('data-product-json')))"
            data-category="{{ p.subcategory.category_id }}" data-barcode="{{ p.barcode }}">
@@ -211,7 +211,7 @@
         {% if p.barcode %}<div class="text-[9px] text-text-secondary font-mono truncate mt-0.5">{{ p.barcode }}</div>{% endif %}
         
         <div class="flex items-center gap-1 mt-auto flex-wrap">
-          {% if p.effective_stock <= 0 %}
+          {% if p.is_out_of_stock %}
             <span class="sell-badge" style="background:#FEE2E2; color:#DC2626">OUT</span>
           {% elif p.is_low_stock %}
             <span class="sell-badge" style="background:#FEF3C7; color:#D97706">{{ p.effective_stock|floatformat:0 }} left</span>
