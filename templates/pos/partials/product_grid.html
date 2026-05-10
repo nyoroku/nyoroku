@@ -2,7 +2,7 @@
 {% with p=pd.product promo=pd.promo %}
 <div class="product-tile {% if p.effective_stock <= 0 %}out-of-stock{% elif p.is_low_stock %}low-stock{% endif %}"
      data-product-json="{{ pd.product_json|escape }}"
-     @click="addProduct(JSON.parse($el.getAttribute('data-product-json')))"
+     @click="handleProductClick(JSON.parse($el.getAttribute('data-product-json')))"
      data-category="{{ p.subcategory.category_id }}">
   
   {% if promo %}<div class="promo-badge">{{ promo.badge_text }}</div>{% endif %}
