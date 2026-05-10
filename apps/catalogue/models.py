@@ -192,12 +192,22 @@ class Product(models.Model):
         return self.stock_qty
 
     @property
-    def is_low_stock(self):
-        if self.weight_sell_enabled and self.reorder_threshold_weight:
-            return self.stock_in_weight_unit <= self.reorder_threshold_weight
+    def is_out_of_stock(self):
+        """True when available stock is zero or below."""
+        if self.weight_sell_enabled:
+            return self.stock_in_weight_unit <= 0
         if self.is_kadogo:
-            return self.whole_unit_stock <= self.reorder_threshold
-        return self.stock_qty <= self.reorder_threshold
+            return self.whole_unit_stock <= 0
+        return self.stock_qty <= 0
+
+    @property
+    def is_low_stock(self):
+        """True when 0 < stock <= reorder_threshold. Mutually exclusive with out-of-stock."""
+        if self.weight_sell_enabled and self.reorder_threshold_weight:
+            return 0 < self.stock_in_weight_unit <= self.reorder_threshold_weight
+        if self.is_kadogo:
+            return 0 < self.whole_unit_stock <= self.reorder_threshold
+        return 0 < self.stock_qty <= self.reorder_threshold
 
     @property
     def total_pieces(self):

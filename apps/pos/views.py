@@ -27,9 +27,11 @@ def index(request):
 
     if query:
         from django.db.models import Q
-        qs = qs.filter(
-            Q(name__icontains=query) | Q(sku__icontains=query) | Q(barcode__icontains=query)
-        )
+        tokens = query.split()
+        for token in tokens:
+            qs = qs.filter(
+                Q(name__icontains=token) | Q(sku__icontains=token) | Q(barcode__icontains=token)
+            )
     if cat_id and cat_id != 'all':
         try:
             qs = qs.filter(subcategory__category_id=cat_id)

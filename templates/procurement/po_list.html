@@ -75,7 +75,7 @@
           <div class="text-xs text-text-secondary mt-0.5">{{ po.created_at|date:"d M Y, H:i" }} · {{ po.created_by.name }}</div>
         </div>
         <div class="text-right shrink-0 ml-4">
-          <div class="font-bold font-mono text-sm" style="color: var(--primary-dark)">KES {{ po.total_cost|floatformat:0 }}</div>
+          <div class="font-bold font-mono text-sm" style="color: var(--primary-dark)">KES {{ po.total_cost|floatformat:2 }}</div>
           <div class="text-xs text-text-secondary mt-0.5 font-mono">{{ po.line_items.count }} items</div>
         </div>
       </div>

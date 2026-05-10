@@ -43,9 +43,11 @@ def inventory_list(request):
 
     if query:
         from django.db.models import Q
-        products = products.filter(
-            Q(name__icontains=query) | Q(sku__icontains=query) | Q(barcode__icontains=query)
-        )
+        tokens = query.split()
+        for token in tokens:
+            products = products.filter(
+                Q(name__icontains=token) | Q(sku__icontains=token) | Q(barcode__icontains=token)
+            )
     if cat_id:
         products = products.filter(subcategory__category_id=cat_id)
     if subcat_id:

@@ -10,12 +10,12 @@
     <div class="flex gap-3 overflow-x-auto pb-3 mb-5 -mx-4 px-4" style="scrollbar-width: none">
         <div class="min-w-[150px] rounded-2xl p-4 flex flex-col gap-1 shadow-sm" style="background: white; border: 1px solid #E5E7EB">
             <span class="text-[10px] font-bold uppercase tracking-wider" style="color: #6B7280">Total Spent</span>
-            <span class="text-xl font-extrabold" style="color: #2d545e">KES {{ total_expenses|floatformat:0 }}</span>
+            <span class="text-xl font-extrabold" style="color: #2d545e">KES {{ total_expenses|floatformat:2 }}</span>
         </div>
         {% for cat in breakdown %}
         <div class="min-w-[140px] rounded-2xl p-4 flex flex-col gap-1" style="background: #F8F9FB; border: 1px solid #E5E7EB">
             <span class="text-[10px] font-bold uppercase tracking-wider" style="color: #6B7280">{{ cat.category|title }}</span>
-            <span class="text-lg font-bold" style="color: #12343b">KES {{ cat.total|floatformat:0 }}</span>
+            <span class="text-lg font-bold" style="color: #12343b">KES {{ cat.total|floatformat:2 }}</span>
         </div>
         {% endfor %}
     </div>
@@ -30,7 +30,7 @@
             <div class="flex-grow min-w-0" @click='openEdit({id: "{{ expense.id }}", name: "{{ expense.name|escapejs }}", category: "{{ expense.category }}", amount: "{{ expense.amount }}", date: "{{ expense.date|date:"Y-m-d" }}", note: "{{ expense.note|escapejs }}"})' class="cursor-pointer">
                 <div class="flex justify-between items-start mb-0.5">
                     <h4 class="font-bold text-sm truncate" style="color: #12343b">{{ expense.name }}</h4>
-                    <span class="text-sm font-bold whitespace-nowrap ml-2" style="color: #2d545e">- KES {{ expense.amount|floatformat:0 }}</span>
+                    <span class="text-sm font-bold whitespace-nowrap ml-2" style="color: #2d545e">- KES {{ expense.amount|floatformat:2 }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider" style="background: #E5E7EB; color: #6B7280">{{ expense.category }}</span>

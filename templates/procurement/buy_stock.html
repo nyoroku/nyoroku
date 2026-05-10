@@ -43,7 +43,7 @@
 
     removeItem(idx) { this.items.splice(idx, 1); },
 
-    get orderTotal() { return this.items.reduce((s, i) => s + parseFloat(i.total_cost), 0).toFixed(0); },
+    get orderTotal() { return this.items.reduce((s, i) => s + parseFloat(i.total_cost), 0).toFixed(2); },
 
     get modalTotalQty() { return this.productVariants.reduce((s, v) => s + (Number(v.qty) || 0), 0); },
 
@@ -102,7 +102,7 @@
                             <div class="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-xl" style="background: #e1b38222">{{ p.image|default:"📦" }}</div>
                             <div class="flex-1 min-w-0">
                                 <div class="font-semibold text-sm truncate" style="color: #12343b">{{ p.name }}</div>
-                                <div class="text-xs" style="color: #6B7280">Cost: KES {{ p.cost_price|default:0|floatformat:0 }}{% if p.has_variants %} · Has variants{% endif %}</div>
+                                <div class="text-xs" style="color: #6B7280">Cost: KES {{ p.cost_price|default:0|floatformat:2 }}{% if p.has_variants %} · Has variants{% endif %}</div>
                             </div>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c89666" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
                         </button>

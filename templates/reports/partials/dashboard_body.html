@@ -114,7 +114,7 @@
                 <!-- Revenue label -->
                 <span class="text-[9px] font-bold text-text-muted tabular-nums whitespace-nowrap"
                       {% if day.revenue > 0 %}style="color: #2d545e"{% endif %}>
-                    {% if day.revenue >= 1000 %}{{ day.revenue|floatformat:0 }}{% elif day.revenue > 0 %}{{ day.revenue|floatformat:0 }}{% else %}-{% endif %}
+                    {% if day.revenue >= 1000 %}{{ day.revenue|floatformat:2 }}{% elif day.revenue > 0 %}{{ day.revenue|floatformat:2 }}{% else %}-{% endif %}
                 </span>
                 <!-- Bar -->
                 <div class="w-full rounded-xl transition-all duration-500 relative group"

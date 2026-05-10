@@ -122,10 +122,15 @@ async function getProductsFromCache() {
 async function searchProductsOffline(query, categoryId = 'all') {
     const products = await getProductsFromCache();
     return products.filter(p => {
-        const matchesQuery = !query ||
-            p.name.toLowerCase().includes(query.toLowerCase()) ||
-            (p.barcode && p.barcode.includes(query)) ||
-            (p.sku && p.sku.toLowerCase().includes(query.toLowerCase()));
+        let matchesQuery = true;
+        if (query) {
+            const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+            matchesQuery = tokens.every(token =>
+                p.name.toLowerCase().includes(token) ||
+                (p.barcode && p.barcode.includes(token)) ||
+                (p.sku && p.sku.toLowerCase().includes(token))
+            );
+        }
 
         const matchesCategory = categoryId === 'all' || String(p.category_id) === String(categoryId);
 

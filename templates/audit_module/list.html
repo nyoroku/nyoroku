@@ -36,7 +36,7 @@
             {% endif %}
             {% if s.status == 'completed' %}
             <span class="text-xs font-bold px-2 py-1 rounded-lg font-mono {% if s.total_variance_value < 0 %}bg-red-600 text-white{% else %}bg-emerald-600 text-white{% endif %}">
-              KES {{ s.total_variance_value|floatformat:0 }}
+              KES {{ s.total_variance_value|floatformat:2 }}
             </span>
             {% endif %}
           </div>

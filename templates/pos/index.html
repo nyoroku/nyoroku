@@ -146,6 +146,13 @@
     animation: scaleIn 0.25s cubic-bezier(.4,0,.2,1);
   }
   @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* Cart auto-scroll highlight */
+  .cart-item-new { animation: cartItemGlow 1.2s ease-out; }
+  @keyframes cartItemGlow {
+    0% { background: rgba(212,168,82,0.25); box-shadow: 0 0 12px rgba(212,168,82,0.3); }
+    100% { background: transparent; box-shadow: none; }
+  }
 </style>
 {% endblock %}
 
@@ -377,9 +384,9 @@
         </div>
       </div>
       <!-- Cart Items (SCROLLS) -->
-      <div class="flex-1 overflow-y-auto px-6 py-4 overscroll-contain space-y-2" style="min-height:0">
+      <div id="cart-items-list" class="flex-1 overflow-y-auto px-6 py-4 overscroll-contain space-y-2" style="min-height:0">
         <template x-for="(item, idx) in cart" :key="idx">
-          <div class="cart-item">
+          <div class="cart-item cart-line-item">
             <div class="flex-1 min-w-0">
               <div class="font-semibold text-sm truncate text-white" x-text="item.name"></div>
               <div class="text-[11px] mt-0.5" style="color:rgba(255,255,255,0.4)">
@@ -402,7 +409,7 @@
               <button @click="updateQty(idx,1)" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background:rgba(255,255,255,0.08);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)">+</button>
             </div>
             <div class="text-right min-w-[70px]">
-              <div class="font-mono font-bold text-sm" style="color:var(--accent-glow)" x-text="'KES '+item.line_total.toFixed(0)"></div>
+              <div class="font-mono font-bold text-sm" style="color:var(--accent-glow)" x-text="'KES '+item.line_total.toFixed(2)"></div>
             </div>
             <button @click="removeItem(idx)" class="w-7 h-7 flex items-center justify-center rounded-lg" style="color:#f87171">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -419,11 +426,11 @@
         <div class="px-6 py-5 border-t border-white/10">
           <div class="flex justify-between items-end mb-4">
             <span class="text-white/60 font-medium text-sm uppercase tracking-wider">Total Amount</span>
-            <span class="font-mono text-3xl font-black" style="color:var(--accent-glow)" x-text="'KES '+cartTotal.toFixed(0)"></span>
+            <span class="font-mono text-3xl font-black" style="color:var(--accent-glow)" x-text="'KES '+cartTotal.toFixed(2)"></span>
           </div>
           <button @click="checkoutMode=true" class="w-full py-3.5 rounded-2xl font-extrabold text-lg active:scale-[0.97]" 
                   style="background:linear-gradient(135deg,var(--accent, #d4a852),var(--accent-glow, #fde08b)); color:var(--primary-dark, #0f172a); box-shadow:0 6px 24px rgba(212,168,82,0.35);">
-            Pay — KES <span x-text="cartTotal.toFixed(0)"></span>
+            Pay — KES <span x-text="cartTotal.toFixed(2)"></span>
           </button>
         </div>
       </div>
@@ -438,7 +445,7 @@
         </button>
         <div class="flex-1">
           <h2 class="font-extrabold text-lg text-white leading-tight">Payment</h2>
-          <div class="font-mono text-xl font-black" style="color:var(--accent-glow)">KES <span x-text="cartTotal.toFixed(0)"></span></div>
+          <div class="font-mono text-xl font-black" style="color:var(--accent-glow)">KES <span x-text="cartTotal.toFixed(2)"></span></div>
         </div>
       </div>
       <!-- Payment Tabs (PINNED) -->
@@ -464,11 +471,11 @@
           </div>
           <div class="flex justify-between items-center bg-black/20 p-3 rounded-xl" x-show="cashTendered!==null&&cashTendered>=cartTotal">
             <span class="text-sm font-semibold" style="color:rgba(255,255,255,0.5)">Change Due</span>
-            <span class="font-mono font-bold text-xl" style="color:#34d399" x-text="'KES '+((cashTendered||0)-cartTotal).toFixed(0)"></span>
+            <span class="font-mono font-bold text-xl" style="color:#34d399" x-text="'KES '+((cashTendered||0)-cartTotal).toFixed(2)"></span>
           </div>
           <div class="flex justify-between items-center bg-red-900/20 p-3 rounded-xl" x-show="cashTendered!==null&&cashTendered<cartTotal">
             <span class="text-sm font-semibold" style="color:rgba(255,255,255,0.5)">Short By</span>
-            <span class="font-mono font-bold text-lg" style="color:#f87171" x-text="'KES '+Math.abs((cashTendered||0)-cartTotal).toFixed(0)"></span>
+            <span class="font-mono font-bold text-lg" style="color:#f87171" x-text="'KES '+Math.abs((cashTendered||0)-cartTotal).toFixed(2)"></span>
           </div>
         </div>
         <!-- M-Pesa (Code Only) -->
@@ -490,7 +497,7 @@
             </div>
             <div class="flex justify-between items-center bg-black/20 p-3 rounded-xl text-sm">
               <span class="text-white/50 font-semibold">M-Pesa Balance</span>
-              <span class="font-mono font-bold text-lg text-white" x-text="'KES '+Math.max(0,cartTotal-(splitCash||0)).toFixed(0)"></span>
+              <span class="font-mono font-bold text-lg text-white" x-text="'KES '+Math.max(0,cartTotal-(splitCash||0)).toFixed(2)"></span>
             </div>
             <div>
               <label class="text-xs font-semibold uppercase mb-1 block" style="color:rgba(255,255,255,0.4)">M-Pesa Code</label>
@@ -710,9 +717,9 @@ function posApp() {
     },
     get chargeLabel() {
       if (this.paymentMethod === 'mpesa' && this.mpesaPhone) {
-        return `Send STK Push — KES ${this.cartTotal.toFixed(0)}`;
+        return `Send STK Push — KES ${this.cartTotal.toFixed(2)}`;
       }
-      return `Charge KES ${this.cartTotal.toFixed(0)}`;
+      return `Charge KES ${this.cartTotal.toFixed(2)}`;
     },
 
     // ── Product Actions ──
@@ -795,6 +802,23 @@ function posApp() {
         single_unit_price: p.single_unit_price,
       });
       showToast(`${p.name} added`);
+      this.scrollCartToBottom();
+    },
+
+    scrollCartToBottom() {
+      this.$nextTick(() => {
+        const cartList = document.getElementById('cart-items-list');
+        if (cartList) {
+          cartList.scrollTop = cartList.scrollHeight;
+          // Highlight newest item
+          const items = cartList.querySelectorAll('.cart-line-item');
+          if (items.length > 0) {
+            const last = items[items.length - 1];
+            last.classList.add('cart-item-new');
+            setTimeout(() => last.classList.remove('cart-item-new'), 1200);
+          }
+        }
+      });
     },
 
     confirmCut() {
@@ -849,6 +873,7 @@ function posApp() {
 
       this.activeModal = null;
       showToast(`${p.name} — ${weightVal.toFixed(3)} ${p.weight_unit}`);
+      this.scrollCartToBottom();
     },
 
     updateQty(idx, delta) {

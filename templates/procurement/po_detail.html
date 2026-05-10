@@ -37,7 +37,7 @@
         <div class="text-[10px] font-semibold text-text-secondary uppercase">Items</div>
       </div>
       <div class="summary-chip">
-        <div class="text-lg font-extrabold font-mono" style="color: var(--primary-dark)">KES {{ po.total_cost|floatformat:0 }}</div>
+        <div class="text-lg font-extrabold font-mono" style="color: var(--primary-dark)">KES {{ po.total_cost|floatformat:2 }}</div>
         <div class="text-[10px] font-semibold text-text-secondary uppercase">Total Cost</div>
       </div>
       <div class="summary-chip">
@@ -104,8 +104,8 @@
               </div>
             </div>
             <div class="text-right shrink-0">
-              <div class="text-xs font-mono font-bold" style="color: var(--primary)" x-text="'KES ' + parseFloat(product.cost_price).toFixed(0)"></div>
-              <div class="text-[10px] text-text-secondary font-mono" x-text="'Sell: KES ' + parseFloat(product.sell_price).toFixed(0)"></div>
+              <div class="text-xs font-mono font-bold" style="color: var(--primary)" x-text="'KES ' + parseFloat(product.cost_price).toFixed(2)"></div>
+              <div class="text-[10px] text-text-secondary font-mono" x-text="'Sell: KES ' + parseFloat(product.sell_price).toFixed(2)"></div>
             </div>
           </button>
         </template>
@@ -123,7 +123,7 @@
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style="background: var(--primary); color: white" x-text="selectedProduct?.name?.charAt(0) || ''"></div>
             <div class="min-w-0">
               <div class="font-semibold text-sm truncate" x-text="selectedProduct?.name"></div>
-              <div class="text-[10px] text-text-secondary font-mono" x-text="'Current cost: KES ' + parseFloat(selectedProduct?.cost_price || 0).toFixed(0)"></div>
+              <div class="text-[10px] text-text-secondary font-mono" x-text="'Current cost: KES ' + parseFloat(selectedProduct?.cost_price || 0).toFixed(2)"></div>
             </div>
           </div>
           <div class="flex items-center gap-2">

@@ -125,7 +125,7 @@
                           {% endif %}
                         </td>
                         <td>{{ item.quantity }}</td>
-                        <td style="text-align:right;font-weight:700;">{{ item.line_total|floatformat:0 }}</td>
+                        <td style="text-align:right;font-weight:700;">{{ item.line_total|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -135,7 +135,7 @@
 
             <div class="total-row" style="display:flex;justify-content:space-between;">
                 <span style="font-family:'Inter',sans-serif;">TOTAL</span>
-                <span>KES {{ sale.total|floatformat:0 }}</span>
+                <span>KES {{ sale.total|floatformat:2 }}</span>
             </div>
 
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">

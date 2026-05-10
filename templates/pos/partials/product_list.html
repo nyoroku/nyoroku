@@ -33,7 +33,7 @@
       {% if not product.has_variants %}
       <div class="shrink-0 text-right">
         <div class="text-base font-bold font-mono tabular" style="color: #2d545e">
-          {{ product.price|floatformat:0 }}
+          {{ product.price|floatformat:2 }}
         </div>
         <div class="text-[10px]" style="color: #e1b382">KES</div>
       </div>
@@ -56,7 +56,7 @@
         </span>
         <span class="text-[10px] font-mono font-medium"
               :style="cart.items.some(i => i.id === '{{ v.id }}') ? 'color: rgba(255,255,255,0.7)' : 'color: #2d545e'">
-          KES {{ v.price|floatformat:0 }}
+          KES {{ v.price|floatformat:2 }}
         </span>
       </button>
       {% endfor %}

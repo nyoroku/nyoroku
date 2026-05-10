@@ -27,25 +27,25 @@
           </span>
         </td>
         <td class="px-4 py-3 text-right font-mono font-bold" style="color: var(--primary)">
-          KES {{ line.unit_cost|floatformat:0 }}
+          KES {{ line.unit_cost|floatformat:2 }}
           <div class="text-[10px] text-text-secondary font-normal italic">
             per {% if line.product.bundle_pricing_enabled %}{{ line.product.purchase_unit_label }}{% else %}{{ line.product.base_unit_label|default:'unit' }}{% endif %}
           </div>
         </td>
-        <td class="px-4 py-3 text-right font-mono">KES {{ line.product.base_unit_price|floatformat:0 }}</td>
+        <td class="px-4 py-3 text-right font-mono">KES {{ line.product.base_unit_price|floatformat:2 }}</td>
         <td class="px-4 py-3 text-right">
           {% if line.margin_at_order is not None %}
           <span class="font-mono font-bold 
             {% if line.margin_variance == 'good' %}text-success{% elif line.margin_variance == 'warning' %}text-warning{% elif line.margin_variance == 'danger' %}text-danger{% endif %}">
             {{ line.margin_at_order }}%
           </span>
-          {% if line.margin_kes %}<div class="text-[10px] text-text-secondary font-mono">KES {{ line.margin_kes|floatformat:0 }}</div>{% endif %}
+          {% if line.margin_kes %}<div class="text-[10px] text-text-secondary font-mono">KES {{ line.margin_kes|floatformat:2 }}</div>{% endif %}
           {% endif %}
         </td>
         <td class="px-4 py-3 text-right">
           {% if line.previous_order_cost %}
           <span class="font-mono text-xs {% if line.unit_cost > line.previous_order_cost %}text-danger{% elif line.unit_cost < line.previous_order_cost %}text-success{% endif %}">
-            KES {{ line.previous_order_cost|floatformat:0 }}
+            KES {{ line.previous_order_cost|floatformat:2 }}
             {% if line.unit_cost > line.previous_order_cost %}↑{% elif line.unit_cost < line.previous_order_cost %}↓{% endif %}
           </span>
           {% else %}<span class="text-xs text-text-secondary">First order</span>{% endif %}
@@ -81,7 +81,7 @@
       <tr class="font-bold" style="background: #f8f9fb">
         <td class="px-4 py-3">Total</td>
         <td class="px-4 py-3"></td>
-        <td class="px-4 py-3 text-right font-mono" style="color: var(--primary)">KES {{ po.total_cost|floatformat:0 }}</td>
+        <td class="px-4 py-3 text-right font-mono" style="color: var(--primary)">KES {{ po.total_cost|floatformat:2 }}</td>
         <td colspan="5" class="px-4 py-3"></td>
       </tr>
       {% endif %}
