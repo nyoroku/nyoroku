@@ -115,38 +115,67 @@
     <!-- Quick Add Form (shown after selecting product) -->
     <div x-show="selectedProduct" x-transition x-cloak class="mt-3">
       <form method="POST" action="{% url 'procurement:po_add_item' po.pk %}" id="add-item-form"
-            hx-post="{% url 'procurement:po_add_item' po.pk %}" hx-target="#line-items-container" hx-swap="innerHTML">
+            hx-post="{% url 'procurement:po_add_item' po.pk %}" hx-target="#line-items-container" hx-swap="innerHTML"
+            @htmx:after-request.window="if($event.detail.elt === $el && $event.detail.successful) { selectedProduct = null; searchQuery = ''; lineQty = 1; lineUnitCost = 0; lineTotalCost = 0; }">
         {% csrf_token %}
         <input type="hidden" name="product_id" :value="selectedProduct?.id">
-        <div class="selected-product-bar">
-          <div class="flex items-center gap-3 flex-1 min-w-0">
+        <div class="selected-product-bar relative">
+          <!-- Product Info Row -->
+          <div class="flex items-center gap-3 w-full mb-3">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0" style="background: var(--primary); color: white" x-text="selectedProduct?.name?.charAt(0) || ''"></div>
-            <div class="min-w-0">
+            <div class="flex-1 min-w-0">
               <div class="font-semibold text-sm truncate" x-text="selectedProduct?.name"></div>
-              <div class="text-[10px] text-text-secondary font-mono" x-text="'Current cost: KES ' + parseFloat(selectedProduct?.cost_price || 0).toFixed(2)"></div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <div>
-              <label class="text-[10px] font-semibold text-text-secondary uppercase block" 
-                     x-text="selectedProduct?.bundle_pricing_enabled ? 'Qty (' + (selectedProduct?.purchase_unit_label || 'packets') + ')' : 'Qty'"></label>
-              <input type="number" name="qty" value="1" min="1" step="0.001" class="w-24 px-3 py-2 rounded-lg border border-border text-sm font-mono text-center">
-            </div>
-            <div>
-              <label class="text-[10px] font-semibold text-text-secondary uppercase block" 
-                     x-text="selectedProduct?.bundle_pricing_enabled ? 'Cost per ' + (selectedProduct?.purchase_unit_label || 'packet') : 'Unit Cost'"></label>
-              <input type="number" name="unit_cost" step="0.0001" 
-                     :value="(selectedProduct?.bundle_pricing_enabled && selectedProduct?.units_per_purchase > 1) ? (selectedProduct?.cost_price * selectedProduct?.units_per_purchase).toFixed(2) : selectedProduct?.cost_price" 
-                     class="w-28 px-3 py-2 rounded-lg border border-border text-sm font-mono text-right">
-            </div>
-            <div class="mt-4 px-2 hidden md:block">
-              <div class="text-[10px] text-success font-bold" x-show="selectedProduct?.bundle_pricing_enabled && selectedProduct?.units_per_purchase > 1">
-                &rarr; <span x-text="selectedProduct?.units_per_purchase"></span> <span x-text="selectedProduct?.base_unit_label"></span>s/ea
+              <div class="text-[10px] text-text-secondary font-mono">
+                System: <span class="font-bold text-text-primary" x-text="'KES ' + parseFloat(systemUnitCost).toFixed(2)"></span>
+                <template x-if="selectedProduct?.bundle_pricing_enabled && selectedProduct?.units_per_purchase > 1">
+                  <span class="ml-1 text-text-secondary">per <span x-text="selectedProduct?.purchase_unit_label"></span> · <span class="font-bold" x-text="selectedProduct?.units_per_purchase"></span> <span x-text="selectedProduct?.base_unit_label"></span>s ea</span>
+                </template>
               </div>
             </div>
-            <button type="submit" class="btn btn-primary text-sm mt-3">Add</button>
-            <button type="button" @click="selectedProduct=null; searchQuery=''" class="btn btn-outline text-sm mt-3">✕</button>
+            <button type="button" @click="selectedProduct=null; searchQuery=''" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-danger transition-colors shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
           </div>
+
+          <!-- Input Fields Row -->
+          <div class="flex items-end gap-2 flex-wrap w-full">
+            <div class="flex-1 min-w-[70px]">
+              <label class="text-[10px] font-semibold text-text-secondary uppercase block" 
+                     x-text="selectedProduct?.bundle_pricing_enabled ? 'Qty (' + (selectedProduct?.purchase_unit_label || 'pkt') + ')' : 'Qty'"></label>
+              <input type="number" name="qty" x-model.number="lineQty" @input="updateTotal()" min="0.001" step="0.001" 
+                     class="w-full px-3 py-2.5 rounded-lg border border-border text-sm font-mono text-center focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+            </div>
+            <div class="flex-1 min-w-[100px]">
+              <label class="text-[10px] font-semibold text-text-secondary uppercase block" 
+                     x-text="selectedProduct?.bundle_pricing_enabled ? 'Cost/' + (selectedProduct?.purchase_unit_label || 'pkt') : 'Unit Cost'"></label>
+              <input type="number" name="unit_cost" step="0.0001" x-model.number="lineUnitCost" @input="updateTotal()"
+                     class="w-full px-3 py-2.5 rounded-lg border border-border text-sm font-mono text-right focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all">
+            </div>
+            <div class="text-lg font-bold text-text-secondary px-1 pb-2.5">=</div>
+            <div class="flex-1 min-w-[100px]">
+              <label class="text-[10px] font-semibold text-text-secondary uppercase block">Total Cost</label>
+              <input type="number" step="0.01" x-model.number="lineTotalCost" @input="updateUnit()"
+                     class="w-full px-3 py-2.5 rounded-lg border-2 border-blue-200 text-sm font-mono text-right bg-blue-50/40 focus:bg-white focus:ring-2 focus:ring-blue-300/30 focus:border-blue-400 transition-all font-bold">
+            </div>
+            <button type="submit" class="btn btn-primary text-sm px-6 py-2.5 shrink-0">+ Add</button>
+          </div>
+
+          <!-- Variance Indicator -->
+          <template x-if="selectedProduct && Math.abs(costVariance) >= 0.1">
+            <div class="w-full mt-2 px-1">
+              <div class="flex items-center gap-2 text-[11px] font-semibold rounded-lg px-3 py-1.5"
+                   :class="costVariance > 0 ? 'bg-red-50 text-danger border border-red-100' : 'bg-green-50 text-success border border-green-100'">
+                <span x-text="costVariance > 0 ? '⚠ Price UP' : '✓ Price DOWN'"></span>
+                <span class="font-mono font-bold" x-text="(costVariance > 0 ? '+' : '') + costVariance + '%'"></span>
+                <span class="text-text-secondary font-normal">vs system cost</span>
+                <template x-if="selectedProduct?.bundle_pricing_enabled && selectedProduct?.units_per_purchase > 1">
+                  <span class="ml-auto text-text-secondary font-mono font-normal">
+                    = KES <span x-text="(lineUnitCost / selectedProduct.units_per_purchase).toFixed(2)"></span>/ea
+                  </span>
+                </template>
+              </div>
+            </div>
+          </template>
         </div>
       </form>
     </div>
@@ -310,6 +339,9 @@ function poBuilder() {
     searchQuery: '',
     searchResults: [],
     selectedProduct: null,
+    lineQty: 1,
+    lineUnitCost: 0,
+    lineTotalCost: 0,
 
     async doSearch() {
       if (this.searchQuery.length < 1) { this.searchResults = []; return; }
@@ -323,7 +355,42 @@ function poBuilder() {
       this.selectedProduct = product;
       this.searchResults = [];
       this.searchQuery = product.name;
+      this.lineQty = 1;
+      
+      // Calculate initial unit cost based on purchase unit if bundle
+      if (product.bundle_pricing_enabled && product.units_per_purchase > 1) {
+        this.lineUnitCost = parseFloat(product.cost_price * product.units_per_purchase);
+      } else {
+        this.lineUnitCost = parseFloat(product.cost_price);
+      }
+      this.updateTotal();
     },
+
+    updateUnit() {
+      if (this.lineQty > 0) {
+        this.lineUnitCost = parseFloat((this.lineTotalCost / this.lineQty).toFixed(4));
+      }
+    },
+
+    updateTotal() {
+      this.lineTotalCost = parseFloat((this.lineUnitCost * this.lineQty).toFixed(2));
+    },
+
+    get systemUnitCost() {
+      if (!this.selectedProduct) return 0;
+      const base = parseFloat(this.selectedProduct.cost_price) || 0;
+      if (this.selectedProduct.bundle_pricing_enabled && this.selectedProduct.units_per_purchase > 1) {
+        return base * this.selectedProduct.units_per_purchase;
+      }
+      return base;
+    },
+
+    get costVariance() {
+      const sys = this.systemUnitCost;
+      if (!sys || sys === 0 || !this.lineUnitCost) return 0;
+      const pct = ((this.lineUnitCost - sys) / sys * 100);
+      return isNaN(pct) ? 0 : pct.toFixed(1);
+    }
   };
 }
 </script>

@@ -5,6 +5,7 @@
         <th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Product</th>
         <th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Qty</th>
         <th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Unit Cost</th>
+        <th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Line Total</th>
         <th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Sell Price</th>
         <th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Margin</th>
         <th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Prev Cost</th>
@@ -15,7 +16,14 @@
     <tbody>
       {% for line in line_items %}
       <tr class="border-b border-border/50 hover:bg-gray-50/50 transition-colors">
-        <td class="px-4 py-3 font-medium">{{ line.product.name }}</td>
+        <td class="px-4 py-3 font-medium">
+          {{ line.product.name }}
+          {% if line.product.bundle_pricing_enabled %}
+          <div class="text-[10px] text-text-secondary font-normal">
+            1 {{ line.product.purchase_unit_label }} = {{ line.product.units_per_purchase }} {{ line.product.base_unit_label|default:'unit' }}(s)
+          </div>
+          {% endif %}
+        </td>
         <td class="px-4 py-3 text-right font-mono font-semibold">
           {{ line.ordered_qty }} 
           <span class="text-[10px] text-text-secondary">
@@ -31,6 +39,9 @@
           <div class="text-[10px] text-text-secondary font-normal italic">
             per {% if line.product.bundle_pricing_enabled %}{{ line.product.purchase_unit_label }}{% else %}{{ line.product.base_unit_label|default:'unit' }}{% endif %}
           </div>
+        </td>
+        <td class="px-4 py-3 text-right font-mono font-bold">
+          KES {{ line.line_total|floatformat:2 }}
         </td>
         <td class="px-4 py-3 text-right font-mono">KES {{ line.product.base_unit_price|floatformat:2 }}</td>
         <td class="px-4 py-3 text-right">
@@ -70,7 +81,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="8" class="px-4 py-12 text-center">
+        <td colspan="9" class="px-4 py-12 text-center">
           <div class="text-3xl mb-2 opacity-30">📦</div>
           <p class="text-sm text-text-secondary font-semibold">No items yet</p>
           <p class="text-xs text-text-secondary mt-1">Use the search above to add products</p>
@@ -80,6 +91,7 @@
       {% if line_items %}
       <tr class="font-bold" style="background: #f8f9fb">
         <td class="px-4 py-3">Total</td>
+        <td class="px-4 py-3"></td>
         <td class="px-4 py-3"></td>
         <td class="px-4 py-3 text-right font-mono" style="color: var(--primary)">KES {{ po.total_cost|floatformat:2 }}</td>
         <td colspan="5" class="px-4 py-3"></td>
