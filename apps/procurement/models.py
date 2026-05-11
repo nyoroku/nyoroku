@@ -126,7 +126,7 @@ class POLineItem(models.Model):
         related_name='po_line_items',
     )
     ordered_qty = models.DecimalField(max_digits=12, decimal_places=3)
-    unit_cost = models.DecimalField(max_digits=12, decimal_places=2)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=4)
     received_qty = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('0'))
     line_status = models.CharField(max_length=10, choices=LINE_STATUS_CHOICES, default='pending')
 

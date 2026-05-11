@@ -135,7 +135,7 @@
             <div>
               <label class="text-[10px] font-semibold text-text-secondary uppercase block" 
                      x-text="selectedProduct?.bundle_pricing_enabled ? 'Cost per ' + (selectedProduct?.purchase_unit_label || 'packet') : 'Unit Cost'"></label>
-              <input type="number" name="unit_cost" step="0.01" 
+              <input type="number" name="unit_cost" step="0.0001" 
                      :value="(selectedProduct?.bundle_pricing_enabled && selectedProduct?.units_per_purchase > 1) ? (selectedProduct?.cost_price * selectedProduct?.units_per_purchase).toFixed(2) : selectedProduct?.cost_price" 
                      class="w-28 px-3 py-2 rounded-lg border border-border text-sm font-mono text-right">
             </div>

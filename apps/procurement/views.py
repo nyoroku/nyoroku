@@ -298,16 +298,17 @@ def po_receive_goods(request, pk):
 
         # Update product stock
         product = po_line.product
-        base_qty_added = int(rcvd_qty * Decimal(product.units_per_purchase))
+        base_qty_multiplied = rcvd_qty * Decimal(str(product.units_per_purchase))
+        base_qty_added = int(base_qty_multiplied.to_integral_value(rounding='ROUND_HALF_UP'))
 
         if product.weight_sell_enabled:
-            product.stock_in_weight_unit += rcvd_qty * Decimal(product.units_per_purchase)
+            product.stock_in_weight_unit += base_qty_multiplied
             product.save(update_fields=['stock_in_weight_unit'])
         elif product.is_kadogo:
-            product.whole_unit_stock += int(base_qty_added)
+            product.whole_unit_stock += base_qty_added
             product.save(update_fields=['whole_unit_stock'])
         else:
-            product.stock_qty += Decimal(str(base_qty_added))
+            product.stock_qty += base_qty_multiplied
             product.save(update_fields=['stock_qty'])
 
         # Write to StockLedger
@@ -324,8 +325,10 @@ def po_receive_goods(request, pk):
         )
 
         # Update cost price (derive base unit cost from purchase unit cost)
+        # Use quantize to 4dp to avoid floating-point drift
         if product.units_per_purchase > 0:
-            product.cost_price = po_line.unit_cost / Decimal(str(product.units_per_purchase))
+            derived_cost = po_line.unit_cost / Decimal(str(product.units_per_purchase))
+            product.cost_price = derived_cost.quantize(Decimal('0.0001'))
         else:
             product.cost_price = po_line.unit_cost
         product.save(update_fields=['cost_price'])

@@ -72,7 +72,7 @@ class Product(models.Model):
     # ── Base Unit Pricing ──
     base_unit_label = models.CharField(max_length=30, default='Unit')
     base_unit_price = models.DecimalField(max_digits=12, decimal_places=2)
-    cost_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    cost_price = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
 
     # ── Split Sell Mode (Pieces) ──
     split_enabled = models.BooleanField(default=False, help_text='Can this product be sold in pieces?')
