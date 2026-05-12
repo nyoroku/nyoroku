@@ -565,6 +565,40 @@ function updateCutPreview() {
 function closeCutModal() {
     document.getElementById('manual-cut-modal').style.display = 'none';
 }
+
+function openConvertWeightModal(id, name, baseLabel, wholeStock, weightUnit, weightPerWhole) {
+    document.getElementById('cw-product-id').value = id;
+    document.getElementById('cw-product-name').innerText = name;
+    document.getElementById('cw-base-label').innerText = baseLabel;
+    document.getElementById('cw-available-whole').innerText = wholeStock;
+    document.getElementById('cw-weight-unit').innerText = weightUnit;
+    
+    const weightInput = document.getElementById('cw-weight-per-whole');
+    if (weightPerWhole > 1) {
+        weightInput.value = weightPerWhole;
+    }
+    
+    updateConvertPreview();
+    document.getElementById('convert-weight-modal').style.display = 'flex';
+}
+
+function updateConvertPreview() {
+    const wholeQty = parseInt(document.getElementById('cw-whole-qty').value || 0);
+    const weightPerWhole = parseFloat(document.getElementById('cw-weight-per-whole').value || 0);
+    const preview = document.getElementById('cw-preview');
+    const unit = document.getElementById('cw-weight-unit').innerText;
+    
+    if (wholeQty > 0 && weightPerWhole > 0) {
+        preview.innerText = `➔ This will add ${wholeQty * weightPerWhole} ${unit} to the weight pool`;
+        preview.classList.remove('hidden');
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+function closeConvertWeightModal() {
+    document.getElementById('convert-weight-modal').style.display = 'none';
+}
 </script>
 
 <!-- Manual Cut Modal -->
@@ -600,6 +634,42 @@ function closeCutModal() {
       <div id="cut-preview" class="p-3 bg-green-50 text-success text-xs font-bold rounded-lg hidden"></div>
 
       <button type="submit" class="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20">Confirm Cut</button>
+    </form>
+  </div>
+</div>
+
+<!-- Convert to Weight Modal -->
+<div id="convert-weight-modal" class="fixed inset-0 z-[250] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div class="p-6 border-b border-border flex items-center justify-between">
+      <h3 class="font-bold text-lg">Convert to Weight Pool</h3>
+      <button onclick="closeConvertWeightModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
+    </div>
+    <form action="{% url 'catalogue:convert_to_weight' %}" method="POST" class="p-6 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="product_id" id="cw-product-id">
+      
+      <div class="p-4 bg-orange-50 rounded-xl space-y-1">
+        <div class="text-xs font-bold text-orange-500 uppercase mb-1" id="cw-product-name">Product Name</div>
+        <div class="text-sm">Available: <span class="font-bold" id="cw-available-whole">0</span> <span id="cw-base-label">Units</span></div>
+      </div>
+
+      <div>
+        <label class="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Number of Whole Units to Open</label>
+        <input type="number" name="whole_qty" id="cw-whole-qty" value="1" min="1" oninput="updateConvertPreview()"
+               class="w-full px-3 py-2 rounded-lg border border-border text-sm font-mono">
+      </div>
+      
+      <div>
+        <label class="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Weight (<span id="cw-weight-unit"></span>) per Whole Unit</label>
+        <input type="number" name="weight_per_whole" id="cw-weight-per-whole" value="1000" min="0.001" step="0.001" oninput="updateConvertPreview()"
+               class="w-full px-3 py-2 rounded-lg border border-border text-sm font-mono">
+        <p class="text-[10px] text-text-secondary mt-1">E.g. if 1 Litre = 1000 ml, enter 1000</p>
+      </div>
+
+      <div id="cw-preview" class="p-3 bg-green-50 text-success text-xs font-bold rounded-lg hidden"></div>
+
+      <button type="submit" class="w-full py-3 bg-orange-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20">Convert to Weight</button>
     </form>
   </div>
 </div>

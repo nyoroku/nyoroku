@@ -102,6 +102,11 @@
               class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-blue-50 text-primary transition-colors" title="Manual Cut">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 15L12 9L18 15"/><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/></svg>
       </button>
+      {% elif product.weight_sell_enabled %}
+      <button onclick="openConvertWeightModal('{{ product.pk }}', '{{ product.name|escapejs }}', '{{ product.base_unit_label|escapejs }}', {{ product.stock_qty }}, '{{ product.weight_unit|escapejs }}', {{ product.units_per_purchase }})" 
+              class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-orange-50 text-orange-500 transition-colors" title="Convert to Weight">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </button>
       {% endif %}
       <button onclick="openAdjustModal('{{ product.pk }}', '{{ product.name|escapejs }}', {{ product.units_per_purchase }}, '{{ product.base_unit_label|escapejs }}', '{{ product.purchase_unit_label|escapejs }}', '{{ product.bundle_pricing_enabled|yesno:'true,false' }}')" 
               class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-green-50 text-success transition-colors" title="Adjust Stock">

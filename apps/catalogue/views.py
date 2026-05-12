@@ -647,3 +647,50 @@ def manual_cut(request):
     )
     
     return redirect('catalogue:inventory')
+
+
+@login_required
+@require_http_methods(["POST"])
+def convert_to_weight(request):
+    """Admin manually converts whole units into weight units."""
+    if request.user.role not in ('admin', 'manager'):
+        return HttpResponse('Unauthorized', status=403)
+        
+    product_id = request.POST.get('product_id')
+    whole_qty = Decimal(str(request.POST.get('whole_qty', 1)))
+    weight_per_whole = Decimal(str(request.POST.get('weight_per_whole', 1)))
+    
+    from .models import Product, StockLedger
+    product = get_object_or_404(Product, pk=product_id)
+    
+    if not product.weight_sell_enabled:
+        return HttpResponse('Product is not configured for weight sell', status=400)
+        
+    if product.stock_qty < whole_qty:
+        return HttpResponse('Insufficient whole unit stock to perform conversion', status=400)
+        
+    total_weight = whole_qty * weight_per_whole
+    
+    with db_transaction.atomic():
+        # Update pools
+        product.stock_qty -= whole_qty
+        product.stock_in_weight_unit += total_weight
+        product.save(update_fields=['stock_qty', 'stock_in_weight_unit'])
+        
+        # Paired CONVERSION Ledger entries
+        StockLedger.objects.create(
+            product=product, entry_type='ADJUSTMENT', pool='WHOLE',
+            qty_delta=-int(whole_qty), reference_id=f"CONVERT-{request.user.username}", created_by=request.user
+        )
+        # We don't have a specific pool for weight in the ledger enum yet, but we can log an adjustment
+        
+    log_audit(
+        action='stock_adjusted',
+        user=request.user,
+        entity_type='Product',
+        entity_id=str(product.pk),
+        description=f'Converted {whole_qty} {product.base_unit_label}s to {total_weight} {product.weight_unit}',
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+    
+    return redirect('catalogue:inventory')

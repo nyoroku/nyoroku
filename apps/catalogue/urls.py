@@ -26,4 +26,5 @@ urlpatterns = [
     path('batches/<uuid:pk>/quarantine/', views.quarantine_batch, name='quarantine_batch'),
     path('adjust-stock/', views.manual_stock_adjustment, name='adjust_stock'),
     path('manual-cut/', views.manual_cut, name='manual_cut'),
+    path('convert-to-weight/', views.convert_to_weight, name='convert_to_weight'),
 ]
