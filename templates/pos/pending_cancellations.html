@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+  .req-card { border:1.5px solid var(--border); border-radius:14px; padding:16px 18px; background:white; transition:box-shadow .2s; }
+  .req-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.07); }
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 16px; font-size:13px; }
+  .detail-label { color:var(--text-secondary); font-weight:500; }
+  .detail-val { font-weight:600; color:var(--text-primary); }
+  .modal-overlay { position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px; }
+  .modal-box { background:white;border-radius:20px;width:100%;max-width:460px;box-shadow:0 25px 60px rgba(0,0,0,.25);overflow:hidden; }
+  .modal-header { padding:22px 24px 16px;border-bottom:1px solid var(--border); }
+  .modal-body { padding:20px 24px; }
+  .modal-footer { padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end; }
+  textarea { width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;resize:vertical;min-height:70px;outline:none;transition:border-color .2s; }
+  textarea:focus { border-color:var(--primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="pending-list" class="max-w-4xl mx-auto px-4 py-6 pb-24">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h2 class="text-xl font-extrabold" style="color:var(--primary-dark)">Pending Cancellation Requests</h2>
+      <p class="text-sm mt-0.5" style="color:var(--text-secondary)">Review and approve or reject staff cancellation requests</p>
+    </div>
+    <a href="{% url 'pos:history' %}" class="btn btn-outline" style="font-size:13px;padding:8px 14px;">← Back to History</a>
+  </div>
+
+  {% if not requests %}
+  <div class="card p-12 text-center">
+    <div class="text-5xl mb-3">✅</div>
+    <p class="font-bold text-lg" style="color:var(--primary-dark)">No pending requests</p>
+    <p class="text-sm mt-1" style="color:var(--text-secondary)">All cancellation requests have been reviewed.</p>
+  </div>
+  {% else %}
+  <div class="space-y-4">
+    {% for req in requests %}
+    <div class="req-card">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="font-mono font-bold text-base" style="color:var(--primary)">{{ req.sale.receipt_number }}</span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold" style="background:#fef3c7;color:#92400e;">⏳ Pending</span>
+          </div>
+          <div class="detail-grid mb-3">
+            <span class="detail-label">Requested By</span>
+            <span class="detail-val">{{ req.requested_by.name|default:req.requested_by.username }}</span>
+            <span class="detail-label">Sale Total</span>
+            <span class="detail-val font-mono">KES {{ req.sale.total|floatformat:2 }}</span>
+            <span class="detail-label">Payment Method</span>
+            <span class="detail-val capitalize">{{ req.sale.get_payment_method_display }}</span>
+            <span class="detail-label">Submitted</span>
+            <span class="detail-val">{{ req.created_at|date:"d M Y, H:i" }}</span>
+          </div>
+          <div class="p-3 rounded-xl" style="background:#f8fafc;">
+            <p class="text-xs font-bold uppercase tracking-wide mb-1" style="color:var(--text-secondary)">Reason:</p>
+            <p class="text-sm" style="color:var(--text-primary)">{{ req.reason }}</p>
+          </div>
+        </div>
+        <div class="flex gap-2 shrink-0">
+          <button onclick="openReview('{{ req.pk }}', '{{ req.sale.receipt_number }}', `{{ req.reason|escapejs }}`, '{{ req.requested_by.name|default:req.requested_by.username }}', '{{ req.sale.total|floatformat:2 }}')"
+                  class="btn btn-primary" style="font-size:13px;padding:8px 14px;">
+            Review
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Review Modal -->
+<div id="reviewModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeReview()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-lg" style="color:var(--primary-dark)">Review Cancellation Request</h3>
+      <p id="reviewSub" class="text-sm mt-1" style="color:var(--text-secondary)"></p>
+    </div>
+    <div class="modal-body">
+      <div id="reviewInfo" class="mb-4 p-3 rounded-xl" style="background:#f8fafc;font-size:13px;"></div>
+      <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--text-secondary)">Admin Notes (optional)</label>
+      <textarea id="reviewNotes" placeholder="Notes for the record…"></textarea>
+      <div class="mt-3 p-3 rounded-xl text-sm" style="background:#fee2e2;color:#991b1b;">
+        ⚠️ <strong>Approving</strong> will immediately void the sale and restore all stock. This cannot be undone.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeReview()" class="btn btn-outline" style="padding:9px 18px;font-size:13px;">Cancel</button>
+      <button onclick="doReview('reject')" class="btn" style="background:#fee2e2;color:#991b1b;padding:9px 18px;font-size:13px;border-radius:12px;font-weight:700;">❌ Reject</button>
+      <button onclick="doReview('approve')" class="btn btn-success" style="padding:9px 18px;font-size:13px;">✅ Approve & Void</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+let activeReqId = null;
+
+function openReview(reqId, receipt, reason, requester, total) {
+  activeReqId = reqId;
+  document.getElementById('reviewSub').textContent = `Sale: ${receipt} — KES ${total}`;
+  document.getElementById('reviewInfo').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-bottom:10px;">
+      <span style="color:var(--text-secondary);font-weight:500;">Requested By</span><span style="font-weight:700;">${requester}</span>
+      <span style="color:var(--text-secondary);font-weight:500;">Amount</span><span style="font-weight:700;font-family:monospace;">KES ${total}</span>
+    </div>
+    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text-secondary);margin-bottom:4px;">Reason:</p>
+    <p style="font-size:13px;">${reason}</p>`;
+  document.getElementById('reviewNotes').value = '';
+  document.getElementById('reviewModal').style.display = 'flex';
+}
+function closeReview() { document.getElementById('reviewModal').style.display = 'none'; }
+
+async function doReview(action) {
+  const notes = document.getElementById('reviewNotes').value.trim();
+  try {
+    const resp = await fetch(`/pos/cancel/${action}/${activeReqId}/`, {
+      method: 'POST', headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({ notes })
+    });
+    const data = await resp.json();
+    closeReview();
+    alert(data.message || '✅ Done');
+    if (resp.ok) location.reload();
+  } catch(e) { alert('Network error'); }
+}
+</script>
+{% endblock %}

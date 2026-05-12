@@ -165,3 +165,40 @@ class ParkedSale(models.Model):
 
     def __str__(self):
         return f"Parked by {self.cashier} at {self.parked_at.strftime('%H:%M')}"
+
+
+class CancellationRequest(models.Model):
+    """A request to cancel/void a sale, submitted by non-admin staff and awaiting admin approval."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sale = models.ForeignKey(
+        Sale, on_delete=models.CASCADE,
+        related_name='cancellation_requests',
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='cancellation_requests_made',
+    )
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='cancellation_requests_reviewed',
+    )
+    review_notes = models.TextField(blank=True, default='')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Cancel request for {self.sale.receipt_number} by {self.requested_by} [{self.status}]"

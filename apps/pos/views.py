@@ -9,7 +9,7 @@ from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.conf import settings
 from catalogue.models import Product, Category, SubCategory, Batch
-from .models import Sale, SaleLineItem, ParkedSale
+from .models import Sale, SaleLineItem, ParkedSale, CancellationRequest
 from core.models import log_audit
 
 logger = logging.getLogger(__name__)
@@ -703,11 +703,19 @@ def resume_sale(request, pk):
 @login_required
 def sale_history(request):
     """View past sales with filters."""
-    sales = Sale.objects.all()
+    from django.db.models import Prefetch
+    sales = Sale.objects.select_related('cashier', 'voided_by').prefetch_related(
+        'line_items',
+        Prefetch(
+            'cancellation_requests',
+            queryset=CancellationRequest.objects.select_related('requested_by', 'reviewed_by'),
+        )
+    )
 
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
     status = request.GET.get('status', '')
+    search = request.GET.get('q', '')
 
     if date_from:
         sales = sales.filter(created_at__date__gte=date_from)
@@ -715,16 +723,214 @@ def sale_history(request):
         sales = sales.filter(created_at__date__lte=date_to)
     if status:
         sales = sales.filter(status=status)
+    if search:
+        sales = sales.filter(receipt_number__icontains=search)
 
-    sales = sales[:200]
+    sales = sales[:300]
+
+    pending_requests_count = CancellationRequest.objects.filter(status='pending').count()
 
     context = {
         'sales': sales,
         'date_from': date_from,
         'date_to': date_to,
         'active_status': status,
+        'search': search,
+        'is_admin': request.user.role == 'admin',
+        'is_manager': request.user.role in ('admin', 'manager'),
+        'pending_requests_count': pending_requests_count,
     }
     return render(request, 'pos/sale_history.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def request_cancellation(request, pk):
+    """Non-admin staff submit a cancellation request; admin can cancel directly."""
+    sale = get_object_or_404(Sale, pk=pk)
+
+    if sale.status == 'voided':
+        return JsonResponse({'status': 'error', 'message': 'Sale is already voided.'}, status=400)
+
+    data = json.loads(request.body)
+    reason = data.get('reason', '').strip()
+    if not reason:
+        return JsonResponse({'status': 'error', 'message': 'A reason is required.'}, status=400)
+
+    is_admin = request.user.role == 'admin'
+
+    if is_admin:
+        # Admin can void directly — reuse existing void logic
+        with db_transaction.atomic():
+            for li in sale.line_items.all():
+                product = Product.objects.select_for_update().get(pk=li.product_id)
+                if li.sell_mode == 'weight' and li.weight_value:
+                    product.stock_in_weight_unit += li.weight_value
+                    product.save(update_fields=['stock_in_weight_unit'])
+                elif li.sell_mode == 'split':
+                    deduction = li.quantity / Decimal(str(product.pieces_per_base))
+                    product.stock_qty += deduction
+                    product.save(update_fields=['stock_qty'])
+                else:
+                    stock_revert = li.quantity
+                    if li.sell_mode == 'bundle' and product.bundle_pricing_enabled:
+                        bundle_pieces = li.quantity * Decimal(str(product.bundle_qty))
+                        stock_revert = bundle_pieces / Decimal(str(product.pieces_per_base)) if product.split_enabled else bundle_pieces
+                    elif li.sell_mode == 'single' and product.split_enabled:
+                        stock_revert = li.quantity / Decimal(str(product.pieces_per_base))
+                    product.stock_qty += stock_revert
+                    product.save(update_fields=['stock_qty'])
+
+            sale.status = 'voided'
+            sale.void_reason = reason
+            sale.voided_at = timezone.now()
+            sale.voided_by = request.user
+            sale.save()
+
+            log_audit(
+                action='sale_voided',
+                user=request.user,
+                entity_type='Sale',
+                entity_id=str(sale.pk),
+                description=f'Admin voided {sale.receipt_number}: {reason}',
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+        return JsonResponse({'status': 'success', 'message': f'Sale {sale.receipt_number} has been cancelled.', 'voided': True})
+    else:
+        # Non-admin: create a pending cancellation request
+        # Prevent duplicate pending requests
+        existing = CancellationRequest.objects.filter(sale=sale, status='pending').first()
+        if existing:
+            return JsonResponse({'status': 'error', 'message': 'A cancellation request for this sale is already pending admin approval.'}, status=400)
+
+        CancellationRequest.objects.create(
+            sale=sale,
+            requested_by=request.user,
+            reason=reason,
+        )
+
+        log_audit(
+            action='cancellation_requested',
+            user=request.user,
+            entity_type='Sale',
+            entity_id=str(sale.pk),
+            description=f'Cancellation request for {sale.receipt_number} by {request.user}: {reason}',
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        return JsonResponse({'status': 'success', 'message': 'Cancellation request submitted. Awaiting admin approval.', 'voided': False})
+
+
+@login_required
+@require_http_methods(["POST"])
+@db_transaction.atomic
+def approve_cancellation(request, pk):
+    """Admin approves a pending cancellation request — voids the sale."""
+    if request.user.role != 'admin':
+        return JsonResponse({'status': 'error', 'message': 'Only admins can approve cancellations.'}, status=403)
+
+    cancel_req = get_object_or_404(CancellationRequest, pk=pk, status='pending')
+    sale = cancel_req.sale
+
+    data = json.loads(request.body)
+    review_notes = data.get('notes', '').strip()
+
+    if sale.status == 'voided':
+        cancel_req.status = 'approved'
+        cancel_req.reviewed_by = request.user
+        cancel_req.reviewed_at = timezone.now()
+        cancel_req.review_notes = review_notes
+        cancel_req.save()
+        return JsonResponse({'status': 'success', 'message': 'Sale was already voided. Request marked approved.'})
+
+    # Restore stock
+    for li in sale.line_items.all():
+        product = Product.objects.select_for_update().get(pk=li.product_id)
+        if li.sell_mode == 'weight' and li.weight_value:
+            product.stock_in_weight_unit += li.weight_value
+            product.save(update_fields=['stock_in_weight_unit'])
+        elif li.sell_mode == 'split':
+            deduction = li.quantity / Decimal(str(product.pieces_per_base))
+            product.stock_qty += deduction
+            product.save(update_fields=['stock_qty'])
+        else:
+            stock_revert = li.quantity
+            if li.sell_mode == 'bundle' and product.bundle_pricing_enabled:
+                bundle_pieces = li.quantity * Decimal(str(product.bundle_qty))
+                stock_revert = bundle_pieces / Decimal(str(product.pieces_per_base)) if product.split_enabled else bundle_pieces
+            elif li.sell_mode == 'single' and product.split_enabled:
+                stock_revert = li.quantity / Decimal(str(product.pieces_per_base))
+            product.stock_qty += stock_revert
+            product.save(update_fields=['stock_qty'])
+
+    void_reason = f"{cancel_req.reason}\n[Approved by {request.user}]"
+    if review_notes:
+        void_reason += f"\nNotes: {review_notes}"
+
+    sale.status = 'voided'
+    sale.void_reason = void_reason
+    sale.voided_at = timezone.now()
+    sale.voided_by = request.user
+    sale.save()
+
+    cancel_req.status = 'approved'
+    cancel_req.reviewed_by = request.user
+    cancel_req.reviewed_at = timezone.now()
+    cancel_req.review_notes = review_notes
+    cancel_req.save()
+
+    log_audit(
+        action='cancellation_approved',
+        user=request.user,
+        entity_type='Sale',
+        entity_id=str(sale.pk),
+        description=f'Approved cancellation of {sale.receipt_number}. Original requester: {cancel_req.requested_by}',
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+    return JsonResponse({'status': 'success', 'message': f'Sale {sale.receipt_number} has been cancelled and stock restored.'})
+
+
+@login_required
+@require_http_methods(["POST"])
+def reject_cancellation(request, pk):
+    """Admin rejects a pending cancellation request."""
+    if request.user.role != 'admin':
+        return JsonResponse({'status': 'error', 'message': 'Only admins can reject cancellations.'}, status=403)
+
+    cancel_req = get_object_or_404(CancellationRequest, pk=pk, status='pending')
+
+    data = json.loads(request.body)
+    review_notes = data.get('notes', '').strip()
+
+    cancel_req.status = 'rejected'
+    cancel_req.reviewed_by = request.user
+    cancel_req.reviewed_at = timezone.now()
+    cancel_req.review_notes = review_notes
+    cancel_req.save()
+
+    log_audit(
+        action='cancellation_rejected',
+        user=request.user,
+        entity_type='Sale',
+        entity_id=str(cancel_req.sale.pk),
+        description=f'Rejected cancellation request for {cancel_req.sale.receipt_number}. Requester: {cancel_req.requested_by}',
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+    return JsonResponse({'status': 'success', 'message': 'Cancellation request rejected.'})
+
+
+@login_required
+def pending_cancellations(request):
+    """Admin view of all pending cancellation requests."""
+    if request.user.role != 'admin':
+        return JsonResponse({'status': 'error', 'message': 'Unauthorized.'}, status=403)
+
+    requests_qs = CancellationRequest.objects.filter(status='pending').select_related(
+        'sale', 'requested_by'
+    )
+    return render(request, 'pos/pending_cancellations.html', {
+        'requests': requests_qs,
+        'is_admin': True,
+    })
 
 
 @login_required

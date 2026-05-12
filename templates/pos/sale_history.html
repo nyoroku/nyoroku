@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: .3px;
+  }
+  .badge-complete  { background: #d1fae5; color: #065f46; }
+  .badge-voided    { background: #fee2e2; color: #991b1b; }
+  .badge-pending   { background: #fef3c7; color: #92400e; }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+    background: white; color: var(--text-secondary);
+  }
+  .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .filter-chip:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+  .sale-row { transition: background .15s; }
+  .sale-row:hover { background: #f8fafc; }
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-box {
+    background: white; border-radius: 20px; width: 100%; max-width: 480px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.25); overflow: hidden;
+  }
+  .modal-header { padding: 22px 24px 16px; border-bottom: 1px solid var(--border); }
+  .modal-body   { padding: 20px 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  textarea { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 14px; resize: vertical; min-height: 80px; outline: none; transition: border-color .2s; }
+  textarea:focus { border-color: var(--primary); }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; font-size: 13px; }
+  .detail-label { color: var(--text-secondary); font-weight: 500; }
+  .detail-val   { font-weight: 600; color: var(--text-primary); }
+  .pending-badge { background: #fef3c7; color: #92400e; border-radius: 8px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  .req-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; background: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 pb-24">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h2 class="text-xl font-extrabold" style="color:var(--primary-dark)">Sale History</h2>
+      <p class="text-sm mt-0.5" style="color:var(--text-secondary)">View, search and cancel transactions</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      {% if is_admin and pending_requests_count > 0 %}
+      <a href="#pending-section" class="btn btn-accent" style="font-size:13px; padding:8px 16px; gap:6px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        {{ pending_requests_count }} Pending Request{{ pending_requests_count|pluralize }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card p-4 mb-5">
+    <form method="get" class="flex flex-wrap gap-3 items-end">
+      <div class="flex-1 min-w-[180px]">
+        <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">SEARCH RECEIPT</label>
+        <input type="text" name="q" value="{{ search }}" placeholder="FLK-2026-..."
+               class="w-full px-3 py-2 rounded-lg border text-sm" style="border:1.5px solid var(--border); outline:none;"
+               onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">FROM</label>
+        <input type="date" name="date_from" value="{{ date_from }}"
+               class="px-3 py-2 rounded-lg border text-sm" style="border:1.5px solid var(--border); outline:none;">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold mb-1" style="color:var(--text-secondary)">TO</label>
+        <input type="date" name="date_to" value="{{ date_to }}"
+               class="px-3 py-2 rounded-lg border text-sm" style="border:1.5px solid var(--border); outline:none;">
+      </div>
+      <div class="flex gap-2">
+        <button type="submit" class="btn btn-primary" style="padding:8px 18px; font-size:13px;">Filter</button>
+        <a href="{% url 'pos:history' %}" class="btn btn-outline" style="padding:8px 14px; font-size:13px;">Reset</a>
+      </div>
+    </form>
+    <div class="flex gap-2 mt-3 flex-wrap">
+      <a href="?{% if date_from %}date_from={{ date_from }}&{% endif %}{% if date_to %}date_to={{ date_to }}&{% endif %}"
+         class="filter-chip {% if not active_status %}active{% endif %}">All</a>
+      <a href="?status=complete{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}"
+         class="filter-chip {% if active_status == 'complete' %}active{% endif %}">✅ Complete</a>
+      <a href="?status=voided{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}"
+         class="filter-chip {% if active_status == 'voided' %}active{% endif %}">🚫 Voided</a>
+    </div>
+  </div>
+
+  <!-- Sales Table -->
+  <div class="card overflow-hidden mb-6">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr style="background:#f8fafc; border-bottom:1.5px solid var(--border);">
+            <th class="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide" style="color:var(--text-secondary)">Receipt</th>
+            <th class="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide" style="color:var(--text-secondary)">Date &amp; Time</th>
+            <th class="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide" style="color:var(--text-secondary)">Cashier</th>
+            <th class="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide" style="color:var(--text-secondary)">Payment</th>
+            <th class="text-right px-4 py-3 font-semibold text-xs uppercase tracking-wide" style="color:var(--text-secondary)">Total</th>
+            <th class="text-center px-4 py-3 font-semibold text-xs uppercase tracking-wide" style="color:var(--text-secondary)">Status</th>
+            <th class="text-center px-4 py-3 font-semibold text-xs uppercase tracking-wide" style="color:var(--text-secondary)">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sale in sales %}
+          {% with pending_req=sale.cancellation_requests.all|dictsort:"created_at"|last %}
+          <tr class="sale-row border-b" style="border-color:var(--border);">
+            <td class="px-4 py-3">
+              <span class="font-mono font-bold text-sm" style="color:var(--primary)">{{ sale.receipt_number }}</span>
+              {% if sale.cancellation_requests.all %}
+                {% for req in sale.cancellation_requests.all %}
+                  {% if req.status == 'pending' %}
+                    <span class="pending-badge ml-1">⏳ Pending</span>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </td>
+            <td class="px-4 py-3" style="color:var(--text-secondary)">
+              {{ sale.created_at|date:"d M Y" }}<br>
+              <span class="text-xs">{{ sale.created_at|time:"H:i" }}</span>
+            </td>
+            <td class="px-4 py-3 font-medium">{{ sale.cashier.name|default:sale.cashier.username }}</td>
+            <td class="px-4 py-3">
+              {% if sale.payment_method == 'cash' %}💵{% elif sale.payment_method == 'mpesa' %}📱{% elif sale.payment_method == 'split' %}🔀{% else %}📋{% endif %}
+              <span class="capitalize">{{ sale.get_payment_method_display }}</span>
+            </td>
+            <td class="px-4 py-3 text-right font-bold font-mono" style="color:var(--primary-dark)">
+              KES {{ sale.total|floatformat:2 }}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if sale.status == 'complete' %}
+                <span class="status-badge badge-complete">✅ Complete</span>
+              {% elif sale.status == 'voided' %}
+                <span class="status-badge badge-voided">🚫 Voided</span>
+              {% else %}
+                <span class="status-badge badge-pending">⏳ {{ sale.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex items-center justify-center gap-1 flex-wrap">
+                <button onclick="viewSale('{{ sale.pk }}', '{{ sale.receipt_number }}', '{{ sale.status }}')"
+                        class="btn btn-outline" style="padding:5px 10px; font-size:11px; border-radius:8px; min-height:28px;">
+                  View
+                </button>
+                <a href="{% url 'pos:receipt' sale.pk %}" target="_blank"
+                   class="btn btn-outline" style="padding:5px 10px; font-size:11px; border-radius:8px; min-height:28px; display:inline-flex; align-items:center; gap:4px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  Print
+                </a>
+                {% if sale.status != 'voided' %}
+                  {% comment %}Check if already has pending request{% endcomment %}
+                  {% with has_pending=False %}
+                  {% for req in sale.cancellation_requests.all %}{% if req.status == 'pending' %}
+                    <span class="text-xs font-semibold" style="color:#92400e;">⏳ Awaiting</span>
+                  {% endif %}{% endfor %}
+                  {% endwith %}
+                  {% if not sale.cancellation_requests.all or sale.cancellation_requests.all|length == 0 %}
+                    <button onclick="openCancelModal('{{ sale.pk }}', '{{ sale.receipt_number }}', '{{ sale.total }}', '{{ sale.payment_method }}')"
+                            class="btn btn-danger" style="padding:5px 10px; font-size:11px; border-radius:8px; min-height:28px;">
+                      Cancel
+                    </button>
+                  {% else %}
+                    {% for req in sale.cancellation_requests.all %}
+                      {% if req.status != 'pending' %}
+                    <button onclick="openCancelModal('{{ sale.pk }}', '{{ sale.receipt_number }}', '{{ sale.total }}', '{{ sale.payment_method }}')"
+                            class="btn btn-danger" style="padding:5px 10px; font-size:11px; border-radius:8px; min-height:28px;">
+                      Cancel
+                    </button>
+                      {% endif %}
+                    {% endfor %}
+                  {% endif %}
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endwith %}
+          {% empty %}
+          <tr>
+            <td colspan="7" class="py-16 text-center" style="color:var(--text-secondary)">
+              <div class="text-4xl mb-3">🧾</div>
+              <p class="font-semibold">No sales found</p>
+              <p class="text-sm mt-1">Try adjusting your filters</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pending Cancellation Requests (Admin only) -->
+  {% if is_admin %}
+  <div id="pending-section">
+    {% with pending_reqs=sales %}
+    <h3 class="text-base font-bold mb-3" style="color:var(--primary-dark)">
+      🔔 Pending Cancellation Requests
+      {% if pending_requests_count > 0 %}
+        <span class="ml-2 px-2 py-0.5 rounded-full text-xs font-bold" style="background:#fef3c7;color:#92400e;">{{ pending_requests_count }}</span>
+      {% endif %}
+    </h3>
+    {% if pending_requests_count == 0 %}
+    <div class="card p-8 text-center" style="color:var(--text-secondary)">
+      <div class="text-3xl mb-2">✅</div>
+      <p class="font-semibold">No pending requests</p>
+    </div>
+    {% else %}
+    <div id="pending-requests-container">
+      <div class="card p-4">
+        <p class="text-sm font-medium" style="color:var(--text-secondary)">
+          Loading pending requests…
+        </p>
+      </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ===== Cancel Modal ===== -->
+<div id="cancelModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeCancelModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-lg" style="color:var(--primary-dark)">🚫 Cancel Sale</h3>
+      <p id="cancelModalSubtitle" class="text-sm mt-1" style="color:var(--text-secondary)"></p>
+    </div>
+    <div class="modal-body">
+      <div id="cancelModalInfo" class="detail-grid mb-4"></div>
+      <div id="adminDirectNote" class="hidden mb-3 p-3 rounded-xl text-sm font-semibold" style="background:#d1fae5;color:#065f46;">
+        ✅ As admin, this sale will be cancelled immediately and stock will be restored.
+      </div>
+      <div id="staffRequestNote" class="hidden mb-3 p-3 rounded-xl text-sm font-semibold" style="background:#fef3c7;color:#92400e;">
+        ⚠️ Your cancellation request will be sent to an admin for approval. Sale will remain active until approved.
+      </div>
+      <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--text-secondary)">Reason for Cancellation *</label>
+      <textarea id="cancelReason" placeholder="Explain why this sale needs to be cancelled…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeCancelModal()" class="btn btn-outline" style="padding:9px 18px; font-size:13px;">Dismiss</button>
+      <button onclick="submitCancellation()" id="cancelSubmitBtn" class="btn btn-danger" style="padding:9px 18px; font-size:13px;">
+        <span id="cancelBtnLabel">Submit Request</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== View Sale Modal ===== -->
+<div id="viewModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeViewModal()">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-header flex items-center justify-between">
+      <h3 class="font-bold text-lg" style="color:var(--primary-dark)">🧾 Sale Details</h3>
+      <button onclick="closeViewModal()" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="viewModalBody" class="modal-body max-h-[60vh] overflow-y-auto">
+      <div class="text-center py-8" style="color:var(--text-secondary)">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Admin: Approve/Reject Modal ===== -->
+<div id="reviewModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)closeReviewModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="font-bold text-lg" style="color:var(--primary-dark)" id="reviewModalTitle">Review Cancellation</h3>
+      <p id="reviewModalSub" class="text-sm mt-1" style="color:var(--text-secondary)"></p>
+    </div>
+    <div class="modal-body">
+      <div id="reviewModalInfo" class="mb-4"></div>
+      <label class="block text-xs font-bold mb-1.5 uppercase tracking-wide" style="color:var(--text-secondary)">Admin Notes (optional)</label>
+      <textarea id="reviewNotes" placeholder="Add notes for the record…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeReviewModal()" class="btn btn-outline" style="padding:9px 18px; font-size:13px;">Close</button>
+      <button onclick="submitReview('reject')" class="btn" style="background:#fee2e2;color:#991b1b;padding:9px 18px;font-size:13px;">Reject</button>
+      <button onclick="submitReview('approve')" class="btn btn-success" style="padding:9px 18px; font-size:13px;">✅ Approve & Void</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+let activeSaleId = null;
+let activeSaleReceipt = null;
+let activeRequestId = null;
+const IS_ADMIN = {{ is_admin|yesno:"true,false" }};
+
+/* ─── Cancel Modal ─── */
+function openCancelModal(saleId, receipt, total, paymentMethod) {
+  activeSaleId = saleId;
+  activeSaleReceipt = receipt;
+  document.getElementById('cancelModalSubtitle').textContent = receipt;
+  document.getElementById('cancelModalInfo').innerHTML = `
+    <span class="detail-label">Receipt</span><span class="detail-val">${receipt}</span>
+    <span class="detail-label">Total</span><span class="detail-val">KES ${parseFloat(total).toFixed(2)}</span>
+    <span class="detail-label">Payment</span><span class="detail-val">${paymentMethod}</span>
+  `;
+  document.getElementById('adminDirectNote').classList.toggle('hidden', !IS_ADMIN);
+  document.getElementById('staffRequestNote').classList.toggle('hidden', IS_ADMIN);
+  document.getElementById('cancelBtnLabel').textContent = IS_ADMIN ? 'Cancel Sale Now' : 'Submit Request';
+  document.getElementById('cancelReason').value = '';
+  document.getElementById('cancelModal').style.display = 'flex';
+}
+function closeCancelModal() {
+  document.getElementById('cancelModal').style.display = 'none';
+}
+async function submitCancellation() {
+  const reason = document.getElementById('cancelReason').value.trim();
+  if (!reason) { showToast('⚠️ Please provide a reason.'); return; }
+  const btn = document.getElementById('cancelSubmitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Processing…';
+  try {
+    const resp = await fetch(`/pos/cancel/request/${activeSaleId}/`, {
+      method: 'POST', headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({ reason })
+    });
+    const data = await resp.json();
+    closeCancelModal();
+    showToast(data.message || (resp.ok ? '✅ Done' : '❌ Error'));
+    if (resp.ok) setTimeout(() => location.reload(), 1200);
+  } catch(e) { showToast('❌ Network error'); }
+  finally { btn.disabled = false; btn.innerHTML = `<span id="cancelBtnLabel">${IS_ADMIN ? 'Cancel Sale Now' : 'Submit Request'}</span>`; }
+}
+
+/* ─── View Modal ─── */
+function viewSale(saleId, receipt, status) {
+  document.getElementById('viewModal').style.display = 'flex';
+  document.getElementById('viewModalBody').innerHTML = '<div class="text-center py-8 text-gray-400">Loading…</div>';
+  fetch(`/pos/receipt/${saleId}/`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.text())
+    .then(html => {
+      // parse out just the body content
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const content = doc.querySelector('.receipt-content') || doc.body;
+      document.getElementById('viewModalBody').innerHTML = content.innerHTML;
+    })
+    .catch(() => {
+      document.getElementById('viewModalBody').innerHTML = `
+        <div class="p-4 rounded-xl text-sm" style="background:#f8fafc;">
+          <p class="font-bold mb-2">Receipt #${receipt}</p>
+          <p style="color:var(--text-secondary)">Status: ${status}</p>
+          <a href="/pos/receipt/${saleId}/" target="_blank" class="btn btn-primary mt-4" style="font-size:13px;padding:8px 16px;">
+            Open Full Receipt →
+          </a>
+        </div>`;
+    });
+}
+function closeViewModal() {
+  document.getElementById('viewModal').style.display = 'none';
+}
+
+/* ─── Review Modal (Admin) ─── */
+function openReviewModal(requestId, receipt, reason, requester, saleTotal) {
+  activeRequestId = requestId;
+  document.getElementById('reviewModalSub').textContent = `Sale: ${receipt}`;
+  document.getElementById('reviewModalInfo').innerHTML = `
+    <div class="req-card">
+      <div class="detail-grid mb-2">
+        <span class="detail-label">Receipt</span><span class="detail-val">${receipt}</span>
+        <span class="detail-label">Amount</span><span class="detail-val">KES ${saleTotal}</span>
+        <span class="detail-label">Requested By</span><span class="detail-val">${requester}</span>
+      </div>
+      <p class="text-xs font-semibold uppercase tracking-wide mb-1" style="color:var(--text-secondary)">Reason:</p>
+      <p class="text-sm" style="color:var(--text-primary)">${reason}</p>
+    </div>`;
+  document.getElementById('reviewNotes').value = '';
+  document.getElementById('reviewModal').style.display = 'flex';
+}
+function closeReviewModal() {
+  document.getElementById('reviewModal').style.display = 'none';
+}
+async function submitReview(action) {
+  const notes = document.getElementById('reviewNotes').value.trim();
+  const url = `/pos/cancel/${action}/${activeRequestId}/`;
+  try {
+    const resp = await fetch(url, {
+      method: 'POST', headers: {'Content-Type':'application/json','X-CSRFToken':CSRF},
+      body: JSON.stringify({ notes })
+    });
+    const data = await resp.json();
+    closeReviewModal();
+    showToast(data.message || '✅ Done');
+    if (resp.ok) setTimeout(() => location.reload(), 1200);
+  } catch(e) { showToast('❌ Network error'); }
+}
+
+/* ─── Load Pending Requests (Admin) ─── */
+{% if is_admin %}
+async function loadPendingRequests() {
+  const container = document.getElementById('pending-requests-container');
+  if (!container) return;
+  try {
+    const resp = await fetch('/pos/cancel/pending/');
+    const html = await resp.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const inner = doc.querySelector('#pending-list');
+    if (inner) container.innerHTML = inner.outerHTML;
+  } catch(e) {}
+}
+document.addEventListener('DOMContentLoaded', loadPendingRequests);
+{% endif %}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+</script>
+{% endblock %}
