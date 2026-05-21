@@ -140,7 +140,7 @@
   <div class="relative z-10 flex flex-col items-center justify-center min-h-screen px-5 py-8">
     
     <!-- ═══ STEP 1: Profile Selector ═══ -->
-    <div x-show="step === 1" 
+    <div x-show="step === 1 && mode === 'profile'" 
          x-transition:enter="transition ease-out duration-500"
          x-transition:enter-start="opacity-0 scale-95"
          x-transition:enter-end="opacity-100 scale-100"
@@ -188,6 +188,63 @@
         </div>
         {% endfor %}
       </div>
+
+      <!-- Toggle to Keyboard Login -->
+      <div class="text-center mt-8">
+        <button @click="mode = 'keyboard'" type="button" class="text-xs font-semibold text-[#00C853] hover:text-[#69F0AE] transition-colors uppercase tracking-widest focus:outline-none">
+          ⌨️ Keyboard Sign In
+        </button>
+      </div>
+    </div>
+
+    <!-- Keyboard Sign In View -->
+    <div x-show="step === 1 && mode === 'keyboard'" x-cloak
+         x-transition:enter="transition ease-out duration-500"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0 -translate-y-8"
+         class="w-full max-w-sm">
+      
+      <!-- Brand -->
+      <div class="text-center mb-10">
+        <h1 class="syne font-extrabold text-[42px] sm:text-[52px] tracking-tight leading-none">
+          <span style="background: linear-gradient(135deg, #00C853, #69F0AE); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Jimmy's Mini Mart</span>
+        </h1>
+        <p class="text-[#555566] mt-3 font-semibold uppercase tracking-[0.3em] text-[10px]">Keyboard Sign In</p>
+      </div>
+
+      <!-- Back button -->
+      <button @click="mode = 'profile'" type="button" class="flex items-center gap-2 text-[#555566] hover:text-[#EAEAEA] transition-colors mb-8 group focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="group-active:scale-90 transition-transform"><path d="m15 18-6-6 6-6"/></svg>
+        <span class="text-xs font-bold uppercase tracking-widest">Profile Login</span>
+      </button>
+
+      <!-- Keyboard Login Form -->
+      <form hx-post="{% url 'accounts:pin_auth' %}" 
+            hx-target="#keyboard-auth-feedback" 
+            hx-swap="innerHTML"
+            class="space-y-5 bg-[#0e0e0e] border border-white/[0.05] rounded-[24px] p-8">
+        {% csrf_token %}
+        <div>
+          <label class="text-[10px] font-bold uppercase tracking-widest text-[#555566] mb-2 block">Username</label>
+          <input type="text" name="username" required placeholder="Type username"
+                 class="w-full px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.08] text-sm text-[#EAEAEA] placeholder-white/20 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853] transition-all">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold uppercase tracking-widest text-[#555566] mb-2 block">Password / PIN</label>
+          <input type="password" name="pin" required placeholder="••••"
+                 class="w-full px-4 py-3 rounded-xl bg-white/[0.02] border border-white/[0.08] text-sm text-[#EAEAEA] placeholder-white/20 focus:outline-none focus:border-[#00C853] focus:ring-1 focus:ring-[#00C853] transition-all">
+        </div>
+
+        <!-- Feedback Area -->
+        <div id="keyboard-auth-feedback" class="mt-2 text-center text-[#FF1744] text-xs font-bold"></div>
+
+        <button type="submit" class="w-full btn bg-[#00C853] text-[#030303] font-bold text-sm uppercase tracking-widest hover:bg-[#69F0AE] transition-all shadow-[0_0_24px_rgba(0,200,83,0.15)] active:scale-[0.98] rounded-xl py-3 mt-4">
+          Sign In
+        </button>
+      </form>
     </div>
     
     <!-- ═══ STEP 2: PIN Entry ═══ -->
@@ -298,6 +355,7 @@
     function loginApp() {
       return {
         step: 1,
+        mode: 'profile',
         selectedUsername: '',
         selectedName: '',
         selectedAvatar: '👤',
@@ -307,6 +365,22 @@
         pinError: false,
         pinErrorMsg: '',
         isSubmitting: false,
+        
+        init() {
+          window.addEventListener('keydown', (e) => {
+            if (this.step === 2 && this.mode === 'profile') {
+              if (e.key >= '0' && e.key <= '9') {
+                this.addDigit(parseInt(e.key));
+              } else if (e.key === 'Backspace') {
+                this.removeDigit();
+              } else if (e.key === 'Enter') {
+                if (this.pin.length === 4) {
+                  this.submitPin();
+                }
+              }
+            }
+          });
+        },
         
         selectUser(username, name, avatar, role, color) {
           this.selectedUsername = username;

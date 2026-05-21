@@ -6,10 +6,12 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.db import transaction as db_transaction
+from django.db.models import Sum
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.conf import settings
 from catalogue.models import Product, Category, SubCategory, Batch
-from .models import Sale, SaleLineItem, ParkedSale, CancellationRequest
+from .models import Sale, SaleLineItem, ParkedSale, CancellationRequest, CashHandover
 from core.models import log_audit
 
 logger = logging.getLogger(__name__)
@@ -1007,3 +1009,259 @@ def api_sync(request):
         return JsonResponse({'status': 'success', 'results': results})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@login_required
+def cash_handover_submit(request):
+    """Cashier submits shift cash & M-Pesa counted, with auto-filled expenses and sales."""
+    # Default shift times
+    last_handover = CashHandover.objects.filter(staff=request.user, status='confirmed').order_by('-confirmed_at').first()
+    if last_handover and last_handover.confirmed_at:
+        default_shift_start = last_handover.confirmed_at
+    else:
+        # Default to midnight today
+        default_shift_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    default_shift_end = timezone.now()
+
+    req_data = request.POST if request.method == 'POST' else request.GET
+    shift_start_str = req_data.get('shift_start')
+    shift_end_str = req_data.get('shift_end')
+
+    if shift_start_str:
+        shift_start = parse_datetime(shift_start_str)
+        if shift_start and timezone.is_naive(shift_start):
+            shift_start = timezone.make_aware(shift_start)
+    else:
+        shift_start = default_shift_start
+
+    if shift_end_str:
+        shift_end = parse_datetime(shift_end_str)
+        if shift_end and timezone.is_naive(shift_end):
+            shift_end = timezone.make_aware(shift_end)
+    else:
+        shift_end = default_shift_end
+
+    # Calculate expected sales
+    sales = Sale.objects.filter(cashier=request.user, status='complete', created_at__gte=shift_start, created_at__lte=shift_end)
+    expected_sales = sales.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+
+    expected_cash = Decimal('0.00')
+    expected_mpesa = Decimal('0.00')
+    for sale in sales:
+        if sale.payment_method == 'cash':
+            expected_cash += sale.total
+        elif sale.payment_method == 'mpesa':
+            expected_mpesa += sale.total
+        elif sale.payment_method == 'split':
+            if sale.cash_amount:
+                expected_cash += sale.cash_amount
+            if sale.mpesa_amount:
+                expected_mpesa += sale.mpesa_amount
+
+    # Calculate in-shop expenses
+    from expenses.models import Expense
+    from procurement.models import PurchaseOrder, Supplier
+
+    supplier, _ = Supplier.objects.get_or_create(name="Ad Hoc / Walk-in")
+
+    shift_expenses = Expense.objects.filter(recorded_by=request.user, created_at__gte=shift_start, created_at__lte=shift_end).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    shift_pos = PurchaseOrder.objects.filter(created_by=request.user, created_at__gte=shift_start, created_at__lte=shift_end, supplier=supplier).exclude(status='cancelled')
+    shift_procurement = sum(po.total_cost for po in shift_pos)
+
+    in_shop_expenses = shift_expenses + Decimal(str(shift_procurement))
+
+    if request.method == 'POST':
+        try:
+            cash_amount = Decimal(request.POST.get('cash_amount', '0'))
+            mpesa_amount = Decimal(request.POST.get('mpesa_amount', '0'))
+        except (ValueError, InvalidOperation):
+            cash_amount = Decimal('0')
+            mpesa_amount = Decimal('0')
+
+        variance = (cash_amount + mpesa_amount + in_shop_expenses) - expected_sales
+
+        handover = CashHandover.objects.create(
+            staff=request.user,
+            cash_amount=cash_amount,
+            mpesa_amount=mpesa_amount,
+            in_shop_expenses=in_shop_expenses,
+            total_sales=expected_sales,
+            variance=variance,
+            shift_start=shift_start,
+            shift_end=shift_end,
+            status='pending',
+        )
+        
+        log_audit(
+            action='cash_handover_submitted',
+            user=request.user,
+            entity_type='CashHandover',
+            entity_id=str(handover.pk),
+            description=f'Cash handover submitted: Cash={cash_amount}, Mpesa={mpesa_amount}, Expenses={in_shop_expenses}, Sales={expected_sales}, Variance={variance}, Shift={shift_start} to {shift_end}',
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+        
+        return render(request, 'pos/cash_handover_success.html', {
+            'handover': handover,
+            'store_name': getattr(settings, 'STORE_NAME', "Jimmy's Mini Mart"),
+        })
+
+    if request.headers.get('HX-Request') == 'true':
+        return render(request, 'pos/partials/cash_handover_stats.html', {
+            'expected_sales': expected_sales,
+            'expected_cash': expected_cash,
+            'expected_mpesa': expected_mpesa,
+            'in_shop_expenses': in_shop_expenses,
+        })
+
+    # Render submit form
+    pending_handover = CashHandover.objects.filter(staff=request.user, status='pending').first()
+
+    return render(request, 'pos/cash_handover_submit.html', {
+        'shift_start': shift_start,
+        'shift_end': shift_end,
+        'expected_sales': expected_sales,
+        'expected_cash': expected_cash,
+        'expected_mpesa': expected_mpesa,
+        'in_shop_expenses': in_shop_expenses,
+        'pending_handover': pending_handover,
+        'store_name': getattr(settings, 'STORE_NAME', "Jimmy's Mini Mart"),
+    })
+
+
+@login_required
+def cash_handover_list(request):
+    """Admin/Manager view of all submitted cash handovers."""
+    if request.user.role not in ('admin', 'manager'):
+        return HttpResponse('Unauthorized', status=403)
+
+    filter_tabs = [
+        ('All', ''),
+        ('Pending', 'pending'),
+        ('Confirmed', 'confirmed'),
+        ('Rejected', 'rejected'),
+    ]
+    current_filter = request.GET.get('status', '')
+    handovers = CashHandover.objects.select_related('staff', 'confirmed_by').order_by('-created_at')
+    if current_filter in ('pending', 'confirmed', 'rejected'):
+        handovers = handovers.filter(status=current_filter)
+
+    return render(request, 'pos/cash_handover_list.html', {
+        'handovers': handovers,
+        'filter_tabs': filter_tabs,
+        'current_filter': current_filter,
+        'is_admin': request.user.role == 'admin',
+        'is_manager': request.user.role in ('admin', 'manager'),
+        'store_name': getattr(settings, 'STORE_NAME', "Jimmy's Mini Mart"),
+    })
+
+
+@login_required
+def cash_handover_detail(request, pk):
+    """Admin/Manager detail view of a single handover to confirm or reject."""
+    if request.user.role not in ('admin', 'manager'):
+        return HttpResponse('Unauthorized', status=403)
+
+    handover = get_object_or_404(CashHandover, pk=pk)
+    
+    # Calculate what the system expected for this cashier's shift period
+    if handover.shift_start and handover.shift_end:
+        shift_start = handover.shift_start
+        shift_end = handover.shift_end
+    else:
+        last_confirmed = CashHandover.objects.filter(staff=handover.staff, status='confirmed', created_at__lt=handover.created_at).order_by('-confirmed_at').first()
+        if last_confirmed and last_confirmed.confirmed_at:
+            shift_start = last_confirmed.confirmed_at
+        else:
+            shift_start = handover.created_at.replace(hour=0, minute=0, second=0, microsecond=0)
+        shift_end = handover.created_at
+        
+    sales = Sale.objects.filter(cashier=handover.staff, status='complete', created_at__gte=shift_start, created_at__lte=shift_end)
+    
+    expected_cash = Decimal('0.00')
+    expected_mpesa = Decimal('0.00')
+    for sale in sales:
+        if sale.payment_method == 'cash':
+            expected_cash += sale.total
+        elif sale.payment_method == 'mpesa':
+            expected_mpesa += sale.total
+        elif sale.payment_method == 'split':
+            if sale.cash_amount:
+                expected_cash += sale.cash_amount
+            if sale.mpesa_amount:
+                expected_mpesa += sale.mpesa_amount
+
+    return render(request, 'pos/cash_handover_detail.html', {
+        'handover': handover,
+        'expected_cash': expected_cash,
+        'expected_mpesa': expected_mpesa,
+        'is_admin': request.user.role == 'admin',
+        'is_manager': request.user.role in ('admin', 'manager'),
+        'store_name': getattr(settings, 'STORE_NAME', "Jimmy's Mini Mart"),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def cash_handover_confirm(request, pk):
+    """Admin confirms a submitted cash handover."""
+    if request.user.role not in ('admin', 'manager'):
+        return HttpResponse('Unauthorized', status=403)
+
+    handover = get_object_or_404(CashHandover, pk=pk)
+    if handover.status != 'pending':
+        return HttpResponse('Handover is not pending review', status=400)
+
+    admin_note = request.POST.get('admin_note', '').strip()
+    
+    handover.status = 'confirmed'
+    handover.confirmed_by = request.user
+    handover.confirmed_at = timezone.now()
+    if admin_note:
+        handover.admin_note = admin_note
+    handover.save()
+
+    log_audit(
+        action='cash_handover_confirmed',
+        user=request.user,
+        entity_type='CashHandover',
+        entity_id=str(handover.pk),
+        description=f'Confirmed cash handover for {handover.staff.name}. Status: confirmed.',
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+
+    return redirect('pos:cash_handover_detail', pk=handover.pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def cash_handover_reject(request, pk):
+    """Admin rejects a submitted cash handover."""
+    if request.user.role not in ('admin', 'manager'):
+        return HttpResponse('Unauthorized', status=403)
+
+    handover = get_object_or_404(CashHandover, pk=pk)
+    if handover.status != 'pending':
+        return HttpResponse('Handover is not pending review', status=400)
+
+    admin_note = request.POST.get('admin_note', '').strip()
+    if not admin_note:
+        return HttpResponse('Rejection notes are required.', status=400)
+
+    handover.status = 'rejected'
+    handover.confirmed_by = request.user
+    handover.confirmed_at = timezone.now()
+    handover.admin_note = admin_note
+    handover.save()
+
+    log_audit(
+        action='cash_handover_rejected',
+        user=request.user,
+        entity_type='CashHandover',
+        entity_id=str(handover.pk),
+        description=f'Rejected cash handover for {handover.staff.name}. Notes: {admin_note}',
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+
+    return redirect('pos:cash_handover_detail', pk=handover.pk)

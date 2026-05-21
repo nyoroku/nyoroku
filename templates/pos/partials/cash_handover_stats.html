@@ -1,0 +1,33 @@
+<!-- System Figures Partial for HTMX -->
+<div id="system-figures" 
+     x-data="{ 
+        expenses: {{ in_shop_expenses|floatformat:2 }}, 
+        expectedSales: {{ expected_sales|floatformat:2 }} 
+     }" 
+     x-init="
+        $dispatch('stats-updated', { expenses: expenses, expectedSales: expectedSales });
+     ">
+    <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-3">System Figures (This Shift)</h2>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="stat-card text-center">
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-value text-xl" style="color: var(--primary-dark)">{{ expected_sales|floatformat:2 }}</div>
+        <div class="stat-sub">KES</div>
+      </div>
+      <div class="stat-card text-center">
+        <div class="stat-label">Expected Cash</div>
+        <div class="stat-value text-xl">{{ expected_cash|floatformat:2 }}</div>
+        <div class="stat-sub">KES</div>
+      </div>
+      <div class="stat-card text-center">
+        <div class="stat-label">Expected M-Pesa</div>
+        <div class="stat-value text-xl">{{ expected_mpesa|floatformat:2 }}</div>
+        <div class="stat-sub">KES</div>
+      </div>
+      <div class="stat-card text-center">
+        <div class="stat-label">In-Shop Expenses</div>
+        <div class="stat-value text-xl text-amber-600">{{ in_shop_expenses|floatformat:2 }}</div>
+        <div class="stat-sub">KES (auto)</div>
+      </div>
+    </div>
+</div>

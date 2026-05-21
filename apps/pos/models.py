@@ -202,3 +202,42 @@ class CancellationRequest(models.Model):
 
     def __str__(self):
         return f"Cancel request for {self.sale.receipt_number} by {self.requested_by} [{self.status}]"
+
+
+class CashHandover(models.Model):
+    """Staff submission of shift cash & M-Pesa counted, and admin confirmation."""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('confirmed', 'Confirmed'),
+        ('rejected', 'Rejected'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    staff = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='handovers_submitted',
+    )
+    cash_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="Cash Counted")
+    mpesa_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="M-Pesa Counted")
+    in_shop_expenses = models.DecimalField(max_digits=12, decimal_places=2, help_text="Expenses & Procurement")
+    total_sales = models.DecimalField(max_digits=12, decimal_places=2, help_text="Expected Total Sales")
+    variance = models.DecimalField(max_digits=12, decimal_places=2, help_text="Shortage / Surplus")
+    
+    shift_start = models.DateTimeField(null=True, blank=True, help_text="Start of shift period")
+    shift_end = models.DateTimeField(null=True, blank=True, help_text="End of shift period")
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_note = models.TextField(blank=True, default='')
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='handovers_confirmed',
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Handover for {self.staff.name} on {self.created_at.strftime('%d %b %Y %H:%M')} [{self.status}]"

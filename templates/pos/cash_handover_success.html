@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-10 text-center">
+  <!-- Success Icon -->
+  <div class="flex items-center justify-center mb-6">
+    <div class="w-20 h-20 rounded-full flex items-center justify-center shadow-xl shadow-emerald-100"
+         style="background: linear-gradient(135deg, #10b981, #34d399);">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+  </div>
+
+  <h1 class="text-2xl font-extrabold tracking-tight mb-2" style="color: var(--primary-dark)">Handover Submitted!</h1>
+  <p class="text-sm mb-8" style="color: var(--text-secondary)">
+    Your cash handover has been submitted and is awaiting review by management.
+  </p>
+
+  <!-- Handover Receipt Card -->
+  <div class="card p-6 text-left mb-6">
+    <div class="flex items-center justify-between mb-5 pb-4 border-b" style="border-color: var(--border)">
+      <div>
+        <p class="font-extrabold text-sm" style="color: var(--primary-dark)">{{ store_name }}</p>
+        <p class="text-xs" style="color: var(--text-secondary)">Cash Handover Receipt</p>
+      </div>
+      <span class="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-100">Pending Review</span>
+    </div>
+
+    <div class="space-y-3 text-sm">
+      <div class="flex justify-between">
+        <span style="color: var(--text-secondary)">Staff</span>
+        <span class="font-semibold">{{ handover.staff.name }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span style="color: var(--text-secondary)">Submitted At</span>
+        <span class="font-semibold">{{ handover.created_at|date:"d M Y, H:i" }}</span>
+      </div>
+      <div class="border-t pt-3 mt-1" style="border-color: var(--border)"></div>
+      <div class="flex justify-between">
+        <span style="color: var(--text-secondary)">Cash Counted</span>
+        <span class="font-mono font-bold">KES {{ handover.cash_amount|floatformat:2 }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span style="color: var(--text-secondary)">M-Pesa Collected</span>
+        <span class="font-mono font-bold">KES {{ handover.mpesa_amount|floatformat:2 }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span style="color: var(--text-secondary)">In-Shop Expenses</span>
+        <span class="font-mono font-bold text-amber-600">KES {{ handover.in_shop_expenses|floatformat:2 }}</span>
+      </div>
+      <div class="flex justify-between border-t pt-3" style="border-color: var(--border)">
+        <span style="color: var(--text-secondary)">Total Sales (System)</span>
+        <span class="font-mono font-bold">KES {{ handover.total_sales|floatformat:2 }}</span>
+      </div>
+      <div class="flex justify-between items-center pt-1">
+        <span class="font-bold" style="color: var(--primary-dark)">Variance</span>
+        <span class="font-mono font-extrabold text-base
+          {% if handover.variance > 0 %}text-emerald-600
+          {% elif handover.variance < 0 %}text-red-600
+          {% else %}text-slate-500{% endif %}">
+          KES {{ handover.variance|floatformat:2 }}
+          {% if handover.variance > 0 %}(Surplus)
+          {% elif handover.variance < 0 %}(Shortage)
+          {% else %}(Balanced){% endif %}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <a href="{% url 'pos:index' %}" class="btn btn-primary w-full font-bold gap-2">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <rect width="20" height="14" x="2" y="3" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+    </svg>
+    Back to Sell Screen
+  </a>
+</div>
+{% endblock %}

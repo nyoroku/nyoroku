@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<style>
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; padding: 4px 10px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .badge-confirmed { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+  .badge-rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .row-link { display: contents; }
+  .handover-row { transition: background 0.15s; cursor: pointer; }
+  .handover-row:hover td { background: rgba(26,58,74,0.025); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6 lg:py-8">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Cash Handovers</h1>
+      <p class="text-sm mt-0.5" style="color: var(--text-secondary)">Staff end-of-shift cash submissions for review</p>
+    </div>
+    {% if pending_handovers_count > 0 %}
+    <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-100">
+      <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+      <span class="text-sm font-bold text-red-700">{{ pending_handovers_count }} Pending Review</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="flex gap-2 mb-5 overflow-x-auto pb-1">
+    {% for label, val in filter_tabs %}
+    <a href="?status={{ val }}"
+       class="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border
+       {% if current_filter == val %}text-white border-transparent{% else %}border-border bg-white text-text-secondary hover:bg-gray-50{% endif %}"
+       style="{% if current_filter == val %}background: var(--primary); {% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Table -->
+  <div class="card overflow-hidden">
+    {% if handovers %}
+    <table class="w-full text-sm">
+      <thead>
+        <tr style="background: var(--bg-main)">
+          <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Staff</th>
+          <th class="px-5 py-3.5 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Submitted</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Cash</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">M-Pesa</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Sales</th>
+          <th class="px-5 py-3.5 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Variance</th>
+          <th class="px-5 py-3.5 text-center text-[11px] font-bold text-text-secondary uppercase tracking-wider">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in handovers %}
+        <tr class="handover-row border-b" style="border-color: #f1f3f5"
+            onclick="window.location='{% url 'pos:cash_handover_detail' h.pk %}'">
+          <td class="px-5 py-4">
+            <div class="font-semibold">{{ h.staff.name }}</div>
+            <div class="text-[11px]" style="color: var(--text-secondary)">@{{ h.staff.username }}</div>
+          </td>
+          <td class="px-5 py-4" style="color: var(--text-secondary)">{{ h.created_at|date:"d M Y, H:i" }}</td>
+          <td class="px-5 py-4 text-right font-mono font-bold">{{ h.cash_amount|floatformat:2 }}</td>
+          <td class="px-5 py-4 text-right font-mono font-bold">{{ h.mpesa_amount|floatformat:2 }}</td>
+          <td class="px-5 py-4 text-right font-mono font-bold">{{ h.total_sales|floatformat:2 }}</td>
+          <td class="px-5 py-4 text-right font-mono font-bold
+            {% if h.variance > 0 %}text-emerald-600{% elif h.variance < 0 %}text-red-600{% else %}text-slate-400{% endif %}">
+            {{ h.variance|floatformat:2 }}
+          </td>
+          <td class="px-5 py-4 text-center">
+            {% if h.status == 'pending' %}
+              <span class="status-badge badge-pending">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending
+              </span>
+            {% elif h.status == 'confirmed' %}
+              <span class="status-badge badge-confirmed">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Confirmed
+              </span>
+            {% else %}
+              <span class="status-badge badge-rejected">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
+              </span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="py-16 text-center">
+      <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background: var(--bg-main)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </div>
+      <p class="font-bold text-slate-700">No handovers yet</p>
+      <p class="text-sm text-text-secondary mt-1">Staff handovers will appear here once submitted.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<style>
+  .compare-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-label { color: var(--text-secondary); font-size: 12px; }
+  .compare-system { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--primary-dark); }
+  .compare-staff  { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; padding: 5px 13px;
+    border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .pill-pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .pill-confirmed { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+  .pill-rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  .note-textarea {
+    width: 100%; padding: 12px 16px; border-radius: 12px;
+    border: 2px solid var(--border); font-size: 13px;
+    transition: all 0.2s; resize: vertical; min-height: 80px;
+  }
+  .note-textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(26,58,74,0.08); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-6 lg:py-8">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4 mb-7">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <a href="{% url 'pos:cash_handover_list' %}" class="text-text-secondary hover:text-primary transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+        <h1 class="text-xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Handover Review</h1>
+      </div>
+      <p class="text-sm" style="color: var(--text-secondary)">
+        {{ handover.staff.name }} · Shift: 
+        {% if handover.shift_start and handover.shift_end %}
+          {{ handover.shift_start|date:"d M H:i" }} to {{ handover.shift_end|date:"d M H:i" }}
+        {% else %}
+          (Legacy) Submitted {{ handover.created_at|date:"d M H:i" }}
+        {% endif %}
+      </p>
+    </div>
+    <div>
+      {% if handover.status == 'pending' %}
+        <span class="status-pill pill-pending">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Pending
+        </span>
+      {% elif handover.status == 'confirmed' %}
+        <span class="status-pill pill-confirmed">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Confirmed
+        </span>
+      {% else %}
+        <span class="status-pill pill-rejected">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
+        </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Side-by-side comparison -->
+  <div class="card p-6 mb-5">
+    <h2 class="text-xs font-bold uppercase tracking-wider mb-5" style="color: var(--text-secondary)">Figure Comparison</h2>
+    <div class="grid grid-cols-3 text-center text-[11px] font-bold uppercase tracking-wider pb-3 border-b mb-2" style="border-color: var(--border); color: var(--text-secondary)">
+      <div class="text-left">Item</div>
+      <div>System (Expected)</div>
+      <div>Staff (Submitted)</div>
+    </div>
+
+    <div class="compare-row">
+      <span class="compare-label">Cash</span>
+      <span class="compare-system">KES {{ expected_cash|floatformat:2 }}</span>
+      <span class="compare-staff {% if handover.cash_amount < expected_cash %}text-red-600{% elif handover.cash_amount > expected_cash %}text-emerald-600{% else %}text-slate-700{% endif %}">
+        KES {{ handover.cash_amount|floatformat:2 }}
+      </span>
+    </div>
+    <div class="compare-row">
+      <span class="compare-label">M-Pesa</span>
+      <span class="compare-system">KES {{ expected_mpesa|floatformat:2 }}</span>
+      <span class="compare-staff {% if handover.mpesa_amount < expected_mpesa %}text-red-600{% elif handover.mpesa_amount > expected_mpesa %}text-emerald-600{% else %}text-slate-700{% endif %}">
+        KES {{ handover.mpesa_amount|floatformat:2 }}
+      </span>
+    </div>
+    <div class="compare-row">
+      <span class="compare-label">In-Shop Expenses</span>
+      <span class="compare-system text-amber-600">KES {{ handover.in_shop_expenses|floatformat:2 }}</span>
+      <span class="compare-staff text-amber-600">KES {{ handover.in_shop_expenses|floatformat:2 }}</span>
+    </div>
+    <div class="compare-row">
+      <span class="compare-label">Total Sales</span>
+      <span class="compare-system">KES {{ handover.total_sales|floatformat:2 }}</span>
+      <span class="compare-staff text-slate-700">—</span>
+    </div>
+
+    <!-- Net variance banner -->
+    <div class="mt-4 p-4 rounded-2xl text-center
+      {% if handover.variance > 0 %}bg-emerald-600 text-white shadow-lg shadow-emerald-200
+      {% elif handover.variance < 0 %}bg-red-600 text-white shadow-lg shadow-red-200
+      {% else %}bg-slate-100 text-slate-700{% endif %}">
+      <div class="text-[11px] font-bold uppercase tracking-wider opacity-80 mb-1">Net Variance</div>
+      <div class="text-3xl font-extrabold font-mono">KES {{ handover.variance|floatformat:2 }}</div>
+      <div class="text-xs font-semibold opacity-80 mt-1">
+        {% if handover.variance > 0 %}Surplus — cash in excess of sales
+        {% elif handover.variance < 0 %}Shortage — cash below expected
+        {% else %}Balanced{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if handover.admin_note %}
+  <!-- Admin note (if already actioned) -->
+  <div class="card p-5 mb-5 border-l-4 {% if handover.status == 'rejected' %}border-l-red-400{% else %}border-l-emerald-400{% endif %}">
+    <p class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color: var(--text-secondary)">
+      {{ handover.get_status_display }} by {{ handover.confirmed_by.name }} · {{ handover.confirmed_at|date:"d M Y, H:i" }}
+    </p>
+    <p class="text-sm text-slate-700">{{ handover.admin_note }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Action panel — only for pending handovers and admin/manager -->
+  {% if handover.status == 'pending' and is_manager %}
+  <div class="card p-6" x-data="{ tab: 'confirm' }">
+    <h2 class="text-sm font-bold mb-5" style="color: var(--primary-dark)">Review Action</h2>
+
+    <div class="flex gap-2 mb-5 p-1 rounded-xl" style="background: var(--bg-main)">
+      <button type="button" @click="tab='confirm'"
+              class="flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all"
+              :class="tab==='confirm' ? 'bg-emerald-600 text-white shadow-md' : 'text-text-secondary hover:text-primary'">
+        ✓ Confirm
+      </button>
+      <button type="button" @click="tab='reject'"
+              class="flex-1 py-2.5 px-4 rounded-lg text-sm font-bold transition-all"
+              :class="tab==='reject' ? 'bg-red-600 text-white shadow-md' : 'text-text-secondary hover:text-primary'">
+        ✕ Reject
+      </button>
+    </div>
+
+    <!-- Confirm form -->
+    <div x-show="tab==='confirm'" x-transition>
+      <form method="POST" action="{% url 'pos:cash_handover_confirm' handover.pk %}">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style="color: var(--text-secondary)">Optional Note</label>
+          <textarea name="admin_note" placeholder="Add a note (optional)..." class="note-textarea"></textarea>
+        </div>
+        <button type="submit" class="btn btn-success w-full font-bold gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirm Handover
+        </button>
+      </form>
+    </div>
+
+    <!-- Reject form -->
+    <div x-show="tab==='reject'" x-cloak x-transition>
+      <form method="POST" action="{% url 'pos:cash_handover_reject' handover.pk %}">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="text-xs font-semibold uppercase tracking-wider mb-1.5 block" style="color: var(--text-secondary)">Rejection Reason <span class="text-red-500">*</span></label>
+          <textarea name="admin_note" required placeholder="Explain why this handover is being rejected..." class="note-textarea border-red-200 focus:border-red-400"></textarea>
+        </div>
+        <button type="submit" class="btn btn-danger w-full font-bold gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Reject Handover
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

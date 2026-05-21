@@ -2,36 +2,73 @@
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-6">
   <h1 class="text-2xl font-bold mb-4" style="color: var(--primary-dark)">Initiate Stock Audit</h1>
+  
+  {% if form_errors %}
+  <div class="mb-5 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm space-y-1">
+    <div class="font-semibold text-red-700">Please correct the errors below:</div>
+    <ul class="list-disc pl-5">
+      {% for field, errors in form_errors.items %}
+        {% for error in errors %}
+          <li>{{ field|capfirst }}: {{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <div class="bg-white rounded-2xl border border-border p-6">
-    <form method="POST" class="space-y-4">
+    <form method="POST" class="space-y-4" id="audit-initiate-form">
       {% csrf_token %}
       <div>
         <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Scope</label>
-        <select name="scope" class="w-full px-4 py-3 rounded-xl border border-border text-sm" onchange="document.getElementById('cat-field').style.display=this.value==='category'?'block':'none'; document.getElementById('subcat-field').style.display=this.value==='subcategory'?'block':'none'">
+        <select name="scope" id="scope-select" class="w-full px-4 py-3 rounded-xl border border-border text-sm" 
+                onchange="updateFormState(this.value)">
+          <option value="" disabled selected>-- Select Scope --</option>
           <option value="all">All Products</option>
           <option value="category">Specific Category</option>
           <option value="subcategory">Specific Sub-Category</option>
         </select>
       </div>
+      
       <div id="cat-field" style="display:none">
         <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Category</label>
         <select name="category_id" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
           {% for c in categories %}<option value="{{ c.pk }}">{{ c.icon }} {{ c.name }}</option>{% endfor %}
         </select>
       </div>
+      
       <div id="subcat-field" style="display:none">
         <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sub-Category</label>
         <select name="subcategory_id" class="w-full px-4 py-3 rounded-xl border border-border text-sm">
           {% for sc in subcategories %}<option value="{{ sc.pk }}">{{ sc.category.name }} › {{ sc.name }}</option>{% endfor %}
         </select>
       </div>
-      <div>
+      
+      <div id="sample-size-field" style="display:none">
         <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sample Size</label>
-        <input type="number" name="sample_size" value="10" min="1" max="100" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
+        <input type="number" name="sample_size" value="10" min="1" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
         <p class="text-xs text-text-secondary mt-1">Products will be randomly selected (weighted towards recently moved stock)</p>
       </div>
-      <button type="submit" class="btn btn-primary w-full text-sm">🔍 Generate Audit Sheet</button>
+      
+      <button type="submit" id="submit-btn" disabled class="btn btn-primary w-full text-sm opacity-50 cursor-not-allowed">🔍 Generate Audit Sheet</button>
     </form>
   </div>
 </div>
+
+<script>
+  function updateFormState(value) {
+    document.getElementById('cat-field').style.display = value === 'category' ? 'block' : 'none';
+    document.getElementById('subcat-field').style.display = value === 'subcategory' ? 'block' : 'none';
+    document.getElementById('sample-size-field').style.display = (value === 'category' || value === 'subcategory') ? 'block' : 'none';
+    
+    const btn = document.getElementById('submit-btn');
+    if (value) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+      btn.disabled = true;
+      btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+  }
+</script>
 {% endblock %}

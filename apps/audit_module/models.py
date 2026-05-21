@@ -66,6 +66,14 @@ class AuditSession(models.Model):
 
 class AuditItem(models.Model):
     """One product within an audit session — holds system qty vs physical count."""
+    
+    ACTION_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('validated', 'Validated'),
+        ('disputed', 'Disputed'),
+        ('posted', 'Posted'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(AuditSession, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(
@@ -76,6 +84,17 @@ class AuditItem(models.Model):
     physical_qty = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     variance = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
     note = models.CharField(max_length=200, blank=True, default='')
+    
+    action_status = models.CharField(max_length=15, choices=ACTION_STATUS_CHOICES, default='pending')
+    payroll_adjustment = models.ForeignKey(
+        'payroll.PayrollAdjustment', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='audit_items',
+    )
+    validated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='validated_audit_items',
+    )
+    validated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['product__name']

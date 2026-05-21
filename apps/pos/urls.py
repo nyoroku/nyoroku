@@ -22,4 +22,10 @@ urlpatterns = [
     # Offline API
     path('api/products/', views.api_products, name='api_products'),
     path('api/sync/', views.api_sync, name='api_sync'),
+    # Cash Handover workflow
+    path('handover/submit/', views.cash_handover_submit, name='cash_handover_submit'),
+    path('handover/list/', views.cash_handover_list, name='cash_handover_list'),
+    path('handover/<uuid:pk>/', views.cash_handover_detail, name='cash_handover_detail'),
+    path('handover/<uuid:pk>/confirm/', views.cash_handover_confirm, name='cash_handover_confirm'),
+    path('handover/<uuid:pk>/reject/', views.cash_handover_reject, name='cash_handover_reject'),
 ]
