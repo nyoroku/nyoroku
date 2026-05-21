@@ -45,7 +45,7 @@
   </div>
 
   {% if session.status == 'in_progress' %}
-  <form method="POST" action="{% url 'audit_module:submit' session.pk %}">
+  <form id="audit-submit-form" method="POST" action="{% url 'audit_module:submit' session.pk %}">
     {% csrf_token %}
   {% endif %}
 
@@ -67,7 +67,11 @@
       </thead>
       <tbody>
         {% for item in items %}
-        <tr class="audit-row border-b {% if item.variance and item.variance != 0 %}bg-red-50/40{% endif %}" style="border-color: #f1f3f5">
+        <tr class="audit-row border-b {% if item.variance and item.variance != 0 %}bg-red-50/40{% endif %}"
+            style="border-color: #f1f3f5"
+            data-system-qty="{{ item.system_qty|stringformat:".3f" }}"
+            data-unit-price="{% if item.product.weight_sell_enabled and item.product.price_per_weight_unit %}{{ item.product.price_per_weight_unit|stringformat:".2f" }}{% else %}{{ item.product.base_unit_price|stringformat:".2f" }}{% endif %}"
+            data-item-id="{{ item.pk }}">
           <td class="px-5 py-3.5">
             <div class="font-semibold text-sm">{{ item.product.name }}</div>
             <div class="text-[11px]" style="color: var(--text-secondary)">{{ item.product.subcategory.category.name }} › {{ item.product.subcategory.name }}</div>
@@ -76,12 +80,12 @@
           <td class="px-5 py-3.5 text-right">
             {% if session.status == 'in_progress' %}
             <input type="number" name="physical_{{ item.pk }}" step="0.001" value="{{ item.physical_qty|default:'' }}"
-                   class="audit-input" inputmode="decimal" placeholder="—">
+                   class="audit-input physical-input" inputmode="decimal" placeholder="—">
             {% else %}
             <span class="font-mono font-bold">{{ item.physical_qty|default:"—" }}</span>
             {% endif %}
           </td>
-          <td class="px-5 py-3.5 text-right">
+          <td class="px-5 py-3.5 text-right" id="variance-{{ item.pk }}">
             {% if item.variance is not None %}
             <span class="variance-cell {% if item.variance == 0 %}text-emerald-600{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
               {{ item.status_icon }} {{ item.variance }}
@@ -90,7 +94,7 @@
             <span class="text-text-secondary">—</span>
             {% endif %}
           </td>
-          <td class="px-5 py-3.5 text-right font-mono font-bold text-sm">
+          <td class="px-5 py-3.5 text-right font-mono font-bold text-sm" id="variance-val-{{ item.pk }}">
             {% if item.variance is not None %}
             <span class="{% if item.variance == 0 %}text-text-secondary{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
               {{ item.variance_value|floatformat:2 }}
@@ -148,6 +152,20 @@
         </tr>
         {% endfor %}
       </tbody>
+      {% if session.status == 'in_progress' %}
+      <tfoot>
+        <tr style="background: var(--bg-main); border-top: 2px solid var(--border)">
+          <td class="px-5 py-4 font-bold text-sm" colspan="3" style="color: var(--primary-dark)">Running Total</td>
+          <td class="px-5 py-4 text-right" id="total-variance">
+            <span class="variance-cell text-text-secondary">—</span>
+          </td>
+          <td class="px-5 py-4 text-right font-mono font-extrabold text-sm" id="total-variance-value">
+            <span class="text-text-secondary">—</span>
+          </td>
+          <td class="px-5 py-4">&nbsp;</td>
+        </tr>
+      </tfoot>
+      {% endif %}
     </table>
   </div>
 
@@ -160,6 +178,123 @@
       </button>
     </div>
   </form>
+
+  <script>
+  (function() {
+    function cleanNumberString(val) {
+      return (val || '').toString().replace(/,/g, '');
+    }
+
+    function recalcRow(input) {
+      var row = input.closest('tr');
+      var itemId = row.getAttribute('data-item-id');
+      var systemQty = parseFloat(cleanNumberString(row.getAttribute('data-system-qty'))) || 0;
+      var unitPrice = parseFloat(cleanNumberString(row.getAttribute('data-unit-price'))) || 0;
+      var physicalVal = input.value.trim();
+
+      var varianceCell = document.getElementById('variance-' + itemId);
+      var varianceValCell = document.getElementById('variance-val-' + itemId);
+
+      if (physicalVal === '') {
+        varianceCell.innerHTML = '<span class="text-text-secondary">—</span>';
+        varianceValCell.innerHTML = '<span class="text-text-secondary">—</span>';
+        row.classList.remove('bg-red-50/40');
+        recalcTotals();
+        return;
+      }
+
+      var physical = parseFloat(cleanNumberString(physicalVal)) || 0;
+      var variance = physical - systemQty;
+      var varianceValue = variance * unitPrice;
+
+      // Variance qty display
+      var icon, colorClass;
+      if (variance === 0) {
+        icon = '\u2705'; colorClass = 'text-emerald-600';
+        row.classList.remove('bg-red-50/40');
+      } else if (variance > 0) {
+        icon = '\uD83D\uDD3C'; colorClass = 'text-blue-600';
+        row.classList.remove('bg-red-50/40');
+      } else {
+        icon = '\u274C'; colorClass = 'text-red-600';
+        row.classList.add('bg-red-50/40');
+      }
+      varianceCell.innerHTML = '<span class="variance-cell ' + colorClass + '">' + icon + ' ' + variance.toFixed(3) + '</span>';
+
+      // Variance value display
+      var valColor = variance === 0 ? 'text-text-secondary' : (variance > 0 ? 'text-blue-600' : 'text-red-600');
+      varianceValCell.innerHTML = '<span class="' + valColor + '">' + varianceValue.toFixed(2) + '</span>';
+
+      recalcTotals();
+    }
+
+    function recalcTotals() {
+      var rows = document.querySelectorAll('tr[data-item-id]');
+      var totalVar = 0;
+      var totalVal = 0;
+      var hasAny = false;
+
+      rows.forEach(function(row) {
+        var input = row.querySelector('.physical-input');
+        if (!input || input.value.trim() === '') return;
+        hasAny = true;
+        var systemQty = parseFloat(cleanNumberString(row.getAttribute('data-system-qty'))) || 0;
+        var unitPrice = parseFloat(cleanNumberString(row.getAttribute('data-unit-price'))) || 0;
+        var physical = parseFloat(cleanNumberString(input.value)) || 0;
+        var v = physical - systemQty;
+        totalVar += v;
+        totalVal += v * unitPrice;
+      });
+
+      var totalVarCell = document.getElementById('total-variance');
+      var totalValCell = document.getElementById('total-variance-value');
+      if (!totalVarCell || !totalValCell) return;
+
+      if (!hasAny) {
+        totalVarCell.innerHTML = '<span class="variance-cell text-text-secondary">—</span>';
+        totalValCell.innerHTML = '<span class="text-text-secondary">—</span>';
+        return;
+      }
+
+      var tColor = totalVar === 0 ? 'text-emerald-600' : (totalVar > 0 ? 'text-blue-600' : 'text-red-600');
+      totalVarCell.innerHTML = '<span class="variance-cell ' + tColor + '">' + totalVar.toFixed(3) + '</span>';
+
+      var tvColor = totalVal === 0 ? 'text-text-secondary' : (totalVal > 0 ? 'text-blue-600' : 'text-red-600');
+      totalValCell.innerHTML = '<span class="font-mono font-extrabold ' + tvColor + '">KES ' + totalVal.toFixed(2) + '</span>';
+    }
+
+    // Attach event listeners
+    document.querySelectorAll('.physical-input').forEach(function(input) {
+      input.addEventListener('input', function() { recalcRow(this); });
+      input.addEventListener('change', function() { recalcRow(this); });
+    });
+
+    // Initial calculation for any pre-filled values
+    document.querySelectorAll('.physical-input').forEach(function(input) {
+      if (input.value.trim() !== '') recalcRow(input);
+    });
+
+    // Form submit payload optimization
+    var form = document.getElementById('audit-submit-form');
+    if (form) {
+      form.addEventListener('submit', function() {
+        document.querySelectorAll('.physical-input').forEach(function(input) {
+          if (input.value.trim() === '') {
+            // Disable empty inputs so they are NOT submitted to the server
+            input.disabled = true;
+            
+            // Also disable corresponding note inputs to further reduce payload field count
+            var row = input.closest('tr');
+            var noteInput = row.querySelector('.note-input');
+            if (noteInput) {
+              noteInput.disabled = true;
+            }
+          }
+        });
+      });
+    }
+  })();
+  </script>
   {% endif %}
 
   <!-- Summary (completed) -->
