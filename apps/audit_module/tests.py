@@ -99,3 +99,42 @@ class StockAuditTestCase(TestCase):
         self.assertIsNone(self.item2.physical_qty)
         self.assertIsNone(self.item2.variance)
         self.assertEqual(self.product2.stock_in_weight_unit, Decimal('10.500'))
+
+    def test_initiate_audit_all_success(self):
+        """Test initiating an audit for all products."""
+        initiate_url = reverse('audit_module:initiate')
+        post_data = {
+            'scope': 'all'
+        }
+        response = self.client.post(initiate_url, post_data)
+        
+        # Check redirection to the newly created audit detail page
+        self.assertEqual(response.status_code, 302)
+        
+        # Verify the session is created and populated with products
+        session = AuditSession.objects.exclude(pk=self.session.pk).first()
+        self.assertIsNotNone(session)
+        self.assertEqual(session.scope, 'all')
+        self.assertEqual(session.sample_size, 2) # both self.product1 and self.product2
+        self.assertEqual(session.items.count(), 2)
+
+    def test_initiate_audit_category_success(self):
+        """Test initiating a category-scoped audit with sample size."""
+        initiate_url = reverse('audit_module:initiate')
+        post_data = {
+            'scope': 'category',
+            'category_id': str(self.category.pk),
+            'sample_size': 1
+        }
+        response = self.client.post(initiate_url, post_data)
+        
+        # Check redirect
+        self.assertEqual(response.status_code, 302)
+        
+        # Verify the session is created and populated with exactly 1 product
+        session = AuditSession.objects.exclude(pk=self.session.pk).first()
+        self.assertIsNotNone(session)
+        self.assertEqual(session.scope, 'category')
+        self.assertEqual(session.scope_category, self.category)
+        self.assertEqual(session.sample_size, 1)
+        self.assertEqual(session.items.count(), 1)

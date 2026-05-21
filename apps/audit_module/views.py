@@ -76,13 +76,15 @@ def audit_initiate(request):
                 sample_size=len(selected),
             )
 
+            audit_items = []
             for product in selected:
                 system_qty = product.stock_in_weight_unit if product.weight_sell_enabled else product.stock_qty
-                AuditItem.objects.create(
+                audit_items.append(AuditItem(
                     session=session,
                     product=product,
                     system_qty=system_qty,
-                )
+                ))
+            AuditItem.objects.bulk_create(audit_items)
 
             return redirect('audit_module:detail', pk=session.pk)
         else:
