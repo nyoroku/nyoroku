@@ -46,22 +46,56 @@
       
       <div id="sample-size-field" style="display:none">
         <label class="text-xs font-semibold text-text-secondary uppercase mb-1 block">Sample Size</label>
-        <input type="number" name="sample_size" value="10" min="1" class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
+        <input type="number" name="sample_size" id="sample-size-input" value="10" min="1" disabled
+               class="w-full px-4 py-3 rounded-xl border border-border text-sm font-mono">
         <p class="text-xs text-text-secondary mt-1">Products will be randomly selected (weighted towards recently moved stock)</p>
       </div>
+
+      <!-- Info banner for "All Products" scope -->
+      <div id="all-scope-info" style="display:none; background: rgba(16,185,129,0.05); border-color: rgba(16,185,129,0.2);" class="p-4 rounded-xl border text-sm">
+        <div class="flex items-center gap-2 text-emerald-700 font-semibold">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          All active products will be included in this audit
+        </div>
+      </div>
       
-      <button type="submit" id="submit-btn" disabled class="btn btn-primary w-full text-sm opacity-50 cursor-not-allowed">🔍 Generate Audit Sheet</button>
+      <button type="submit" id="submit-btn" disabled class="btn btn-primary w-full text-sm opacity-50 cursor-not-allowed">
+        <span id="btn-text">🔍 Generate Audit Sheet</span>
+        <span id="btn-loading" style="display:none" class="flex items-center gap-2">
+          <svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+          Creating audit session...
+        </span>
+      </button>
     </form>
   </div>
 </div>
 
 <script>
   function updateFormState(value) {
-    document.getElementById('cat-field').style.display = value === 'category' ? 'block' : 'none';
-    document.getElementById('subcat-field').style.display = value === 'subcategory' ? 'block' : 'none';
-    document.getElementById('sample-size-field').style.display = (value === 'category' || value === 'subcategory') ? 'block' : 'none';
+    var sampleInput = document.getElementById('sample-size-input');
+    var sampleField = document.getElementById('sample-size-field');
+    var catField = document.getElementById('cat-field');
+    var subcatField = document.getElementById('subcat-field');
+    var allInfo = document.getElementById('all-scope-info');
+
+    // Show/hide fields based on scope
+    catField.style.display = value === 'category' ? 'block' : 'none';
+    subcatField.style.display = value === 'subcategory' ? 'block' : 'none';
     
-    const btn = document.getElementById('submit-btn');
+    if (value === 'category' || value === 'subcategory') {
+      sampleField.style.display = 'block';
+      sampleInput.disabled = false;  // Enable so it validates and submits
+      allInfo.style.display = 'none';
+    } else {
+      sampleField.style.display = 'none';
+      sampleInput.disabled = true;   // Disable to exclude from validation & submission
+      allInfo.style.display = value === 'all' ? 'block' : 'none';
+    }
+    
+    // Enable/disable submit button
+    var btn = document.getElementById('submit-btn');
     if (value) {
       btn.disabled = false;
       btn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -70,5 +104,14 @@
       btn.classList.add('opacity-50', 'cursor-not-allowed');
     }
   }
+
+  // Loading state on form submit
+  document.getElementById('audit-initiate-form').addEventListener('submit', function() {
+    var btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    document.getElementById('btn-text').style.display = 'none';
+    document.getElementById('btn-loading').style.display = 'flex';
+  });
 </script>
 {% endblock %}
