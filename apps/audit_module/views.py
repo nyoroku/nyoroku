@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
@@ -204,13 +205,14 @@ def audit_item_apply(request, item_id):
         ip_address=request.META.get('REMOTE_ADDR'),
     )
 
+    messages.success(request, f"Stock adjusted successfully for {product.name}.")
     return redirect('audit_module:detail', pk=item.session.pk)
 
 
 @login_required
 @require_http_methods(["POST"])
 def audit_apply_all(request, pk):
-    """Bulk apply all unposted variance items in one atomic transaction."""
+    """Bulk apply selected or all unposted variance items in one atomic transaction."""
     if request.user.role != 'admin':
         return HttpResponse('Unauthorized', status=403)
 
@@ -218,7 +220,13 @@ def audit_apply_all(request, pk):
     if session.status != 'completed':
         return HttpResponse('Audit session is not completed', status=400)
 
+    # Support selection
+    selected_ids = request.POST.getlist('selected_items')
+    
     items = session.items.exclude(variance=Decimal('0')).exclude(variance__isnull=True).exclude(action_status='applied')
+    if selected_ids:
+        items = items.filter(pk__in=selected_ids)
+        
     applied_count = 0
 
     with transaction.atomic():
@@ -255,6 +263,11 @@ def audit_apply_all(request, pk):
         description=f"Bulk applied stock adjustments for {applied_count} items.",
         ip_address=request.META.get('REMOTE_ADDR'),
     )
+
+    if applied_count > 0:
+        messages.success(request, f"Successfully adjusted stock for {applied_count} products.")
+    else:
+        messages.warning(request, "No stock adjustments were made.")
 
     return redirect('audit_module:detail', pk=session.pk)
 
