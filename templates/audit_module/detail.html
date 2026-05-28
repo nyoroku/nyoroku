@@ -104,7 +104,10 @@
       </thead>
       <tbody>
         {% for item in items %}
-        <tr class="audit-row border-b {% if item.variance and item.variance != 0 %}bg-red-50/40{% endif %}" style="border-color: #f1f3f5">
+        <tr class="audit-row border-b audit-row-input {% if item.variance and item.variance != 0 %}bg-red-50/40{% endif %}" style="border-color: #f1f3f5"
+            data-item-id="{{ item.pk }}" 
+            data-system-qty="{{ item.system_qty }}" 
+            data-product-price="{% if item.product.weight_sell_enabled and item.product.price_per_weight_unit %}{{ item.product.price_per_weight_unit }}{% else %}{{ item.product.base_unit_price }}{% endif %}">
           <td class="px-5 py-3.5">
             <div class="font-semibold text-sm">{{ item.product.name }}</div>
             <div class="text-[11px]" style="color: var(--text-secondary)">{{ item.product.subcategory.category.name }} › {{ item.product.subcategory.name }}</div>
@@ -112,28 +115,36 @@
           <td class="px-5 py-3.5 text-right font-mono font-bold text-sm">{{ item.system_qty }}</td>
           <td class="px-5 py-3.5 text-right">
             {% if session.status == 'in_progress' %}
-            <input type="number" name="physical_{{ item.pk }}" step="0.001" value="{{ item.physical_qty|default:'' }}"
-                   class="audit-input" inputmode="decimal" placeholder="—">
+            <input type="number" name="physical_{{ item.pk }}" id="physical-input-{{ item.pk }}" step="0.001" value="{{ item.physical_qty|default:'' }}"
+                   class="audit-input physical-input" inputmode="decimal" placeholder="—" data-item-id="{{ item.pk }}">
             {% else %}
             <span class="font-mono font-bold">{{ item.physical_qty|default:"—" }}</span>
             {% endif %}
           </td>
           <td class="px-5 py-3.5 text-right">
-            {% if item.variance is not None %}
-            <span class="variance-cell {% if item.variance == 0 %}text-emerald-600{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
-              {{ item.status_icon }} {{ item.variance }}
-            </span>
+            {% if session.status == 'in_progress' %}
+              <span id="variance-{{ item.pk }}" class="variance-cell text-text-secondary font-mono font-bold text-sm">—</span>
             {% else %}
-            <span class="text-text-secondary">—</span>
+              {% if item.variance is not None %}
+              <span class="variance-cell {% if item.variance == 0 %}text-emerald-600{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
+                {{ item.status_icon }} {{ item.variance }}
+              </span>
+              {% else %}
+              <span class="text-text-secondary">—</span>
+              {% endif %}
             {% endif %}
           </td>
           <td class="px-5 py-3.5 text-right font-mono font-bold text-sm">
-            {% if item.variance is not None %}
-            <span class="{% if item.variance == 0 %}text-text-secondary{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
-              {{ item.variance_value|floatformat:2 }}
-            </span>
+            {% if session.status == 'in_progress' %}
+              <span id="variance-value-{{ item.pk }}" class="variance-value-cell text-text-secondary font-mono font-bold text-sm">—</span>
             {% else %}
-            <span class="text-text-secondary">—</span>
+              {% if item.variance is not None %}
+              <span class="{% if item.variance == 0 %}text-text-secondary{% elif item.variance > 0 %}text-blue-600{% else %}text-red-600{% endif %}">
+                {{ item.variance_value|floatformat:2 }}
+              </span>
+              {% else %}
+              <span class="text-text-secondary">—</span>
+              {% endif %}
             {% endif %}
           </td>
           <td class="px-5 py-3.5">
@@ -219,31 +230,44 @@
   </form>
   {% endif %}
 
-  <!-- Summary (completed) -->
-  {% if session.status == 'completed' %}
+  <!-- Summary -->
   <div class="mt-5 card p-5">
-    <h3 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4">Audit Summary</h3>
+    <h3 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4" id="summary-title">
+      {% if session.status == 'completed' %}Audit Summary{% else %}Live Audit Summary{% endif %}
+    </h3>
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div class="p-4 rounded-xl bg-emerald-50 text-center">
-        <div class="text-2xl font-extrabold text-emerald-600 font-mono">{{ session.match_count }}</div>
+        <div class="text-2xl font-extrabold text-emerald-600 font-mono" id="live-match-count">
+          {% if session.status == 'completed' %}{{ session.match_count }}{% else %}0{% endif %}
+        </div>
         <div class="text-[10px] font-bold text-emerald-700 uppercase mt-1">Matched</div>
       </div>
       <div class="p-4 rounded-xl bg-red-50 text-center border border-red-100">
-        <div class="text-2xl font-extrabold text-red-600 font-mono">{{ session.variance_count }}</div>
+        <div class="text-2xl font-extrabold text-red-600 font-mono" id="live-variance-count">
+          {% if session.status == 'completed' %}{{ session.variance_count }}{% else %}0{% endif %}
+        </div>
         <div class="text-[10px] font-bold text-red-700 uppercase mt-1">Variances</div>
       </div>
       <div class="p-4 rounded-xl text-center bg-gray-50 border border-gray-100">
-        <div class="text-2xl font-extrabold text-gray-900 font-mono">{{ session.total_items }}</div>
+        <div class="text-2xl font-extrabold text-gray-900 font-mono">
+          {{ session.total_items }}
+        </div>
         <div class="text-[10px] font-bold text-gray-500 uppercase mt-1">Total Items</div>
       </div>
-      <div class="p-4 rounded-xl text-center {% if session.total_variance_value < 0 %}bg-red-600 text-white shadow-lg shadow-red-200{% else %}bg-emerald-600 text-white shadow-lg shadow-emerald-200{% endif %}">
-        <div class="text-2xl font-extrabold font-mono">{{ session.total_variance_value|floatformat:2 }}</div>
+      <div id="live-total-variance-value-card" class="p-4 rounded-xl text-center transition-all duration-300
+        {% if session.status == 'completed' %}
+          {% if session.total_variance_value < 0 %}bg-red-600 text-white shadow-lg shadow-red-200{% else %}bg-emerald-600 text-white shadow-lg shadow-emerald-200{% endif %}
+        {% else %}
+          bg-gray-100 text-gray-800
+        {% endif %}">
+        <div class="text-2xl font-extrabold font-mono" id="live-total-variance-value">
+          {% if session.status == 'completed' %}{{ session.total_variance_value|floatformat:2 }}{% else %}0.00{% endif %}
+        </div>
         <div class="text-[10px] font-bold uppercase mt-1">Total Variance Value</div>
       </div>
     </div>
     {% if session.notes %}<p class="text-sm mt-4" style="color: var(--text-secondary)">{{ session.notes }}</p>{% endif %}
   </div>
-  {% endif %}
 </div>
 
 <!-- ===== Apply Adjustment Modal ===== -->
@@ -423,6 +447,106 @@
 </div>
 
 <script>
+  // ===== Real-time live calculations during audit input (in_progress) =====
+  document.addEventListener('DOMContentLoaded', function() {
+    const isInProgress = {% if session.status == 'in_progress' %}true{% else %}false{% endif %};
+    if (!isInProgress) return;
+
+    const rows = document.querySelectorAll('.audit-row-input');
+    
+    function updateCalculations() {
+      let matchCount = 0;
+      let varianceCount = 0;
+      let totalVarianceValue = 0;
+      
+      rows.forEach(row => {
+        const itemId = row.dataset.itemId;
+        const systemQty = parseFloat(row.dataset.systemQty);
+        const price = parseFloat(row.dataset.productPrice);
+        const input = document.getElementById('physical-input-' + itemId);
+        const varianceSpan = document.getElementById('variance-' + itemId);
+        const varianceValSpan = document.getElementById('variance-value-' + itemId);
+        
+        if (!input || !varianceSpan || !varianceValSpan) return;
+
+        const val = input.value.trim();
+        if (val !== '') {
+          const physicalQty = parseFloat(val);
+          const variance = physicalQty - systemQty;
+          const varianceValue = variance * price;
+          
+          // Update variance span
+          if (Math.abs(variance) < 0.0001) {
+            varianceSpan.textContent = '✅ 0.000';
+            varianceSpan.className = 'variance-cell text-emerald-600 font-mono font-bold text-sm';
+            matchCount++;
+          } else if (variance > 0) {
+            varianceSpan.textContent = '🔼 +' + variance.toFixed(3);
+            varianceSpan.className = 'variance-cell text-blue-600 font-mono font-bold text-sm';
+            varianceCount++;
+          } else {
+            varianceSpan.textContent = '❌ ' + variance.toFixed(3);
+            varianceSpan.className = 'variance-cell text-red-600 font-mono font-bold text-sm';
+            varianceCount++;
+          }
+          
+          // Update variance value span
+          varianceValSpan.textContent = (varianceValue >= 0 ? '+' : '') + varianceValue.toFixed(2);
+          varianceValSpan.className = 'variance-value-cell font-mono font-bold text-sm ' + (Math.abs(varianceValue) < 0.01 ? 'text-text-secondary' : (varianceValue > 0 ? 'text-blue-600' : 'text-red-600'));
+          
+          totalVarianceValue += varianceValue;
+          
+          // Highlight row background depending on variance presence
+          if (Math.abs(variance) >= 0.0001) {
+            row.classList.add('bg-red-50/40');
+          } else {
+            row.classList.remove('bg-red-50/40');
+          }
+        } else {
+          varianceSpan.textContent = '—';
+          varianceSpan.className = 'variance-cell text-text-secondary font-mono font-bold text-sm';
+          varianceValSpan.textContent = '—';
+          varianceValSpan.className = 'variance-value-cell text-text-secondary font-mono font-bold text-sm';
+          row.classList.remove('bg-red-50/40');
+        }
+      });
+      
+      // Update live summaries
+      const matchEl = document.getElementById('live-match-count');
+      const varEl = document.getElementById('live-variance-count');
+      if (matchEl) matchEl.textContent = matchCount;
+      if (varEl) varEl.textContent = varianceCount;
+      
+      const totalVarValEl = document.getElementById('live-total-variance-value');
+      if (totalVarValEl) {
+        totalVarValEl.textContent = totalVarianceValue.toFixed(2);
+      }
+      
+      const cardEl = document.getElementById('live-total-variance-value-card');
+      if (cardEl) {
+        if (totalVarianceValue < -0.01) {
+          cardEl.className = 'p-4 rounded-xl text-center transition-all duration-300 bg-red-600 text-white shadow-lg shadow-red-200';
+        } else if (totalVarianceValue > 0.01) {
+          cardEl.className = 'p-4 rounded-xl text-center transition-all duration-300 bg-emerald-600 text-white shadow-lg shadow-emerald-200';
+        } else {
+          cardEl.className = 'p-4 rounded-xl text-center transition-all duration-300 bg-gray-100 text-gray-800';
+        }
+      }
+    }
+    
+    // Attach input event listeners
+    rows.forEach(row => {
+      const itemId = row.dataset.itemId;
+      const input = document.getElementById('physical-input-' + itemId);
+      if (input) {
+        input.addEventListener('input', updateCalculations);
+      }
+    });
+    
+    // Initial run on load
+    updateCalculations();
+  });
+
   // ===== Apply Adjustment Modal =====
   function openApplyModal(itemId, productName, systemQty, physicalQty, variance, varianceValue) {
     document.getElementById('apply-modal-product').textContent = productName;
