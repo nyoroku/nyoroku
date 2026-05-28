@@ -89,11 +89,28 @@ class StockAuditTestCase(TestCase):
         self.assertEqual(self.session.status, 'completed')
         self.assertEqual(self.session.notes, 'Completed standard items audit')
         
-        # Verify audited item 1 fields and stock adjustment
+        # Verify audited item 1 fields, but stock is NOT changed automatically
         self.assertEqual(self.item1.physical_qty, Decimal('18.000'))
         self.assertEqual(self.item1.variance, Decimal('-2.000'))
         self.assertEqual(self.item1.note, 'Damaged cans')
-        self.assertEqual(self.product1.stock_qty, Decimal('18.000')) # adjusted
+        self.assertEqual(self.product1.stock_qty, Decimal('20.000')) # NOT adjusted automatically
+        self.assertEqual(self.item1.action_status, 'pending')
+        
+        # Now test single item apply
+        apply_url = reverse('audit_module:item_apply', kwargs={'item_id': self.item1.pk})
+        apply_response = self.client.post(apply_url)
+        self.assertEqual(apply_response.status_code, 302)
+        
+        self.product1.refresh_from_db()
+        self.item1.refresh_from_db()
+        self.assertEqual(self.product1.stock_qty, Decimal('18.000')) # Now adjusted!
+        self.assertEqual(self.item1.action_status, 'applied')
+        
+        # Verify StockLedger entry was created
+        from catalogue.models import StockLedger
+        ledger_entry = StockLedger.objects.filter(product=self.product1, entry_type='ADJUSTMENT').first()
+        self.assertIsNotNone(ledger_entry)
+        self.assertEqual(ledger_entry.qty_delta, -2)
         
         # Verify untouched item 2 was skipped and remains unchanged
         self.assertIsNone(self.item2.physical_qty)

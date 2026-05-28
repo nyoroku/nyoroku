@@ -11,5 +11,7 @@ urlpatterns = [
     path('<uuid:pk>/print/', views.audit_print, name='print'),
     path('items/<uuid:item_id>/validate/', views.audit_item_validate, name='item_validate'),
     path('items/<uuid:item_id>/dispute/', views.audit_item_dispute, name='item_dispute'),
+    path('items/<uuid:item_id>/apply/', views.audit_item_apply, name='item_apply'),
+    path('<uuid:pk>/apply-all/', views.audit_apply_all, name='apply_all'),
     path('staff-surplus/', views.staff_surplus, name='staff_surplus'),
 ]

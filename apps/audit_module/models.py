@@ -69,6 +69,7 @@ class AuditItem(models.Model):
     
     ACTION_STATUS_CHOICES = [
         ('pending', 'Pending'),
+        ('applied', 'Applied'),
         ('validated', 'Validated'),
         ('disputed', 'Disputed'),
         ('posted', 'Posted'),

@@ -3,11 +3,12 @@ from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.db import transaction
 from .models import AuditSession, AuditItem
-from catalogue.models import Product, Category, SubCategory
+from catalogue.models import Product, Category, SubCategory, StockLedger
 from core.models import log_audit
 
 
@@ -76,15 +77,13 @@ def audit_initiate(request):
                 sample_size=len(selected),
             )
 
-            audit_items = []
             for product in selected:
                 system_qty = product.stock_in_weight_unit if product.weight_sell_enabled else product.stock_qty
-                audit_items.append(AuditItem(
+                AuditItem.objects.create(
                     session=session,
                     product=product,
                     system_qty=system_qty,
-                ))
-            AuditItem.objects.bulk_create(audit_items)
+                )
 
             return redirect('audit_module:detail', pk=session.pk)
         else:
@@ -136,16 +135,6 @@ def audit_submit(request, pk):
             item.note = note
             item.save()
 
-            # Apply stock adjustment if variance exists
-            if item.variance != 0:
-                product = item.product
-                if product.weight_sell_enabled:
-                    product.stock_in_weight_unit = physical_qty
-                    product.save(update_fields=['stock_in_weight_unit'])
-                else:
-                    product.stock_qty = physical_qty
-                    product.save(update_fields=['stock_qty'])
-
     session.status = 'completed'
     session.completed_at = timezone.now()
     session.notes = request.POST.get('session_notes', '')
@@ -157,6 +146,113 @@ def audit_submit(request, pk):
         entity_type='AuditSession',
         entity_id=str(session.pk),
         description=f'Audit completed: {session.total_items} items, {session.variance_count} variances',
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+
+    return redirect('audit_module:detail', pk=session.pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def audit_item_apply(request, item_id):
+    """Apply a single item's physical count to the database stock.
+    
+    Updates product stock and creates a StockLedger ADJUSTMENT entry.
+    Sets AuditItem.action_status to 'applied'.
+    """
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+
+    item = get_object_or_404(AuditItem, pk=item_id)
+    if item.session.status != 'completed':
+        return HttpResponse('Audit session is not completed', status=400)
+    if item.variance is None or item.variance == 0:
+        return HttpResponse('No variance to apply', status=400)
+    if item.action_status == 'applied':
+        return HttpResponse('Already applied', status=400)
+
+    product = item.product
+
+    with transaction.atomic():
+        # Update product stock
+        if product.weight_sell_enabled:
+            product.stock_in_weight_unit = item.physical_qty
+            product.save(update_fields=['stock_in_weight_unit'])
+        else:
+            product.stock_qty = item.physical_qty
+            product.save(update_fields=['stock_qty'])
+
+        # Create StockLedger entry
+        StockLedger.objects.create(
+            product=product,
+            entry_type='ADJUSTMENT',
+            qty_delta=int(item.variance),
+            reference_id=str(item.session.pk),
+            created_by=request.user,
+        )
+
+        # Mark as applied
+        item.action_status = 'applied'
+        item.save(update_fields=['action_status'])
+
+    log_audit(
+        action='audit_stock_applied',
+        user=request.user,
+        entity_type='AuditItem',
+        entity_id=str(item.pk),
+        description=f"Applied stock adjustment for {product.name}: {item.system_qty} → {item.physical_qty} (variance: {item.variance})",
+        ip_address=request.META.get('REMOTE_ADDR'),
+    )
+
+    return redirect('audit_module:detail', pk=item.session.pk)
+
+
+@login_required
+@require_http_methods(["POST"])
+def audit_apply_all(request, pk):
+    """Bulk apply all unposted variance items in one atomic transaction."""
+    if request.user.role != 'admin':
+        return HttpResponse('Unauthorized', status=403)
+
+    session = get_object_or_404(AuditSession, pk=pk)
+    if session.status != 'completed':
+        return HttpResponse('Audit session is not completed', status=400)
+
+    items = session.items.exclude(variance=Decimal('0')).exclude(variance__isnull=True).exclude(action_status='applied')
+    applied_count = 0
+
+    with transaction.atomic():
+        for item in items:
+            product = item.product
+
+            # Update product stock
+            if product.weight_sell_enabled:
+                product.stock_in_weight_unit = item.physical_qty
+                product.save(update_fields=['stock_in_weight_unit'])
+            else:
+                product.stock_qty = item.physical_qty
+                product.save(update_fields=['stock_qty'])
+
+            # Create StockLedger entry
+            StockLedger.objects.create(
+                product=product,
+                entry_type='ADJUSTMENT',
+                qty_delta=int(item.variance),
+                reference_id=str(session.pk),
+                created_by=request.user,
+            )
+
+            # Mark as applied
+            item.action_status = 'applied'
+            item.save(update_fields=['action_status'])
+            applied_count += 1
+
+    log_audit(
+        action='audit_stock_applied_bulk',
+        user=request.user,
+        entity_type='AuditSession',
+        entity_id=str(session.pk),
+        description=f"Bulk applied stock adjustments for {applied_count} items.",
         ip_address=request.META.get('REMOTE_ADDR'),
     )
 
