@@ -180,8 +180,8 @@ def dashboard(request):
 
     context = {
         'period': period,
-        'start_date_str': request.GET.get('start_date', ''),
-        'end_date_str': request.GET.get('end_date', ''),
+        'start_date_str': start_date.strftime('%Y-%m-%d'),
+        'end_date_str': end_date.strftime('%Y-%m-%d'),
         'revenue': float(revenue),
         'cogs': float(cogs),
         'gross_profit': gross_profit,
@@ -439,9 +439,10 @@ def stock_reconciliation(request):
     total_handed_cash = handovers.aggregate(total=Sum('cash_amount'))['total'] or Decimal('0')
     total_handed_mpesa = handovers.aggregate(total=Sum('mpesa_amount'))['total'] or Decimal('0')
     total_in_shop_expenses = handovers.aggregate(total=Sum('in_shop_expenses'))['total'] or Decimal('0')
+    total_ad_hoc_purchases = handovers.aggregate(total=Sum('ad_hoc_purchases'))['total'] or Decimal('0')
 
-    # Accounted total = handed cash + handed mpesa + in-shop expenses
-    accounted_total = total_handed_cash + total_handed_mpesa + total_in_shop_expenses
+    # Accounted total = handed cash + handed mpesa + in-shop expenses + ad-hoc purchases
+    accounted_total = total_handed_cash + total_handed_mpesa + total_in_shop_expenses + total_ad_hoc_purchases
 
     # Variance
     variance = accounted_total - system_revenue
@@ -469,6 +470,7 @@ def stock_reconciliation(request):
         'total_handed_cash': float(total_handed_cash),
         'total_handed_mpesa': float(total_handed_mpesa),
         'total_in_shop_expenses': float(total_in_shop_expenses),
+        'total_ad_hoc_purchases': float(total_ad_hoc_purchases),
         'accounted_total': float(accounted_total),
         'variance': float(variance),
         'expenses_total': float(expenses_total),

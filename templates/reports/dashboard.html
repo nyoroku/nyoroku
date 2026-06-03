@@ -11,6 +11,8 @@
   }
   .kpi-revenue::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
   .kpi-profit::before { background: linear-gradient(90deg, #10b981, #34d399); }
+  .kpi-purchases::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .kpi-expenses::before { background: linear-gradient(90deg, #ef4444, #f87171); }
   .kpi-net::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
   .kpi-basket::before { background: linear-gradient(90deg, var(--accent), var(--accent-glow)); }
   .chart-bar {
@@ -35,15 +37,33 @@
       <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Dashboard</h1>
       <p class="text-sm" style="color: var(--text-secondary)">Business performance overview</p>
     </div>
-    <div class="flex gap-1.5 p-1 rounded-xl bg-white border border-[var(--border)]">
+    <div class="flex items-center gap-1.5 p-1 rounded-xl bg-white border border-[var(--border)] flex-wrap">
       <a href="{% url 'reports:dashboard' %}?period=today" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == 'today' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == 'today' %}style="background: var(--primary)"{% endif %}>Today</a>
       <a href="{% url 'reports:dashboard' %}?period=7days" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == '7days' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == '7days' %}style="background: var(--primary)"{% endif %}>7 Days</a>
       <a href="{% url 'reports:dashboard' %}?period=30days" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == '30days' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == '30days' %}style="background: var(--primary)"{% endif %}>30 Days</a>
+      
+      <!-- Date Range Selector -->
+      <form method="GET" action="{% url 'reports:dashboard' %}" class="flex items-center gap-2 pl-2 border-l border-gray-200 flex-wrap">
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] font-bold text-gray-400 uppercase">From</span>
+          <input type="date" name="start_date" value="{{ start_date_str }}" required
+                 class="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 focus:ring-1 focus:ring-[var(--primary)] outline-none" style="color: var(--primary-dark)">
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] font-bold text-gray-400 uppercase">To</span>
+          <input type="date" name="end_date" value="{{ end_date_str }}" required
+                 class="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 focus:ring-1 focus:ring-[var(--primary)] outline-none" style="color: var(--primary-dark)">
+        </div>
+        <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-bold text-white transition-all bg-[var(--primary)] hover:opacity-90 flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Filter
+        </button>
+      </form>
     </div>
   </div>
 
   <!-- KPI Cards -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
     <div class="kpi-card kpi-revenue">
       <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Revenue</p>
       <p class="text-2xl font-extrabold font-mono mt-2" style="color: var(--primary-dark)">KES {{ revenue|floatformat:2 }}</p>
@@ -53,6 +73,16 @@
       <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Gross Profit</p>
       <p class="text-2xl font-extrabold font-mono mt-2 {% if gross_profit >= 0 %}text-emerald-600{% else %}text-red-600{% endif %}">KES {{ gross_profit|floatformat:2 }}</p>
       <p class="text-xs font-mono font-bold mt-1.5 {% if margin >= 20 %}text-emerald-600{% else %}text-amber-600{% endif %}">{{ margin|floatformat:1 }}% margin</p>
+    </div>
+    <div class="kpi-card kpi-purchases">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Total Purchases</p>
+      <p class="text-2xl font-extrabold font-mono mt-2" style="color: #d97706">KES {{ purchases|floatformat:2 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">Goods received value</p>
+    </div>
+    <div class="kpi-card kpi-expenses">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Total Expenses</p>
+      <p class="text-2xl font-extrabold font-mono mt-2" style="color: #dc2626">KES {{ expenses|floatformat:2 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">Shop operations cost</p>
     </div>
     <div class="kpi-card kpi-net">
       <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Net Profit</p>

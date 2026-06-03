@@ -220,7 +220,8 @@ class CashHandover(models.Model):
     )
     cash_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="Cash Counted")
     mpesa_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="M-Pesa Counted")
-    in_shop_expenses = models.DecimalField(max_digits=12, decimal_places=2, help_text="Expenses & Procurement")
+    in_shop_expenses = models.DecimalField(max_digits=12, decimal_places=2, help_text="In-Shop Expenses")
+    ad_hoc_purchases = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'), help_text="Cash used for AD HOC purchases")
     total_sales = models.DecimalField(max_digits=12, decimal_places=2, help_text="Expected Total Sales")
     variance = models.DecimalField(max_digits=12, decimal_places=2, help_text="Shortage / Surplus")
     

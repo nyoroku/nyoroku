@@ -60,36 +60,7 @@
       </thead>
       <tbody>
         {% for h in handovers %}
-        <tr class="handover-row border-b" style="border-color: #f1f3f5"
-            onclick="window.location='{% url 'pos:cash_handover_detail' h.pk %}'">
-          <td class="px-5 py-4">
-            <div class="font-semibold">{{ h.staff.name }}</div>
-            <div class="text-[11px]" style="color: var(--text-secondary)">@{{ h.staff.username }}</div>
-          </td>
-          <td class="px-5 py-4" style="color: var(--text-secondary)">{{ h.created_at|date:"d M Y, H:i" }}</td>
-          <td class="px-5 py-4 text-right font-mono font-bold">{{ h.cash_amount|floatformat:2 }}</td>
-          <td class="px-5 py-4 text-right font-mono font-bold">{{ h.mpesa_amount|floatformat:2 }}</td>
-          <td class="px-5 py-4 text-right font-mono font-bold">{{ h.total_sales|floatformat:2 }}</td>
-          <td class="px-5 py-4 text-right font-mono font-bold
-            {% if h.variance > 0 %}text-emerald-600{% elif h.variance < 0 %}text-red-600{% else %}text-slate-400{% endif %}">
-            {{ h.variance|floatformat:2 }}
-          </td>
-          <td class="px-5 py-4 text-center">
-            {% if h.status == 'pending' %}
-              <span class="status-badge badge-pending">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending
-              </span>
-            {% elif h.status == 'confirmed' %}
-              <span class="status-badge badge-confirmed">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Confirmed
-              </span>
-            {% else %}
-              <span class="status-badge badge-rejected">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
-              </span>
-            {% endif %}
-          </td>
-        </tr>
+          {% include 'pos/partials/handover_row.html' %}
         {% endfor %}
       </tbody>
     </table>

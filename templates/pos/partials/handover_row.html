@@ -1,4 +1,5 @@
-<tr id="handover-{{ h.pk }}" class="handover-row border-b" style="border-color: #f1f3f5">
+<tr id="handover-{{ h.pk }}" class="handover-row border-b" style="border-color: #f1f3f5"
+    onclick="window.location='{% url 'pos:cash_handover_detail' h.pk %}'">
   <td class="px-5 py-4">
     <div class="font-semibold">{{ h.staff.name }}</div>
     <div class="text-[11px]" style="color: var(--text-secondary)">@{{ h.staff.username }}</div>

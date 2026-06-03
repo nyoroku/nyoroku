@@ -1072,17 +1072,18 @@ def cash_handover_submit(request):
             if sale.mpesa_amount:
                 expected_mpesa += sale.mpesa_amount
 
-    # Calculate in-shop expenses
+    # Calculate in-shop expenses and AD HOC purchases separately
     from expenses.models import Expense
     from procurement.models import PurchaseOrder, Supplier
 
-    supplier, _ = Supplier.objects.get_or_create(name="Ad Hoc / Walk-in")
+    supplier, _ = Supplier.objects.get_or_create(name="AD HOC")
 
     shift_expenses = Expense.objects.filter(recorded_by=request.user, created_at__gte=shift_start, created_at__lte=shift_end).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
     shift_pos = PurchaseOrder.objects.filter(created_by=request.user, created_at__gte=shift_start, created_at__lte=shift_end, supplier=supplier).exclude(status='cancelled')
     shift_procurement = sum(po.total_cost for po in shift_pos)
 
-    in_shop_expenses = shift_expenses + Decimal(str(shift_procurement))
+    in_shop_expenses = shift_expenses
+    ad_hoc_purchases = Decimal(str(shift_procurement))
 
     if request.method == 'POST':
         try:
@@ -1092,13 +1093,14 @@ def cash_handover_submit(request):
             cash_amount = Decimal('0')
             mpesa_amount = Decimal('0')
 
-        variance = (cash_amount + mpesa_amount + in_shop_expenses) - expected_sales
+        variance = (cash_amount + mpesa_amount + in_shop_expenses + ad_hoc_purchases) - expected_sales
 
         handover = CashHandover.objects.create(
             staff=request.user,
             cash_amount=cash_amount,
             mpesa_amount=mpesa_amount,
             in_shop_expenses=in_shop_expenses,
+            ad_hoc_purchases=ad_hoc_purchases,
             total_sales=expected_sales,
             variance=variance,
             shift_start=shift_start,
@@ -1111,7 +1113,7 @@ def cash_handover_submit(request):
             user=request.user,
             entity_type='CashHandover',
             entity_id=str(handover.pk),
-            description=f'Cash handover submitted: Cash={cash_amount}, Mpesa={mpesa_amount}, Expenses={in_shop_expenses}, Sales={expected_sales}, Variance={variance}, Shift={shift_start} to {shift_end}',
+            description=f'Cash handover submitted: Cash={cash_amount}, Mpesa={mpesa_amount}, Expenses={in_shop_expenses}, Purchases={ad_hoc_purchases}, Sales={expected_sales}, Variance={variance}, Shift={shift_start} to {shift_end}',
             ip_address=request.META.get('REMOTE_ADDR'),
         )
         
@@ -1126,6 +1128,7 @@ def cash_handover_submit(request):
             'expected_cash': expected_cash,
             'expected_mpesa': expected_mpesa,
             'in_shop_expenses': in_shop_expenses,
+            'ad_hoc_purchases': ad_hoc_purchases,
         })
 
     # Render submit form
@@ -1138,6 +1141,7 @@ def cash_handover_submit(request):
         'expected_cash': expected_cash,
         'expected_mpesa': expected_mpesa,
         'in_shop_expenses': in_shop_expenses,
+        'ad_hoc_purchases': ad_hoc_purchases,
         'pending_handover': pending_handover,
         'store_name': getattr(settings, 'STORE_NAME', "Jimmy's Mini Mart"),
     })
@@ -1307,7 +1311,7 @@ def revise_handover(request, pk):
         if form.is_valid():
             revised = form.save(commit=False)
             # Recalculate variance
-            revised.variance = (revised.cash_amount + revised.mpesa_amount + revised.in_shop_expenses) - revised.total_sales
+            revised.variance = (revised.cash_amount + revised.mpesa_amount + revised.in_shop_expenses + revised.ad_hoc_purchases) - revised.total_sales
             revised.status = 'pending'
             revised.admin_note = ''
             revised.confirmed_by = None

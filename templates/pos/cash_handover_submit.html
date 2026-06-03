@@ -31,9 +31,10 @@
   cashCounted: 0,
   mpesaCounted: 0,
   expenses: {{ in_shop_expenses|floatformat:2 }},
+  adHocPurchases: {{ ad_hoc_purchases|floatformat:2 }},
   expectedSales: {{ expected_sales|floatformat:2 }},
 
-  get totalCounted() { return parseFloat(this.cashCounted||0) + parseFloat(this.mpesaCounted||0) + parseFloat(this.expenses||0); },
+  get totalCounted() { return parseFloat(this.cashCounted||0) + parseFloat(this.mpesaCounted||0) + parseFloat(this.expenses||0) + parseFloat(this.adHocPurchases||0); },
   get variance() { return this.totalCounted - this.expectedSales; },
   get varianceClass() {
     if (this.variance > 0) return 'variance-positive';
@@ -45,7 +46,7 @@
     if (this.variance < 0) return 'Shortage';
     return 'Balanced';
   }
-}" @stats-updated.window="expenses = $event.detail.expenses; expectedSales = $event.detail.expectedSales">
+}" @stats-updated.window="expenses = $event.detail.expenses; adHocPurchases = $event.detail.adHocPurchases; expectedSales = $event.detail.expectedSales">
 
   <!-- Header -->
   <div class="mb-7">
@@ -138,6 +139,10 @@
           <div class="flex justify-between">
             <span style="color: var(--text-secondary)">In-shop expenses (auto)</span>
             <span class="font-mono font-bold text-amber-600" x-text="'KES ' + parseFloat(expenses).toFixed(2)"></span>
+          </div>
+          <div class="flex justify-between">
+            <span style="color: var(--text-secondary)">AD HOC purchases (auto)</span>
+            <span class="font-mono font-bold text-amber-600" x-text="'KES ' + parseFloat(adHocPurchases).toFixed(2)"></span>
           </div>
           <div class="flex justify-between border-t pt-2" style="border-color: rgba(0,0,0,0.07)">
             <span style="color: var(--text-secondary)">Total accounted</span>

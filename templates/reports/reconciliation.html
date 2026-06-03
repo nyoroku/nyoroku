@@ -105,6 +105,10 @@
         <span class="recon-label">🧾 In-Shop Expenses</span>
         <span class="recon-value text-amber-600">KES {{ total_in_shop_expenses|floatformat:2 }}</span>
       </div>
+      <div class="recon-row">
+        <span class="recon-label">📦 AD HOC Purchases</span>
+        <span class="recon-value text-amber-600">KES {{ total_ad_hoc_purchases|floatformat:2 }}</span>
+      </div>
       <div class="recon-row" style="border-top: 2px solid var(--border); padding-top: 16px; margin-top: 4px">
         <span class="text-sm font-bold text-emerald-700">Accounted Total</span>
         <span class="recon-value text-lg text-emerald-700">KES {{ accounted_total|floatformat:2 }}</span>
