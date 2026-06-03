@@ -1,16 +1,124 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 py-6">
-  <h1 class="text-2xl font-bold mb-4" style="color: var(--primary-dark)">Product Performance</h1>
-  <h2 class="text-lg font-bold mb-3" style="color: var(--primary)">🏆 Top Sellers</h2>
-  <div class="bg-white rounded-2xl border border-border overflow-hidden mb-6">
-    <table class="w-full text-sm"><thead><tr class="border-b border-border"><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-left">#</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-left">Product</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Qty Sold</th><th class="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Revenue</th></tr></thead>
-    <tbody>{% for p in top_sellers %}<tr class="border-b border-border/50"><td class="px-4 py-2 font-bold text-primary">{{ forloop.counter }}</td><td class="px-4 py-2 font-medium">{{ p.product__name }}</td><td class="px-4 py-2 text-right font-mono">{{ p.total_qty|floatformat:0 }}</td><td class="px-4 py-2 text-right font-mono font-bold">KES {{ p.total_revenue|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+<div class="max-w-5xl mx-auto px-4 py-6 lg:py-8 pb-24">
+  <!-- Header with Date Filters -->
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Product Performance</h1>
+      <p class="text-sm" style="color: var(--text-secondary)">Analyze sales volume and revenue by product</p>
+    </div>
+    <div class="flex items-center gap-1.5 p-1 rounded-xl bg-white border border-[var(--border)] flex-wrap">
+      <a href="{% url 'reports:product_performance' %}?period=today" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == 'today' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == 'today' %}style="background: var(--primary)"{% endif %}>Today</a>
+      <a href="{% url 'reports:product_performance' %}?period=7days" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == '7days' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == '7days' %}style="background: var(--primary)"{% endif %}>7 Days</a>
+      <a href="{% url 'reports:product_performance' %}?period=30days" class="text-xs px-4 py-2 rounded-lg font-semibold transition-all {% if period == '30days' %}text-white{% else %}text-text-secondary hover:bg-gray-50{% endif %}" {% if period == '30days' %}style="background: var(--primary)"{% endif %}>30 Days</a>
+      
+      <!-- Date Range Selector -->
+      <form method="GET" action="{% url 'reports:product_performance' %}" class="flex items-center gap-2 pl-2 border-l border-gray-200 flex-wrap">
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] font-bold text-gray-400 uppercase">From</span>
+          <input type="date" name="start_date" value="{{ start_date_str }}" required
+                 class="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 focus:ring-1 focus:ring-[var(--primary)] outline-none" style="color: var(--primary-dark)">
+        </div>
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] font-bold text-gray-400 uppercase">To</span>
+          <input type="date" name="end_date" value="{{ end_date_str }}" required
+                 class="text-xs px-2.5 py-1.5 rounded-lg border border-gray-300 focus:ring-1 focus:ring-[var(--primary)] outline-none" style="color: var(--primary-dark)">
+        </div>
+        <button type="submit" class="text-xs px-3 py-1.5 rounded-lg font-bold text-white transition-all bg-[var(--primary)] hover:opacity-90 flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Filter
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Product Performance Table -->
+  <h2 class="text-lg font-bold mb-3" style="color: var(--primary)">📦 Product Sales Performance</h2>
+  <div class="bg-white rounded-2xl border border-border overflow-hidden mb-6 shadow-sm">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-border bg-gray-50/50">
+          <th class="px-5 py-3.5 text-xs font-bold text-text-secondary uppercase text-left w-16">#</th>
+          <th class="px-5 py-3.5 text-xs font-bold text-text-secondary uppercase text-left">Product</th>
+          <th class="px-5 py-3.5 text-xs font-bold text-text-secondary uppercase text-right w-36">Qty Sold</th>
+          <th class="px-5 py-3.5 text-xs font-bold text-text-secondary uppercase text-right w-44">Revenue</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border/40">
+        {% for p in sold_products %}
+        <tr class="hover:bg-gray-50/30 transition-colors">
+          <td class="px-5 py-3 font-bold text-primary/80">{{ forloop.counter }}</td>
+          <td class="px-5 py-3 font-semibold text-gray-800">{{ p.product__name }}</td>
+          <td class="px-5 py-3 text-right font-mono text-gray-700">{{ p.total_qty|floatformat:2 }}</td>
+          <td class="px-5 py-3 text-right font-mono font-bold text-gray-900">KES {{ p.total_revenue|floatformat:2 }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-5 py-8 text-center text-sm text-text-secondary">
+            No sales recorded in the selected period.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if sold_products %}
+      <tfoot>
+        <tr class="border-t-2 border-border/80 bg-gray-50/80 font-bold text-gray-900">
+          <td colspan="2" class="px-5 py-4 text-left font-bold uppercase tracking-wider text-xs text-text-secondary">Total Accounted</td>
+          <td class="px-5 py-4 text-right font-mono text-base">{{ total_qty_sold|floatformat:2 }}</td>
+          <td class="px-5 py-4 text-right font-mono text-base text-emerald-700">KES {{ total_revenue_sold|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+      {% endif %}
     </table>
   </div>
-  <h2 class="text-lg font-bold mb-3 text-danger">💤 Zero Sale Items</h2>
-  <div class="bg-white rounded-2xl border border-border overflow-hidden">
-    <div class="p-4 space-y-1">{% for p in zero_sale %}<div class="flex justify-between text-sm"><span class="font-medium">{{ p.name }}</span><span class="font-mono text-text-secondary text-xs">Stock: {{ p.effective_stock|floatformat:0 }}</span></div>{% empty %}<p class="text-sm text-success text-center py-4">All products have sales! 🎉</p>{% endfor %}</div>
+
+  <!-- Zero Sale Items section -->
+  <div class="grid md:grid-cols-2 gap-6 mt-8">
+    <div>
+      <h2 class="text-lg font-bold mb-3 text-red-600 flex items-center gap-2">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        💤 Zero Sale Items (Top 20)
+      </h2>
+      <div class="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
+        <div class="p-4 divide-y divide-border/30">
+          {% for p in zero_sale %}
+          <div class="flex justify-between text-sm py-2 {% if not forloop.first %}pt-2.5{% endif %}">
+            <span class="font-medium text-gray-700">{{ p.name }}</span>
+            <span class="font-mono text-text-secondary text-xs bg-gray-50 px-2 py-0.5 rounded border border-border">Stock: {{ p.effective_stock|floatformat:2 }}</span>
+          </div>
+          {% empty %}
+          <p class="text-sm text-success text-center py-6 font-semibold">All products have sales! 🎉</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Quick insights card -->
+    <div class="flex flex-col">
+      <h2 class="text-lg font-bold mb-3 text-gray-800">💡 Performance Insights</h2>
+      <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-5 shadow-sm flex-1">
+        <div class="space-y-4">
+          <div>
+            <div class="text-[11px] font-bold text-emerald-800/80 uppercase tracking-widest">Active Sales Products</div>
+            <div class="text-2xl font-extrabold text-emerald-950 mt-1">{{ sold_products|length }} product{{ sold_products|pluralize }}</div>
+            <div class="text-xs text-emerald-700/80 mt-1">Products with at least one transaction in this period.</div>
+          </div>
+          <div class="border-t border-emerald-900/10 pt-4">
+            <div class="text-[11px] font-bold text-teal-800/80 uppercase tracking-widest">Total Sales Volume</div>
+            <div class="text-2xl font-extrabold text-teal-950 mt-1">{{ total_qty_sold|floatformat:2 }} units</div>
+            <div class="text-xs text-teal-700/80 mt-1">Cumulative product quantities sold.</div>
+          </div>
+          <div class="border-t border-emerald-900/10 pt-4">
+            <div class="text-[11px] font-bold text-emerald-800/80 uppercase tracking-widest">Average Value Per Item</div>
+            <div class="text-2xl font-extrabold text-emerald-950 mt-1">
+              KES {{ avg_item_value|floatformat:2 }}
+            </div>
+
+            <div class="text-xs text-emerald-700/80 mt-1">Calculated as total revenue divided by total items sold.</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

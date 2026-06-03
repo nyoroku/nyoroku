@@ -239,12 +239,17 @@ def product_performance(request):
     start_date, end_date, period = _get_date_range(request)
     sales = Sale.objects.filter(created_at__range=(start_date, end_date), status='complete')
 
-    top_sellers = SaleLineItem.objects.filter(
+    sold_products = SaleLineItem.objects.filter(
         sale__in=sales
     ).values('product__name', 'product__id').annotate(
         total_qty=Sum('quantity'),
         total_revenue=Sum('line_total'),
-    ).order_by('-total_revenue')[:20]
+    ).order_by('-total_revenue')
+
+    # Total quantity and revenue
+    total_qty_sold = sum(p['total_qty'] for p in sold_products) if sold_products else Decimal('0')
+    total_revenue_sold = sum(p['total_revenue'] for p in sold_products) if sold_products else Decimal('0')
+    avg_item_value = (total_revenue_sold / total_qty_sold) if total_qty_sold > 0 else Decimal('0')
 
     # Zero-sale items
     sold_ids = SaleLineItem.objects.filter(
@@ -253,12 +258,17 @@ def product_performance(request):
     zero_sale = Product.objects.filter(is_active=True).exclude(id__in=sold_ids)[:20]
 
     return render(request, 'reports/product_performance.html', {
-        'top_sellers': top_sellers,
+        'sold_products': sold_products,
+        'total_qty_sold': total_qty_sold,
+        'total_revenue_sold': total_revenue_sold,
+        'avg_item_value': avg_item_value,
         'zero_sale': zero_sale,
         'period': period,
-        'start_date_str': request.GET.get('start_date', ''),
-        'end_date_str': request.GET.get('end_date', ''),
+        'start_date_str': start_date.strftime('%Y-%m-%d'),
+        'end_date_str': end_date.strftime('%Y-%m-%d'),
     })
+
+
 
 
 @login_required
