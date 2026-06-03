@@ -22,4 +22,6 @@ urlpatterns = [
     path('suppliers/create/', views.supplier_create, name='supplier_create'),
     path('suppliers/<uuid:pk>/edit/', views.supplier_edit, name='supplier_edit'),
     path('suppliers/<uuid:pk>/delete/', views.supplier_delete, name='supplier_delete'),
+    path('receive-item/<uuid:item_id>/update-selling-price/', views.update_selling_price, name='update_selling_price'),
+    path('receive-item/<uuid:item_id>/keep-selling-price/', views.keep_selling_price, name='keep_selling_price'),
 ]

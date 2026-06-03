@@ -1,43 +1,76 @@
 import csv
 import collections
 from decimal import Decimal
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.db.models import Sum, Count, Avg, F, Q
+from django.db.models import Sum, Count, Avg, F, Q, ExpressionWrapper, DecimalField
 from django.db.models.functions import TruncDate, ExtractWeekDay
 from django.utils import timezone
 from pos.models import Sale, SaleLineItem
 from expenses.models import Expense
 from catalogue.models import Product, Category, Batch
-from procurement.models import PurchaseOrder, POLineItem, Supplier
+from procurement.models import PurchaseOrder, POLineItem, Supplier, GoodsReceiptItem, GoodsReceipt
+from audit_module.models import Stocktake
+from pos.models import CashHandover
 
 
 def _get_date_range(request):
     """Parse date range from request params."""
-    period = request.GET.get('period', 'today')
-    end_date = timezone.now()
+    # Support both 'range' (new spec) and 'period' (old code)
+    range_param = request.GET.get('range') or request.GET.get('period', 'today')
+    today_dt = timezone.now()
+    today = today_dt.date()
 
-    if period == '7days':
-        start_date = end_date - timedelta(days=7)
-    elif period == '30days':
-        start_date = end_date - timedelta(days=30)
-    elif period == 'custom':
+    start_date = None
+    end_date = None
+
+    if range_param == 'today':
+        start_date = today_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = today_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif range_param == '7days':
+        start_date = today_dt.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=6)
+        end_date = today_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif range_param == '30days':
+        start_date = today_dt.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=29)
+        end_date = today_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif range_param == 'month':
+        from calendar import monthrange
+        start = today.replace(day=1)
+        last_day = monthrange(today.year, today.month)[1]
+        end = today.replace(day=last_day)
+        start_date = timezone.make_aware(datetime.combine(start, datetime.min.time()))
+        end_date = timezone.make_aware(datetime.combine(end, datetime.max.time()))
+    elif request.GET.get('start') and request.GET.get('end'):
         try:
-            start_date = timezone.make_aware(
-                datetime.strptime(request.GET.get('start_date', ''), '%Y-%m-%d')
-            )
-            end_date = timezone.make_aware(
-                datetime.strptime(request.GET.get('end_date', ''), '%Y-%m-%d')
-            ).replace(hour=23, minute=59, second=59)
+            start_val = datetime.strptime(request.GET['start'], '%Y-%m-%d').date()
+            end_val = datetime.strptime(request.GET['end'], '%Y-%m-%d').date()
+            start_date = timezone.make_aware(datetime.combine(start_val, datetime.min.time()))
+            end_date = timezone.make_aware(datetime.combine(end_val, datetime.max.time()))
+            range_param = 'custom'
         except (ValueError, TypeError):
-            start_date = end_date - timedelta(days=30)
-            period = '30days'
-    else:
-        start_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            pass
 
-    return start_date, end_date, period
+    # Fallback to existing parameters
+    if start_date is None or end_date is None:
+        if request.GET.get('start_date') and request.GET.get('end_date'):
+            try:
+                start_val = datetime.strptime(request.GET['start_date'], '%Y-%m-%d').date()
+                end_val = datetime.strptime(request.GET['end_date'], '%Y-%m-%d').date()
+                start_date = timezone.make_aware(datetime.combine(start_val, datetime.min.time()))
+                end_date = timezone.make_aware(datetime.combine(end_val, datetime.max.time()))
+                range_param = 'custom'
+            except (ValueError, TypeError):
+                pass
+
+    if start_date is None or end_date is None:
+        # Default fallback: today
+        start_date = today_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = today_dt.replace(hour=23, minute=59, second=59, microsecond=999999)
+        range_param = 'today'
+
+    return start_date, end_date, range_param
 
 
 @login_required
@@ -55,6 +88,13 @@ def dashboard(request):
     expenses = expenses_qs.aggregate(Sum('amount'))['amount__sum'] or Decimal('0')
     tx_count = sales.count()
     avg_basket = float(revenue) / tx_count if tx_count > 0 else 0
+
+    # Total purchases (cost of goods received in the period)
+    purchases_total = GoodsReceiptItem.objects.filter(
+        receipt__received_at__range=(start_date, end_date),
+    ).aggregate(
+        total=Sum(F('received_qty') * F('po_line__unit_cost'))
+    )['total'] or Decimal('0')
 
     # COGS from sale line items
     cogs = Decimal('0')
@@ -146,6 +186,7 @@ def dashboard(request):
         'cogs': float(cogs),
         'gross_profit': gross_profit,
         'expenses': float(expenses),
+        'purchases': float(purchases_total),
         'net_profit': net_profit,
         'margin': margin,
         'avg_basket': avg_basket,
@@ -352,6 +393,91 @@ def promotion_effectiveness(request):
         'start_date_str': request.GET.get('start_date', ''),
         'end_date_str': request.GET.get('end_date', ''),
     })
+
+
+@login_required
+def stock_reconciliation(request):
+    """Stock/Revenue reconciliation view — compares system revenue against
+    cash handovers, M-Pesa, and in-shop expenses since the last stocktake."""
+    if request.user.role not in ('admin', 'manager'):
+        return HttpResponse('Unauthorized', status=403)
+
+    # Determine period: since last current stocktake, or fallback to 30 days
+    current_stocktake = Stocktake.objects.filter(is_current=True).first()
+    if current_stocktake:
+        start_date = timezone.make_aware(
+            datetime.combine(current_stocktake.conducted_date, datetime.min.time())
+        )
+        period_label = f"Since stocktake on {current_stocktake.conducted_date.strftime('%d %b %Y')}"
+    else:
+        start_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=29)
+        period_label = "Last 30 days (no stocktake recorded)"
+
+    end_date = timezone.now()
+
+    # System revenue (completed sales)
+    sales = Sale.objects.filter(created_at__range=(start_date, end_date), status='complete')
+    system_revenue = sales.aggregate(total=Sum('total'))['total'] or Decimal('0')
+
+    # Payment breakdown from sales
+    system_cash = Decimal('0')
+    system_mpesa = Decimal('0')
+    for sale in sales:
+        if sale.payment_method == 'cash':
+            system_cash += sale.total
+        elif sale.payment_method == 'mpesa':
+            system_mpesa += sale.total
+        elif sale.payment_method == 'split':
+            system_cash += sale.cash_amount or Decimal('0')
+            system_mpesa += sale.mpesa_amount or Decimal('0')
+
+    # Cash handovers (confirmed)
+    handovers = CashHandover.objects.filter(
+        created_at__range=(start_date, end_date),
+        status='confirmed',
+    )
+    total_handed_cash = handovers.aggregate(total=Sum('cash_amount'))['total'] or Decimal('0')
+    total_handed_mpesa = handovers.aggregate(total=Sum('mpesa_amount'))['total'] or Decimal('0')
+    total_in_shop_expenses = handovers.aggregate(total=Sum('in_shop_expenses'))['total'] or Decimal('0')
+
+    # Accounted total = handed cash + handed mpesa + in-shop expenses
+    accounted_total = total_handed_cash + total_handed_mpesa + total_in_shop_expenses
+
+    # Variance
+    variance = accounted_total - system_revenue
+
+    # Expenses from expense module
+    expenses_total = Expense.objects.filter(
+        date__range=(start_date.date(), end_date.date()),
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+    # Purchases in the period
+    purchases_total = GoodsReceiptItem.objects.filter(
+        receipt__received_at__range=(start_date, end_date),
+    ).aggregate(
+        total=Sum(F('received_qty') * F('po_line__unit_cost'))
+    )['total'] or Decimal('0')
+
+    context = {
+        'period_label': period_label,
+        'start_date': start_date,
+        'end_date': end_date,
+        'current_stocktake': current_stocktake,
+        'system_revenue': float(system_revenue),
+        'system_cash': float(system_cash),
+        'system_mpesa': float(system_mpesa),
+        'total_handed_cash': float(total_handed_cash),
+        'total_handed_mpesa': float(total_handed_mpesa),
+        'total_in_shop_expenses': float(total_in_shop_expenses),
+        'accounted_total': float(accounted_total),
+        'variance': float(variance),
+        'expenses_total': float(expenses_total),
+        'purchases_total': float(purchases_total),
+        'handover_count': handovers.count(),
+        'sales_count': sales.count(),
+    }
+
+    return render(request, 'reports/reconciliation.html', context)
 
 
 # ── CSV Export ──

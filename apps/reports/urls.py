@@ -13,5 +13,6 @@ urlpatterns = [
     path('batch-expiry/', views.batch_expiry, name='batch_expiry'),
     path('po-history/', views.po_history, name='po_history'),
     path('promotion-effectiveness/', views.promotion_effectiveness, name='promotion_effectiveness'),
+    path('reconciliation/', views.stock_reconciliation, name='stock_reconciliation'),
     path('export/<str:report_type>/', views.export_csv, name='export_csv'),
 ]

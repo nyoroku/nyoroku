@@ -267,6 +267,7 @@ def po_receive_goods(request, pk):
         notes=request.POST.get('notes', ''),
     )
 
+    cost_changed_items = []
     any_received = False
     for line_data in received_lines:
         line_id = line_data.get('line_id')
@@ -280,7 +281,7 @@ def po_receive_goods(request, pk):
         po_line = get_object_or_404(POLineItem, pk=line_id, po=po)
 
         # Create receipt item
-        GoodsReceiptItem.objects.create(
+        grn_item = GoodsReceiptItem.objects.create(
             receipt=receipt,
             po_line=po_line,
             received_qty=rcvd_qty,
@@ -326,12 +327,26 @@ def po_receive_goods(request, pk):
 
         # Update cost price (derive base unit cost from purchase unit cost)
         # Use quantize to 4dp to avoid floating-point drift
+        old_cost = product.cost_price
         if product.units_per_purchase > 0:
             derived_cost = po_line.unit_cost / Decimal(str(product.units_per_purchase))
             product.cost_price = derived_cost.quantize(Decimal('0.0001'))
         else:
             product.cost_price = po_line.unit_cost
         product.save(update_fields=['cost_price'])
+
+        if old_cost is not None and product.cost_price != old_cost:
+            variance_pct = ((product.cost_price - old_cost) / old_cost * 100).quantize(Decimal('0.01'))
+            direction = 'increased' if product.cost_price > old_cost else 'decreased'
+            cost_changed_items.append({
+                'grn_line_item_id': str(grn_item.id),
+                'product_name': product.name,
+                'direction': direction,
+                'old_cost': old_cost,
+                'new_cost': product.cost_price,
+                'variance_pct': abs(variance_pct),
+                'current_selling_price': product.base_unit_price,
+            })
 
         # Create batch record
         if batch_num:
@@ -364,7 +379,16 @@ def po_receive_goods(request, pk):
             ip_address=request.META.get('REMOTE_ADDR'),
         )
 
-    return redirect('procurement:po_detail', pk=po.pk)
+    if request.headers.get('HX-Request'):
+        if cost_changed_items:
+            return render(request, 'procurement/partials/price_change_prompts.html', {
+                'changed_items': cost_changed_items,
+                'po': po,
+            })
+        else:
+            response = HttpResponse()
+            response['HX-Refresh'] = 'true'
+            return response
 
 
 @login_required
@@ -516,3 +540,22 @@ def supplier_delete(request, pk):
     supplier = get_object_or_404(Supplier, pk=pk)
     supplier.delete()
     return redirect('procurement:supplier_list')
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_selling_price(request, item_id):
+    grn_item = get_object_or_404(GoodsReceiptItem, id=item_id)
+    new_price = Decimal(request.POST.get('new_selling_price', '0'))
+    product = grn_item.po_line.product
+    product.base_unit_price = new_price
+    product.save(update_fields=['base_unit_price'])
+    return HttpResponse(f'<div class="p-3 bg-emerald-500/20 border border-emerald-500 rounded-xl text-emerald-700 text-xs font-semibold">✔ Selling price updated to KES {new_price:.2f} for {product.name}</div>')
+
+
+@login_required
+@require_http_methods(["POST"])
+def keep_selling_price(request, item_id):
+    grn_item = get_object_or_404(GoodsReceiptItem, id=item_id)
+    product = grn_item.po_line.product
+    return HttpResponse(f'<div class="p-3 bg-gray-100 border border-gray-300 rounded-xl text-gray-500 text-xs font-semibold">Selling price kept at KES {product.base_unit_price:.2f} for {product.name}</div>')

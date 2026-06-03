@@ -341,11 +341,24 @@ def checkout(request):
                 batch_used = active_batches.first()
 
             # Store ledger data to create after sale object exists
-            is_fractional_sale = (sell_mode in ('bundle', 'single') and product.split_enabled)
-            if sell_mode != 'weight' and sell_mode != 'split' and sell_mode != 'fragment' and not (sell_mode == 'whole' and product.is_kadogo) and not is_fractional_sale:
+            if sell_mode == 'weight':
                 ledger_data.append({
                     'product': product,
-                    'qty_delta': -base_qty_deducted,
+                    'qty_delta': -weight_dec,
+                    'unit_label': product.weight_unit,
+                    'batch_number': batch_used.batch_number if batch_used else ''
+                })
+            elif sell_mode == 'split':
+                ledger_data.append({
+                    'product': product,
+                    'qty_delta': -deduction,
+                    'unit_label': product.split_unit_label,
+                    'batch_number': batch_used.batch_number if batch_used else ''
+                })
+            elif not product.is_kadogo:
+                ledger_data.append({
+                    'product': product,
+                    'qty_delta': -stock_deduct,
                     'bundle_qty_sold': bundle_qty_sold,
                     'bundle_size': bundle_size,
                     'bundle_price': bundle_price,
@@ -1132,9 +1145,8 @@ def cash_handover_submit(request):
 
 @login_required
 def cash_handover_list(request):
-    """Admin/Manager view of all submitted cash handovers."""
-    if request.user.role not in ('admin', 'manager'):
-        return HttpResponse('Unauthorized', status=403)
+    """View submitted cash handovers. Admins/managers see all; cashiers see their own."""
+    is_cashier = request.user.role not in ('admin', 'manager')
 
     filter_tabs = [
         ('All', ''),
@@ -1144,6 +1156,10 @@ def cash_handover_list(request):
     ]
     current_filter = request.GET.get('status', '')
     handovers = CashHandover.objects.select_related('staff', 'confirmed_by').order_by('-created_at')
+
+    if is_cashier:
+        handovers = handovers.filter(staff=request.user)
+
     if current_filter in ('pending', 'confirmed', 'rejected'):
         handovers = handovers.filter(status=current_filter)
 
@@ -1153,6 +1169,7 @@ def cash_handover_list(request):
         'current_filter': current_filter,
         'is_admin': request.user.role == 'admin',
         'is_manager': request.user.role in ('admin', 'manager'),
+        'is_cashier': is_cashier,
         'store_name': getattr(settings, 'STORE_NAME', "Jimmy's Mini Mart"),
     })
 
@@ -1265,3 +1282,67 @@ def cash_handover_reject(request, pk):
     )
 
     return redirect('pos:cash_handover_detail', pk=handover.pk)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def revise_handover(request, pk):
+    """Cashier revises a rejected handover and resubmits it for review."""
+    from .forms import CashHandoverForm
+
+    handover = get_object_or_404(CashHandover, pk=pk)
+
+    # Only the owner can revise
+    if handover.staff != request.user:
+        return HttpResponse('Unauthorized', status=403)
+
+    # Only rejected handovers can be revised
+    if handover.status != 'rejected':
+        return HttpResponse('Only rejected handovers can be revised.', status=400)
+
+    is_cashier = request.user.role not in ('admin', 'manager')
+
+    if request.method == 'POST':
+        form = CashHandoverForm(request.POST, instance=handover)
+        if form.is_valid():
+            revised = form.save(commit=False)
+            # Recalculate variance
+            revised.variance = (revised.cash_amount + revised.mpesa_amount + revised.in_shop_expenses) - revised.total_sales
+            revised.status = 'pending'
+            revised.admin_note = ''
+            revised.confirmed_by = None
+            revised.confirmed_at = None
+            revised.save()
+
+            log_audit(
+                action='cash_handover_revised',
+                user=request.user,
+                entity_type='CashHandover',
+                entity_id=str(handover.pk),
+                description=f'Revised cash handover: Cash={revised.cash_amount}, Mpesa={revised.mpesa_amount}, Variance={revised.variance}',
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+
+            return render(request, 'pos/partials/handover_row.html', {
+                'h': revised,
+                'is_cashier': is_cashier,
+            })
+        else:
+            # Re-render form with errors
+            return render(request, 'pos/partials/revise_handover.html', {
+                'form': form,
+                'handover': handover,
+            })
+
+    # GET request
+    if request.GET.get('cancel') == '1':
+        return render(request, 'pos/partials/handover_row.html', {
+            'h': handover,
+            'is_cashier': is_cashier,
+        })
+
+    form = CashHandoverForm(instance=handover)
+    return render(request, 'pos/partials/revise_handover.html', {
+        'form': form,
+        'handover': handover,
+    })

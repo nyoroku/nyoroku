@@ -28,4 +28,5 @@ urlpatterns = [
     path('handover/<uuid:pk>/', views.cash_handover_detail, name='cash_handover_detail'),
     path('handover/<uuid:pk>/confirm/', views.cash_handover_confirm, name='cash_handover_confirm'),
     path('handover/<uuid:pk>/reject/', views.cash_handover_reject, name='cash_handover_reject'),
+    path('handover/<uuid:pk>/revise/', views.revise_handover, name='revise_handover'),
 ]

@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block extra_head %}
+<style>
+  .recon-card {
+    background: white; border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; position: relative; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .recon-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .recon-revenue::before { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+  .recon-accounted::before { background: linear-gradient(90deg, #10b981, #34d399); }
+  .recon-purchases::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .recon-expenses::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .recon-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .recon-row:last-child { border-bottom: none; }
+  .recon-label { color: var(--text-secondary); font-weight: 500; }
+  .recon-value { font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-6 lg:py-8 pb-24 lg:pb-8">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <a href="{% url 'reports:dashboard' %}" class="text-text-secondary hover:text-primary transition-colors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+        <h1 class="text-xl font-extrabold tracking-tight" style="color: var(--primary-dark)">Stock / Revenue Reconciliation</h1>
+      </div>
+      <p class="text-sm" style="color: var(--text-secondary)">{{ period_label }}</p>
+    </div>
+    <div class="text-xs px-4 py-2.5 rounded-xl font-bold" style="background: var(--bg-main); color: var(--text-secondary)">
+      {{ start_date|date:"d M Y" }} – {{ end_date|date:"d M Y" }}
+    </div>
+  </div>
+
+  <!-- Top KPI Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="recon-card recon-revenue">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">System Revenue</p>
+      <p class="text-xl font-extrabold font-mono mt-2" style="color: var(--primary-dark)">KES {{ system_revenue|floatformat:2 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">{{ sales_count }} sale{{ sales_count|pluralize }}</p>
+    </div>
+    <div class="recon-card recon-accounted">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Accounted Total</p>
+      <p class="text-xl font-extrabold font-mono mt-2 text-emerald-600">KES {{ accounted_total|floatformat:2 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">{{ handover_count }} handover{{ handover_count|pluralize }}</p>
+    </div>
+    <div class="recon-card recon-purchases">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Purchases</p>
+      <p class="text-xl font-extrabold font-mono mt-2 text-amber-600">KES {{ purchases_total|floatformat:2 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">Goods received</p>
+    </div>
+    <div class="recon-card recon-expenses">
+      <p class="text-[11px] font-bold text-text-secondary uppercase tracking-wider">Expenses</p>
+      <p class="text-xl font-extrabold font-mono mt-2 text-red-600">KES {{ expenses_total|floatformat:2 }}</p>
+      <p class="text-xs mt-1.5" style="color: var(--text-secondary)">Recorded expenses</p>
+    </div>
+  </div>
+
+  <!-- Detailed breakdown -->
+  <div class="grid lg:grid-cols-2 gap-5 mb-6">
+    <!-- System (Expected) -->
+    <div class="card p-6">
+      <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4 flex items-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        System Revenue (POS Records)
+      </h2>
+      <div class="recon-row">
+        <span class="recon-label">💵 Cash Sales</span>
+        <span class="recon-value" style="color: var(--primary-dark)">KES {{ system_cash|floatformat:2 }}</span>
+      </div>
+      <div class="recon-row">
+        <span class="recon-label">📱 M-Pesa Sales</span>
+        <span class="recon-value" style="color: var(--primary-dark)">KES {{ system_mpesa|floatformat:2 }}</span>
+      </div>
+      <div class="recon-row" style="border-top: 2px solid var(--border); padding-top: 16px; margin-top: 4px">
+        <span class="text-sm font-bold" style="color: var(--primary-dark)">Total System Revenue</span>
+        <span class="recon-value text-lg" style="color: var(--primary-dark)">KES {{ system_revenue|floatformat:2 }}</span>
+      </div>
+    </div>
+
+    <!-- Handovers (Actual) -->
+    <div class="card p-6">
+      <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-4 flex items-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Handover Totals (Staff Submitted)
+      </h2>
+      <div class="recon-row">
+        <span class="recon-label">💵 Cash Handed</span>
+        <span class="recon-value text-emerald-700">KES {{ total_handed_cash|floatformat:2 }}</span>
+      </div>
+      <div class="recon-row">
+        <span class="recon-label">📱 M-Pesa Handed</span>
+        <span class="recon-value text-emerald-700">KES {{ total_handed_mpesa|floatformat:2 }}</span>
+      </div>
+      <div class="recon-row">
+        <span class="recon-label">🧾 In-Shop Expenses</span>
+        <span class="recon-value text-amber-600">KES {{ total_in_shop_expenses|floatformat:2 }}</span>
+      </div>
+      <div class="recon-row" style="border-top: 2px solid var(--border); padding-top: 16px; margin-top: 4px">
+        <span class="text-sm font-bold text-emerald-700">Accounted Total</span>
+        <span class="recon-value text-lg text-emerald-700">KES {{ accounted_total|floatformat:2 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Net Variance Banner -->
+  <div class="card p-8 text-center mb-6
+    {% if variance > 0 %} border-2 border-emerald-300
+    {% elif variance < 0 %} border-2 border-red-300
+    {% else %} border-2 border-slate-200{% endif %}">
+    <div class="text-[11px] font-bold uppercase tracking-wider mb-2" style="color: var(--text-secondary)">
+      Net Variance (Accounted − System Revenue)
+    </div>
+    <div class="text-4xl font-extrabold font-mono
+      {% if variance > 0 %}text-emerald-600{% elif variance < 0 %}text-red-600{% else %}text-slate-500{% endif %}">
+      {% if variance >= 0 %}+{% endif %}KES {{ variance|floatformat:2 }}
+    </div>
+    <div class="text-sm font-semibold mt-2
+      {% if variance > 0 %}text-emerald-600{% elif variance < 0 %}text-red-600{% else %}text-slate-500{% endif %}">
+      {% if variance > 0 %}
+        ✅ Surplus — more cash accounted than system sales
+      {% elif variance < 0 %}
+        ❌ Shortfall — less cash accounted than system sales
+      {% else %}
+        ⚖️ Balanced — all cash fully accounted for
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Info notes -->
+  {% if not current_stocktake %}
+  <div class="card p-5 border-l-4 border-l-amber-400 mb-6">
+    <p class="text-sm font-semibold text-amber-800">
+      ⚠️ No stocktake has been recorded yet. This reconciliation covers the last 30 days by default.
+      To set a reference point, conduct a physical stocktake and mark it as "current" in the admin panel.
+    </p>
+  </div>
+  {% endif %}
+
+  <!-- Back link -->
+  <div class="text-center">
+    <a href="{% url 'reports:dashboard' %}" class="text-sm font-bold hover:underline" style="color: var(--primary)">← Back to Dashboard</a>
+  </div>
+</div>
+{% endblock %}

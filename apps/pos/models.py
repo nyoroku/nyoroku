@@ -107,7 +107,7 @@ class SaleLineItem(models.Model):
     sell_mode = models.CharField(max_length=10, choices=SELL_MODE_CHOICES, default='whole')
 
     # ── Pricing ──
-    quantity = models.DecimalField(max_digits=12, decimal_places=3)
+    quantity = models.DecimalField(max_digits=12, decimal_places=4)
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
     line_total = models.DecimalField(max_digits=12, decimal_places=2)
 

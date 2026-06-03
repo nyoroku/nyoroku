@@ -216,12 +216,12 @@
 
 <!-- Goods Receipt Modal -->
 <div id="receive-modal" class="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm items-center justify-center p-4" style="display:none">
-  <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+  <div class="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl" id="receive-form-container">
     <div class="p-6 border-b border-border flex items-center justify-between">
       <h2 class="text-lg font-bold" style="color: var(--primary-dark)">Receive Goods</h2>
       <button onclick="document.getElementById('receive-modal').style.display='none'" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
     </div>
-    <form method="POST" action="{% url 'procurement:po_receive' po.pk %}" class="p-6 space-y-4">
+    <form method="POST" hx-post="{% url 'procurement:po_receive' po.pk %}" hx-target="#receive-form-container" hx-swap="innerHTML" class="p-6 space-y-4">
       {% csrf_token %}
       {% for line in line_items %}
       {% if line.line_status != 'received' %}

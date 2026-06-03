@@ -124,3 +124,16 @@ class AuditItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name}: system={self.system_qty}, physical={self.physical_qty}"
+
+
+class Stocktake(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conducted_date = models.DateField()
+    conducted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    notes = models.TextField(blank=True)
+    is_current = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.is_current:
+            Stocktake.objects.exclude(pk=self.pk).update(is_current=False)
+        super().save(*args, **kwargs)

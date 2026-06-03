@@ -1,0 +1,53 @@
+<tr id="handover-{{ handover.pk }}" class="border-b" style="border-color: #f1f3f5; background: #fffbeb">
+  <td colspan="7" class="px-5 py-4">
+    <form hx-post="{% url 'pos:revise_handover' handover.pk %}"
+          hx-target="#handover-{{ handover.pk }}"
+          hx-swap="outerHTML">
+      {% csrf_token %}
+      <div class="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-bold text-amber-800 mb-2 uppercase tracking-wide">
+            ✏️ Revise Handover — {{ handover.staff.name }}
+          </div>
+          {% if handover.admin_note %}
+          <div class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+            <strong>Rejection reason:</strong> {{ handover.admin_note }}
+          </div>
+          {% endif %}
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">Cash Counted (KES)</label>
+              {{ form.cash_amount }}
+              {% if form.cash_amount.errors %}
+              <p class="text-[11px] text-red-600 mt-0.5">{{ form.cash_amount.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-gray-600 mb-1">M-Pesa Counted (KES)</label>
+              {{ form.mpesa_amount }}
+              {% if form.mpesa_amount.errors %}
+              <p class="text-[11px] text-red-600 mt-0.5">{{ form.mpesa_amount.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="submit"
+                  class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white
+                         bg-amber-500 hover:bg-amber-600 border border-amber-600 transition-colors shadow-sm">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Save &amp; Resubmit
+          </button>
+          <button type="button"
+                  hx-get="{% url 'pos:revise_handover' handover.pk %}?cancel=1"
+                  hx-target="#handover-{{ handover.pk }}"
+                  hx-swap="outerHTML"
+                  class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold
+                         text-gray-600 bg-white hover:bg-gray-50 border border-gray-300 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </form>
+  </td>
+</tr>

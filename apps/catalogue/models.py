@@ -134,7 +134,7 @@ class Product(models.Model):
 
     # ── Stock (base units) ──
     stock_qty = models.DecimalField(
-        max_digits=12, decimal_places=3, default=Decimal('0'),
+        max_digits=12, decimal_places=4, default=Decimal('0.0000'),
         help_text='On-hand stock in base units',
     )
     reorder_threshold = models.IntegerField(default=5)
@@ -181,6 +181,14 @@ class Product(models.Model):
             import random
             self.sku = f"{prefix}-{random.randint(1000, 9999)}"
         super().save(*args, **kwargs)
+
+    @property
+    def selling_price(self):
+        return self.base_unit_price
+
+    @selling_price.setter
+    def selling_price(self, value):
+        self.base_unit_price = value
 
     @property
     def effective_stock(self):
@@ -376,7 +384,7 @@ class StockLedger(models.Model):
     entry_type = models.CharField(max_length=20, choices=ENTRY_TYPE_CHOICES)
     
     # Core inventory tracking (Base Units)
-    qty_delta = models.IntegerField(help_text='Signed integer in base units (- for sales, + for receipts)')
+    qty_delta = models.DecimalField(max_digits=12, decimal_places=4, default=Decimal('0.0000'), help_text='Signed decimal in base units (- for sales, + for receipts)')
     
     # Bundle Sale Snapshots (Populated on SALE/VOID)
     bundle_qty_sold = models.PositiveIntegerField(null=True, blank=True, help_text='Number of bundles in a SALE entry')

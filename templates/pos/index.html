@@ -412,7 +412,8 @@
             </div>
             <div class="flex items-center gap-1" x-show="item.sell_mode!=='weight'">
               <button @click="updateQty(idx,-1)" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background:rgba(255,255,255,0.08);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)">-</button>
-              <span class="w-8 text-center font-mono font-bold text-sm text-white" x-text="item.quantity"></span>
+              <input type="number" step="0.0001" min="0.0001" x-model.number="item.quantity" @input="item.line_total = item.quantity * item.unit_price"
+                     class="w-16 text-center font-mono font-bold text-sm bg-transparent border-none text-white focus:outline-none focus:ring-0 p-0">
               <button @click="updateQty(idx,1)" class="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold" style="background:rgba(255,255,255,0.08);color:#e2e8f0;border:1px solid rgba(255,255,255,0.1)">+</button>
             </div>
             <div class="text-right min-w-[70px]">

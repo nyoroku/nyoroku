@@ -1,0 +1,41 @@
+<tr id="handover-{{ h.pk }}" class="handover-row border-b" style="border-color: #f1f3f5">
+  <td class="px-5 py-4">
+    <div class="font-semibold">{{ h.staff.name }}</div>
+    <div class="text-[11px]" style="color: var(--text-secondary)">@{{ h.staff.username }}</div>
+  </td>
+  <td class="px-5 py-4" style="color: var(--text-secondary)">{{ h.created_at|date:"d M Y, H:i" }}</td>
+  <td class="px-5 py-4 text-right font-mono font-bold">{{ h.cash_amount|floatformat:2 }}</td>
+  <td class="px-5 py-4 text-right font-mono font-bold">{{ h.mpesa_amount|floatformat:2 }}</td>
+  <td class="px-5 py-4 text-right font-mono font-bold">{{ h.total_sales|floatformat:2 }}</td>
+  <td class="px-5 py-4 text-right font-mono font-bold
+    {% if h.variance > 0 %}text-emerald-600{% elif h.variance < 0 %}text-red-600{% else %}text-slate-400{% endif %}">
+    {{ h.variance|floatformat:2 }}
+  </td>
+  <td class="px-5 py-4 text-center">
+    {% if h.status == 'pending' %}
+      <span class="status-badge badge-pending">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Pending
+      </span>
+    {% elif h.status == 'confirmed' %}
+      <span class="status-badge badge-confirmed">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Confirmed
+      </span>
+    {% else %}
+      <span class="status-badge badge-rejected">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Rejected
+      </span>
+      {% if is_cashier and h.staff == request.user %}
+      <button
+        hx-get="{% url 'pos:revise_handover' h.pk %}"
+        hx-target="#handover-{{ h.pk }}"
+        hx-swap="outerHTML"
+        onclick="event.stopPropagation()"
+        class="mt-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold
+               bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 transition-colors">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        Revise &amp; Resubmit
+      </button>
+      {% endif %}
+    {% endif %}
+  </td>
+</tr>
