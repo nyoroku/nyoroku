@@ -63,7 +63,8 @@ class PRDUoMAndBundleTest(TestCase):
         # Receive 2 packets
         response = self.client.post(f'/procurement/{po.id}/receive/', {
             f'received_qty_{po_item.id}': '2'
-        }, HTTP_HX_REQUEST='true')
+        })
+
         
         if response.status_code != 302:
             print(f"DEBUG: test_01 response status: {response.status_code}")

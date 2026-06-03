@@ -390,6 +390,9 @@ def po_receive_goods(request, pk):
             response['HX-Refresh'] = 'true'
             return response
 
+    return redirect('procurement:po_detail', pk=po.pk)
+
+
 
 @login_required
 def po_cancel(request, pk):
