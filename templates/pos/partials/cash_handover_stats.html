@@ -3,10 +3,18 @@
      x-data="{ 
         expenses: {{ in_shop_expenses|floatformat:2 }}, 
         adHocPurchases: {{ ad_hoc_purchases|floatformat:2 }}, 
-        expectedSales: {{ expected_sales|floatformat:2 }} 
+        expectedSales: {{ expected_sales|floatformat:2 }},
+        expectedCash: {{ expected_cash|floatformat:2 }},
+        expectedMpesa: {{ expected_mpesa|floatformat:2 }}
      }" 
      x-init="
-        $dispatch('stats-updated', { expenses: expenses, adHocPurchases: adHocPurchases, expectedSales: expectedSales });
+        $dispatch('stats-updated', { 
+           expenses: expenses, 
+           adHocPurchases: adHocPurchases, 
+           expectedSales: expectedSales,
+           expectedCash: expectedCash,
+           expectedMpesa: expectedMpesa
+        });
      ">
     <h2 class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-3">System Figures (This Shift)</h2>
     <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">

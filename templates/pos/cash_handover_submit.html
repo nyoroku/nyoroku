@@ -28,8 +28,8 @@
 
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 py-6 lg:py-8" x-data="{
-  cashCounted: 0,
-  mpesaCounted: 0,
+  cashCounted: {{ expected_cash|floatformat:2 }},
+  mpesaCounted: {{ expected_mpesa|floatformat:2 }},
   expenses: {{ in_shop_expenses|floatformat:2 }},
   adHocPurchases: {{ ad_hoc_purchases|floatformat:2 }},
   expectedSales: {{ expected_sales|floatformat:2 }},
@@ -46,7 +46,13 @@
     if (this.variance < 0) return 'Shortage';
     return 'Balanced';
   }
-}" @stats-updated.window="expenses = $event.detail.expenses; adHocPurchases = $event.detail.adHocPurchases; expectedSales = $event.detail.expectedSales">
+}" @stats-updated.window="
+  expenses = $event.detail.expenses;
+  adHocPurchases = $event.detail.adHocPurchases;
+  expectedSales = $event.detail.expectedSales;
+  cashCounted = $event.detail.expectedCash;
+  mpesaCounted = $event.detail.expectedMpesa;
+">
 
   <!-- Header -->
   <div class="mb-7">
